@@ -18,12 +18,14 @@ var SchemasString = map[SchemaOrder]string{
 	April2024Version: schemas.April2024Schema,
 	June2024Version:  schemas.June2024Schema,
 	June2024Version2: schemas.June2024Version2,
+	July2024Version:  schemas.July2024Schema,
 }
 
 var schemaOrderMap = map[string]SchemaOrder{
 	"April2024":  April2024Version,
 	"June2024":   June2024Version,
 	"June2024V2": June2024Version2,
+	"July2024":   July2024Version,
 }
 
 func (e SchemaOrder) NameOfSchema() string {

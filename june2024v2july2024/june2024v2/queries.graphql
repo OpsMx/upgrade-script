@@ -9,6 +9,8 @@ query QueryAllArtifactScanData {
         sourceSemgrepHighSeverityScanUrl
         sourceSemgrepMediumSeverityScanUrl
         sourceSemgrepLowSeverityScanUrl
+        sourceSnykScanUrl
+        virusTotalUrlScan
         id
     }
 }

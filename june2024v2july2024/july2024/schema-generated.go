@@ -8,6 +8,28 @@ import (
 	"github.com/Khan/genqlient/graphql"
 )
 
+// GetSeverityFromSecurityIssueQuerySecurityIssue includes the requested fields of the GraphQL type SecurityIssue.
+type GetSeverityFromSecurityIssueQuerySecurityIssue struct {
+	Severity Severity `json:"Severity"`
+	Id       *string  `json:"id"`
+}
+
+// GetSeverity returns GetSeverityFromSecurityIssueQuerySecurityIssue.Severity, and is useful for accessing the field via an interface.
+func (v *GetSeverityFromSecurityIssueQuerySecurityIssue) GetSeverity() Severity { return v.Severity }
+
+// GetId returns GetSeverityFromSecurityIssueQuerySecurityIssue.Id, and is useful for accessing the field via an interface.
+func (v *GetSeverityFromSecurityIssueQuerySecurityIssue) GetId() *string { return v.Id }
+
+// GetSeverityFromSecurityIssueResponse is returned by GetSeverityFromSecurityIssue on success.
+type GetSeverityFromSecurityIssueResponse struct {
+	QuerySecurityIssue []*GetSeverityFromSecurityIssueQuerySecurityIssue `json:"querySecurityIssue"`
+}
+
+// GetQuerySecurityIssue returns GetSeverityFromSecurityIssueResponse.QuerySecurityIssue, and is useful for accessing the field via an interface.
+func (v *GetSeverityFromSecurityIssueResponse) GetQuerySecurityIssue() []*GetSeverityFromSecurityIssueQuerySecurityIssue {
+	return v.QuerySecurityIssue
+}
+
 type ScanFileResultRef struct {
 	Id   *string `json:"id"`
 	Name string  `json:"name"`
@@ -22,6 +44,18 @@ func (v *ScanFileResultRef) GetName() string { return v.Name }
 
 // GetUrl returns ScanFileResultRef.Url, and is useful for accessing the field via an interface.
 func (v *ScanFileResultRef) GetUrl() string { return v.Url }
+
+type Severity string
+
+const (
+	SeverityCritical Severity = "critical"
+	SeverityHigh     Severity = "high"
+	SeverityMedium   Severity = "medium"
+	SeverityLow      Severity = "low"
+	SeverityInfo     Severity = "info"
+	SeverityNone     Severity = "none"
+	SeverityUnknown  Severity = "unknown"
+)
 
 // UpdateScannedFilesInArtifactScanDataResponse is returned by UpdateScannedFilesInArtifactScanData on success.
 type UpdateScannedFilesInArtifactScanDataResponse struct {
@@ -43,6 +77,26 @@ func (v *UpdateScannedFilesInArtifactScanDataUpdateArtifactScanDataUpdateArtifac
 	return v.NumUids
 }
 
+// UpdateSeverityIntInSecurityIssuesResponse is returned by UpdateSeverityIntInSecurityIssues on success.
+type UpdateSeverityIntInSecurityIssuesResponse struct {
+	UpdateSecurityIssue *UpdateSeverityIntInSecurityIssuesUpdateSecurityIssueUpdateSecurityIssuePayload `json:"updateSecurityIssue"`
+}
+
+// GetUpdateSecurityIssue returns UpdateSeverityIntInSecurityIssuesResponse.UpdateSecurityIssue, and is useful for accessing the field via an interface.
+func (v *UpdateSeverityIntInSecurityIssuesResponse) GetUpdateSecurityIssue() *UpdateSeverityIntInSecurityIssuesUpdateSecurityIssueUpdateSecurityIssuePayload {
+	return v.UpdateSecurityIssue
+}
+
+// UpdateSeverityIntInSecurityIssuesUpdateSecurityIssueUpdateSecurityIssuePayload includes the requested fields of the GraphQL type UpdateSecurityIssuePayload.
+type UpdateSeverityIntInSecurityIssuesUpdateSecurityIssueUpdateSecurityIssuePayload struct {
+	NumUids *int `json:"numUids"`
+}
+
+// GetNumUids returns UpdateSeverityIntInSecurityIssuesUpdateSecurityIssueUpdateSecurityIssuePayload.NumUids, and is useful for accessing the field via an interface.
+func (v *UpdateSeverityIntInSecurityIssuesUpdateSecurityIssueUpdateSecurityIssuePayload) GetNumUids() *int {
+	return v.NumUids
+}
+
 // __UpdateScannedFilesInArtifactScanDataInput is used internally by genqlient
 type __UpdateScannedFilesInArtifactScanDataInput struct {
 	Files []*ScanFileResultRef `json:"files,omitempty"`
@@ -54,6 +108,50 @@ func (v *__UpdateScannedFilesInArtifactScanDataInput) GetFiles() []*ScanFileResu
 
 // GetId returns __UpdateScannedFilesInArtifactScanDataInput.Id, and is useful for accessing the field via an interface.
 func (v *__UpdateScannedFilesInArtifactScanDataInput) GetId() string { return v.Id }
+
+// __UpdateSeverityIntInSecurityIssuesInput is used internally by genqlient
+type __UpdateSeverityIntInSecurityIssuesInput struct {
+	Ids         []*string `json:"ids"`
+	SeverityInt *int      `json:"severityInt"`
+}
+
+// GetIds returns __UpdateSeverityIntInSecurityIssuesInput.Ids, and is useful for accessing the field via an interface.
+func (v *__UpdateSeverityIntInSecurityIssuesInput) GetIds() []*string { return v.Ids }
+
+// GetSeverityInt returns __UpdateSeverityIntInSecurityIssuesInput.SeverityInt, and is useful for accessing the field via an interface.
+func (v *__UpdateSeverityIntInSecurityIssuesInput) GetSeverityInt() *int { return v.SeverityInt }
+
+// The query or mutation executed by GetSeverityFromSecurityIssue.
+const GetSeverityFromSecurityIssue_Operation = `
+query GetSeverityFromSecurityIssue {
+	querySecurityIssue {
+		Severity
+		id
+	}
+}
+`
+
+func GetSeverityFromSecurityIssue(
+	ctx_ context.Context,
+	client_ graphql.Client,
+) (*GetSeverityFromSecurityIssueResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "GetSeverityFromSecurityIssue",
+		Query:  GetSeverityFromSecurityIssue_Operation,
+	}
+	var err_ error
+
+	var data_ GetSeverityFromSecurityIssueResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
 
 // The query or mutation executed by UpdateScannedFilesInArtifactScanData.
 const UpdateScannedFilesInArtifactScanData_Operation = `
@@ -81,6 +179,43 @@ func UpdateScannedFilesInArtifactScanData(
 	var err_ error
 
 	var data_ UpdateScannedFilesInArtifactScanDataResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by UpdateSeverityIntInSecurityIssues.
+const UpdateSeverityIntInSecurityIssues_Operation = `
+mutation UpdateSeverityIntInSecurityIssues ($ids: [ID!], $severityInt: Int!) {
+	updateSecurityIssue(input: {set:{SeverityInt:$severityInt},filter:{id:$ids}}) {
+		numUids
+	}
+}
+`
+
+func UpdateSeverityIntInSecurityIssues(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	ids []*string,
+	severityInt *int,
+) (*UpdateSeverityIntInSecurityIssuesResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "UpdateSeverityIntInSecurityIssues",
+		Query:  UpdateSeverityIntInSecurityIssues_Operation,
+		Variables: &__UpdateSeverityIntInSecurityIssuesInput{
+			Ids:         ids,
+			SeverityInt: severityInt,
+		},
+	}
+	var err_ error
+
+	var data_ UpdateSeverityIntInSecurityIssuesResponse
 	resp_ := &graphql.Response{Data: &data_}
 
 	err_ = client_.MakeRequest(

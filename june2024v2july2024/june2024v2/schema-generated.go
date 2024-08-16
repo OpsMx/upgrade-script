@@ -19,6 +19,8 @@ type QueryAllArtifactScanDataQueryArtifactScanData struct {
 	SourceSemgrepHighSeverityScanUrl   string `json:"sourceSemgrepHighSeverityScanUrl"`
 	SourceSemgrepMediumSeverityScanUrl string `json:"sourceSemgrepMediumSeverityScanUrl"`
 	SourceSemgrepLowSeverityScanUrl    string `json:"sourceSemgrepLowSeverityScanUrl"`
+	SourceSnykScanUrl                  string `json:"sourceSnykScanUrl"`
+	VirusTotalUrlScan                  string `json:"virusTotalUrlScan"`
 	Id                                 string `json:"id"`
 }
 
@@ -65,6 +67,16 @@ func (v *QueryAllArtifactScanDataQueryArtifactScanData) GetSourceSemgrepLowSever
 	return v.SourceSemgrepLowSeverityScanUrl
 }
 
+// GetSourceSnykScanUrl returns QueryAllArtifactScanDataQueryArtifactScanData.SourceSnykScanUrl, and is useful for accessing the field via an interface.
+func (v *QueryAllArtifactScanDataQueryArtifactScanData) GetSourceSnykScanUrl() string {
+	return v.SourceSnykScanUrl
+}
+
+// GetVirusTotalUrlScan returns QueryAllArtifactScanDataQueryArtifactScanData.VirusTotalUrlScan, and is useful for accessing the field via an interface.
+func (v *QueryAllArtifactScanDataQueryArtifactScanData) GetVirusTotalUrlScan() string {
+	return v.VirusTotalUrlScan
+}
+
 // GetId returns QueryAllArtifactScanDataQueryArtifactScanData.Id, and is useful for accessing the field via an interface.
 func (v *QueryAllArtifactScanDataQueryArtifactScanData) GetId() string { return v.Id }
 
@@ -91,6 +103,8 @@ query QueryAllArtifactScanData {
 		sourceSemgrepHighSeverityScanUrl
 		sourceSemgrepMediumSeverityScanUrl
 		sourceSemgrepLowSeverityScanUrl
+		sourceSnykScanUrl
+		virusTotalUrlScan
 		id
 	}
 }

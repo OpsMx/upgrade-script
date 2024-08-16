@@ -26,7 +26,7 @@ func performScanFilesTransition(prodDgraphClient, expDgraphClient graphql.Client
 		logger.Logger.Debug("---------------------------------------------")
 		logger.Sl.Debugf("Scanned files Iteration %d to begin", iter)
 
-		scannedFilesList := make([]*july2024.ScanFileResultRef, 0, 10)
+		scannedFilesList := make([]*july2024.ScanFileResultRef, 0, 12)
 
 		if eachArtifactScanData.SbomUrl != "" {
 
@@ -97,6 +97,22 @@ func performScanFilesTransition(prodDgraphClient, expDgraphClient graphql.Client
 			scannedFilesList = append(scannedFilesList, &july2024.ScanFileResultRef{
 				Name: "sourceSemgrepLowSeverityScan",
 				Url:  eachArtifactScanData.SourceSemgrepLowSeverityScanUrl,
+			})
+		}
+
+		if eachArtifactScanData.SourceSnykScanUrl != "" {
+
+			scannedFilesList = append(scannedFilesList, &july2024.ScanFileResultRef{
+				Name: "sourceSnykScan",
+				Url:  eachArtifactScanData.SourceSnykScanUrl,
+			})
+		}
+
+		if eachArtifactScanData.VirusTotalUrlScan != "" {
+
+			scannedFilesList = append(scannedFilesList, &july2024.ScanFileResultRef{
+				Name: "virusTotalScan",
+				Url:  eachArtifactScanData.VirusTotalUrlScan,
 			})
 		}
 

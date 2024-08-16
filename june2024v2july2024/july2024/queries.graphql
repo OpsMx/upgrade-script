@@ -6,5 +6,15 @@ mutation UpdateScannedFilesInArtifactScanData($files: [ScanFileResultRef!], $id:
     }
 }
 
+query GetSeverityFromSecurityIssue {
+    querySecurityIssue {
+        Severity
+        id
+    }
+}
 
-
+mutation UpdateSeverityIntInSecurityIssues($ids:[ID!], $severityInt:Int!) {
+    updateSecurityIssue(input: { set: { SeverityInt: $severityInt }, filter: { id: $ids } }) {
+        numUids
+    }
+}
