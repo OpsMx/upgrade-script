@@ -1,0 +1,10 @@
+mutation UpdateScannedFilesInArtifactScanData($files: [ScanFileResultRef!], $id: String!) {
+    updateArtifactScanData(
+        input: { set: { scanFile: $files }, filter: { id: { eq: $id } } }
+    ) {
+        numUids
+    }
+}
+
+
+

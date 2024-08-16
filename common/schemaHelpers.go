@@ -11,6 +11,7 @@ const (
 	April2024Version
 	June2024Version
 	June2024Version2
+	July2024Version
 )
 
 var SchemasString = map[SchemaOrder]string{
