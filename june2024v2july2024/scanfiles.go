@@ -31,7 +31,7 @@ func performScanFilesTransition(prodDgraphClient, expDgraphClient graphql.Client
 		if eachArtifactScanData.SbomUrl != "" {
 
 			scannedFilesList = append(scannedFilesList, &july2024.ScanFileResultRef{
-				Name: "sbomUrl",
+				Name: "sbom",
 				Url:  eachArtifactScanData.SbomUrl,
 			})
 		}
@@ -39,7 +39,7 @@ func performScanFilesTransition(prodDgraphClient, expDgraphClient graphql.Client
 		if eachArtifactScanData.ArtifactLicenseScanUrl != "" {
 
 			scannedFilesList = append(scannedFilesList, &july2024.ScanFileResultRef{
-				Name: "artifactLicenseScanUrl",
+				Name: "artifactLicenseScan",
 				Url:  eachArtifactScanData.ArtifactLicenseScanUrl,
 			})
 		}
@@ -47,7 +47,7 @@ func performScanFilesTransition(prodDgraphClient, expDgraphClient graphql.Client
 		if eachArtifactScanData.ArtifactSecretScanUrl != "" {
 
 			scannedFilesList = append(scannedFilesList, &july2024.ScanFileResultRef{
-				Name: "artifactSecretScanUrl",
+				Name: "artifactSecretScan",
 				Url:  eachArtifactScanData.ArtifactSecretScanUrl,
 			})
 		}
@@ -55,7 +55,7 @@ func performScanFilesTransition(prodDgraphClient, expDgraphClient graphql.Client
 		if eachArtifactScanData.SourceLicenseScanUrl != "" {
 
 			scannedFilesList = append(scannedFilesList, &july2024.ScanFileResultRef{
-				Name: "sourceLicenseScanUrl",
+				Name: "sourceLicenseScan",
 				Url:  eachArtifactScanData.SourceLicenseScanUrl,
 			})
 		}
@@ -63,7 +63,7 @@ func performScanFilesTransition(prodDgraphClient, expDgraphClient graphql.Client
 		if eachArtifactScanData.SourceSecretScanUrl != "" {
 
 			scannedFilesList = append(scannedFilesList, &july2024.ScanFileResultRef{
-				Name: "sourceSecretScanUrl",
+				Name: "sourceSecretScan",
 				Url:  eachArtifactScanData.SourceSecretScanUrl,
 			})
 		}
@@ -71,7 +71,7 @@ func performScanFilesTransition(prodDgraphClient, expDgraphClient graphql.Client
 		if eachArtifactScanData.SourceScorecardScanUrl != "" {
 
 			scannedFilesList = append(scannedFilesList, &july2024.ScanFileResultRef{
-				Name: "sourceScorecardScanUrl",
+				Name: "sourceScorecardScan",
 				Url:  eachArtifactScanData.SourceScorecardScanUrl,
 			})
 		}
@@ -79,7 +79,7 @@ func performScanFilesTransition(prodDgraphClient, expDgraphClient graphql.Client
 		if eachArtifactScanData.SourceSemgrepHighSeverityScanUrl != "" {
 
 			scannedFilesList = append(scannedFilesList, &july2024.ScanFileResultRef{
-				Name: "sourceSemgrepHighSeverityScanUrl",
+				Name: "sourceSemgrepHighSeverityScan",
 				Url:  eachArtifactScanData.SourceSemgrepHighSeverityScanUrl,
 			})
 		}
@@ -87,7 +87,7 @@ func performScanFilesTransition(prodDgraphClient, expDgraphClient graphql.Client
 		if eachArtifactScanData.SourceSemgrepMediumSeverityScanUrl != "" {
 
 			scannedFilesList = append(scannedFilesList, &july2024.ScanFileResultRef{
-				Name: "sourceSemgrepMediumSeverityScanUrl",
+				Name: "sourceSemgrepMediumSeverityScan",
 				Url:  eachArtifactScanData.SourceSemgrepMediumSeverityScanUrl,
 			})
 		}
@@ -95,7 +95,7 @@ func performScanFilesTransition(prodDgraphClient, expDgraphClient graphql.Client
 		if eachArtifactScanData.SourceSemgrepLowSeverityScanUrl != "" {
 
 			scannedFilesList = append(scannedFilesList, &july2024.ScanFileResultRef{
-				Name: "sourceSemgrepLowSeverityScanUrl",
+				Name: "sourceSemgrepLowSeverityScan",
 				Url:  eachArtifactScanData.SourceSemgrepLowSeverityScanUrl,
 			})
 		}
