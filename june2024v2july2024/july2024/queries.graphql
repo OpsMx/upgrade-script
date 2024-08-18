@@ -1,0 +1,20 @@
+mutation UpdateScannedFilesInArtifactScanData($files: [ScanFileResultRef!], $id: String!) {
+    updateArtifactScanData(
+        input: { set: { scanFile: $files }, filter: { id: { eq: $id } } }
+    ) {
+        numUids
+    }
+}
+
+query GetSeverityFromSecurityIssue {
+    querySecurityIssue {
+        Severity
+        id
+    }
+}
+
+mutation UpdateSeverityIntInSecurityIssues($ids:[ID!], $severityInt:Int!) {
+    updateSecurityIssue(input: { set: { SeverityInt: $severityInt }, filter: { id: $ids } }) {
+        numUids
+    }
+}

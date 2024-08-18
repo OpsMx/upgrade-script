@@ -1,0 +1,16 @@
+query QueryAllArtifactScanData {
+    queryArtifactScanData {
+        sbomUrl
+        artifactLicenseScanUrl
+        artifactSecretScanUrl
+        sourceLicenseScanUrl
+        sourceSecretScanUrl
+        sourceScorecardScanUrl
+        sourceSemgrepHighSeverityScanUrl
+        sourceSemgrepMediumSeverityScanUrl
+        sourceSemgrepLowSeverityScanUrl
+        sourceSnykScanUrl
+        virusTotalUrlScan
+        id
+    }
+}
