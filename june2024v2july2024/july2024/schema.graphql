@@ -1,32 +1,32 @@
+directive @search(by: [DgraphIndex!]) on FIELD_DEFINITION
+
+directive @custom(http: CustomHTTP, dql: String) on FIELD_DEFINITION
+
+directive @remoteResponse(name: String) on FIELD_DEFINITION
+
 directive @hasInverse(field: String!) on FIELD_DEFINITION
 
 directive @secret(field: String!, pred: String) on OBJECT | INTERFACE
 
-directive @custom(http: CustomHTTP, dql: String) on FIELD_DEFINITION
-
 directive @remote on OBJECT | INTERFACE | UNION | INPUT_OBJECT | ENUM
-
-directive @cascade(fields: [String]) on FIELD
-
-directive @lambda on FIELD_DEFINITION
-
-directive @generate(query: GenerateQueryParams, mutation: GenerateMutationParams, subscription: Boolean) on OBJECT | INTERFACE
-
-directive @id(interface: Boolean) on FIELD_DEFINITION
 
 directive @lambdaOnMutate(add: Boolean, update: Boolean, delete: Boolean) on OBJECT | INTERFACE
 
-directive @search(by: [DgraphIndex!]) on FIELD_DEFINITION
+directive @generate(query: GenerateQueryParams, mutation: GenerateMutationParams, subscription: Boolean) on OBJECT | INTERFACE
+
+directive @lambda on FIELD_DEFINITION
+
+directive @cacheControl(maxAge: Int!) on QUERY
 
 directive @dgraph(type: String, pred: String) on OBJECT | INTERFACE | FIELD_DEFINITION
+
+directive @id(interface: Boolean) on FIELD_DEFINITION
 
 directive @withSubscription on OBJECT | INTERFACE | FIELD_DEFINITION
 
 directive @auth(password: AuthRule, query: AuthRule, add: AuthRule, update: AuthRule, delete: AuthRule) on OBJECT | INTERFACE
 
-directive @remoteResponse(name: String) on FIELD_DEFINITION
-
-directive @cacheControl(maxAge: Int!) on QUERY
+directive @cascade(fields: [String]) on FIELD
 
 input AddApplicationDeploymentInput {
   """id is randomly assigned"""
@@ -151,6 +151,7 @@ input AddArtifactScanDataInput {
   lastScannedAt: DateTime
   createdAt: DateTime
   vulnTrackingId: String
+  vulnScanState: String
   components: [ComponentRef!]
   vulnCriticalCount: Int
   vulnHighCount: Int
@@ -1200,6 +1201,7 @@ type ArtifactScanData {
   lastScannedAt: DateTime
   createdAt: DateTime
   vulnTrackingId: String
+  vulnScanState: String
   components(filter: ComponentFilter, order: ComponentOrder, first: Int, offset: Int): [Component!]
   vulnCriticalCount: Int
   vulnHighCount: Int
@@ -1231,6 +1233,8 @@ type ArtifactScanDataAggregateResult {
   createdAtMax: DateTime
   vulnTrackingIdMin: String
   vulnTrackingIdMax: String
+  vulnScanStateMin: String
+  vulnScanStateMax: String
   vulnCriticalCountMin: Int
   vulnCriticalCountMax: Int
   vulnCriticalCountSum: Int
@@ -1269,6 +1273,7 @@ input ArtifactScanDataFilter {
   id: StringHashFilter
   artifactSha: StringExactFilter
   tool: StringExactFilter
+  vulnScanState: StringExactFilter
   vulnCriticalCount: IntFilter
   vulnHighCount: IntFilter
   vulnMediumCount: IntFilter
@@ -1292,6 +1297,7 @@ enum ArtifactScanDataHasFilter {
   lastScannedAt
   createdAt
   vulnTrackingId
+  vulnScanState
   components
   vulnCriticalCount
   vulnHighCount
@@ -1319,6 +1325,7 @@ enum ArtifactScanDataOrderable {
   lastScannedAt
   createdAt
   vulnTrackingId
+  vulnScanState
   vulnCriticalCount
   vulnHighCount
   vulnMediumCount
@@ -1336,6 +1343,7 @@ input ArtifactScanDataPatch {
   lastScannedAt: DateTime
   createdAt: DateTime
   vulnTrackingId: String
+  vulnScanState: String
   components: [ComponentRef!]
   vulnCriticalCount: Int
   vulnHighCount: Int
@@ -1358,6 +1366,7 @@ input ArtifactScanDataRef {
   lastScannedAt: DateTime
   createdAt: DateTime
   vulnTrackingId: String
+  vulnScanState: String
   components: [ComponentRef!]
   vulnCriticalCount: Int
   vulnHighCount: Int

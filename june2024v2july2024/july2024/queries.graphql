@@ -18,3 +18,9 @@ mutation UpdateSeverityIntInSecurityIssues($ids:[ID!], $severityInt:Int!) {
         numUids
     }
 }
+
+mutation UpdateVulnScanState {
+    updateArtifactScanData(input: { set: { vulnScanState: "done" }, filter: {  } }) {
+        numUids
+    }
+}

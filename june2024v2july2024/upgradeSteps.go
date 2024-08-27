@@ -30,6 +30,10 @@ func UpgradeToJuly2024(prodGraphUrl, prodToken, expDgraphUrl, restoreServiceUrl 
 		return fmt.Errorf("UpgradeToJuly2024: %s", err.Error())
 	}
 
+	if err := populateVulnerabilityScanState(prodDgraphClient); err != nil {
+		return fmt.Errorf("UpgradeToJuly2024: %s", err.Error())
+	}
+
 	logger.Logger.Info("--------------Completed UpgradeToJuly2024------------------")
 
 	return nil
