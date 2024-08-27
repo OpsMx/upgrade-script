@@ -97,6 +97,26 @@ func (v *UpdateSeverityIntInSecurityIssuesUpdateSecurityIssueUpdateSecurityIssue
 	return v.NumUids
 }
 
+// UpdateVulnScanStateResponse is returned by UpdateVulnScanState on success.
+type UpdateVulnScanStateResponse struct {
+	UpdateArtifactScanData *UpdateVulnScanStateUpdateArtifactScanDataUpdateArtifactScanDataPayload `json:"updateArtifactScanData"`
+}
+
+// GetUpdateArtifactScanData returns UpdateVulnScanStateResponse.UpdateArtifactScanData, and is useful for accessing the field via an interface.
+func (v *UpdateVulnScanStateResponse) GetUpdateArtifactScanData() *UpdateVulnScanStateUpdateArtifactScanDataUpdateArtifactScanDataPayload {
+	return v.UpdateArtifactScanData
+}
+
+// UpdateVulnScanStateUpdateArtifactScanDataUpdateArtifactScanDataPayload includes the requested fields of the GraphQL type UpdateArtifactScanDataPayload.
+type UpdateVulnScanStateUpdateArtifactScanDataUpdateArtifactScanDataPayload struct {
+	NumUids *int `json:"numUids"`
+}
+
+// GetNumUids returns UpdateVulnScanStateUpdateArtifactScanDataUpdateArtifactScanDataPayload.NumUids, and is useful for accessing the field via an interface.
+func (v *UpdateVulnScanStateUpdateArtifactScanDataUpdateArtifactScanDataPayload) GetNumUids() *int {
+	return v.NumUids
+}
+
 // __UpdateScannedFilesInArtifactScanDataInput is used internally by genqlient
 type __UpdateScannedFilesInArtifactScanDataInput struct {
 	Files []*ScanFileResultRef `json:"files,omitempty"`
@@ -216,6 +236,37 @@ func UpdateSeverityIntInSecurityIssues(
 	var err_ error
 
 	var data_ UpdateSeverityIntInSecurityIssuesResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by UpdateVulnScanState.
+const UpdateVulnScanState_Operation = `
+mutation UpdateVulnScanState {
+	updateArtifactScanData(input: {set:{vulnScanState:"done"},filter:{}}) {
+		numUids
+	}
+}
+`
+
+func UpdateVulnScanState(
+	ctx_ context.Context,
+	client_ graphql.Client,
+) (*UpdateVulnScanStateResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "UpdateVulnScanState",
+		Query:  UpdateVulnScanState_Operation,
+	}
+	var err_ error
+
+	var data_ UpdateVulnScanStateResponse
 	resp_ := &graphql.Response{Data: &data_}
 
 	err_ = client_.MakeRequest(

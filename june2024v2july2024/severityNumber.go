@@ -46,7 +46,7 @@ func populateSeverityNumber(prodDgraphClient graphql.Client) error {
 
 	logger.Logger.Debug("---------------------------------------------")
 
-	logger.Logger.Debug("--------------Completed Severity Number Transition-----------------")
+	logger.Logger.Debug("--------------Completed Severity Number-----------------")
 
 	return nil
 }
