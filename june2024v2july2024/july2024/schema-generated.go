@@ -9,6 +9,59 @@ import (
 	"github.com/Khan/genqlient/graphql"
 )
 
+// AddFeatureModeAddFeatureModeAddFeatureModePayload includes the requested fields of the GraphQL type AddFeatureModePayload.
+type AddFeatureModeAddFeatureModeAddFeatureModePayload struct {
+	NumUids *int `json:"numUids"`
+}
+
+// GetNumUids returns AddFeatureModeAddFeatureModeAddFeatureModePayload.NumUids, and is useful for accessing the field via an interface.
+func (v *AddFeatureModeAddFeatureModeAddFeatureModePayload) GetNumUids() *int { return v.NumUids }
+
+type AddFeatureModeInput struct {
+	Id           string           `json:"id"`
+	Organization *OrganizationRef `json:"organization,omitempty"`
+	Key          string           `json:"key"`
+	Value        string           `json:"value"`
+	Category     string           `json:"category"`
+	CreatedAt    *time.Time       `json:"createdAt"`
+	UpdatedAt    *time.Time       `json:"updatedAt"`
+	Integrator   *IntegratorRef   `json:"integrator,omitempty"`
+}
+
+// GetId returns AddFeatureModeInput.Id, and is useful for accessing the field via an interface.
+func (v *AddFeatureModeInput) GetId() string { return v.Id }
+
+// GetOrganization returns AddFeatureModeInput.Organization, and is useful for accessing the field via an interface.
+func (v *AddFeatureModeInput) GetOrganization() *OrganizationRef { return v.Organization }
+
+// GetKey returns AddFeatureModeInput.Key, and is useful for accessing the field via an interface.
+func (v *AddFeatureModeInput) GetKey() string { return v.Key }
+
+// GetValue returns AddFeatureModeInput.Value, and is useful for accessing the field via an interface.
+func (v *AddFeatureModeInput) GetValue() string { return v.Value }
+
+// GetCategory returns AddFeatureModeInput.Category, and is useful for accessing the field via an interface.
+func (v *AddFeatureModeInput) GetCategory() string { return v.Category }
+
+// GetCreatedAt returns AddFeatureModeInput.CreatedAt, and is useful for accessing the field via an interface.
+func (v *AddFeatureModeInput) GetCreatedAt() *time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns AddFeatureModeInput.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *AddFeatureModeInput) GetUpdatedAt() *time.Time { return v.UpdatedAt }
+
+// GetIntegrator returns AddFeatureModeInput.Integrator, and is useful for accessing the field via an interface.
+func (v *AddFeatureModeInput) GetIntegrator() *IntegratorRef { return v.Integrator }
+
+// AddFeatureModeResponse is returned by AddFeatureMode on success.
+type AddFeatureModeResponse struct {
+	AddFeatureMode *AddFeatureModeAddFeatureModeAddFeatureModePayload `json:"addFeatureMode"`
+}
+
+// GetAddFeatureMode returns AddFeatureModeResponse.AddFeatureMode, and is useful for accessing the field via an interface.
+func (v *AddFeatureModeResponse) GetAddFeatureMode() *AddFeatureModeAddFeatureModeAddFeatureModePayload {
+	return v.AddFeatureMode
+}
+
 // AddIntegratorAddIntegratorAddIntegratorPayload includes the requested fields of the GraphQL type AddIntegratorPayload.
 type AddIntegratorAddIntegratorAddIntegratorPayload struct {
 	NumUids *int `json:"numUids"`
@@ -1465,6 +1518,14 @@ func (v *VulnerabilityRef) GetCisa_kev() string { return v.Cisa_kev }
 // GetAffects returns VulnerabilityRef.Affects, and is useful for accessing the field via an interface.
 func (v *VulnerabilityRef) GetAffects() []*ComponentRef { return v.Affects }
 
+// __AddFeatureModeInput is used internally by genqlient
+type __AddFeatureModeInput struct {
+	Value []*AddFeatureModeInput `json:"value,omitempty"`
+}
+
+// GetValue returns __AddFeatureModeInput.Value, and is useful for accessing the field via an interface.
+func (v *__AddFeatureModeInput) GetValue() []*AddFeatureModeInput { return v.Value }
+
 // __AddIntegratorInput is used internally by genqlient
 type __AddIntegratorInput struct {
 	Value []*AddIntegratorInput `json:"value,omitempty"`
@@ -1496,6 +1557,41 @@ func (v *__UpdateSeverityIntInSecurityIssuesInput) GetIds() []*string { return v
 
 // GetSeverityInt returns __UpdateSeverityIntInSecurityIssuesInput.SeverityInt, and is useful for accessing the field via an interface.
 func (v *__UpdateSeverityIntInSecurityIssuesInput) GetSeverityInt() *int { return v.SeverityInt }
+
+// The query or mutation executed by AddFeatureMode.
+const AddFeatureMode_Operation = `
+mutation AddFeatureMode ($value: [AddFeatureModeInput!]!) {
+	addFeatureMode(input: $value) {
+		numUids
+	}
+}
+`
+
+func AddFeatureMode(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	value []*AddFeatureModeInput,
+) (*AddFeatureModeResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "AddFeatureMode",
+		Query:  AddFeatureMode_Operation,
+		Variables: &__AddFeatureModeInput{
+			Value: value,
+		},
+	}
+	var err_ error
+
+	var data_ AddFeatureModeResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
 
 // The query or mutation executed by AddIntegrator.
 const AddIntegrator_Operation = `

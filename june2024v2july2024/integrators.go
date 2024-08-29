@@ -15,6 +15,34 @@ func performIntegratorsTransition(prodDgraphClient, expDgraphClient graphql.Clie
 
 	ctx := context.Background()
 
+	existingFeatureModes, err := june2024v2.QueryFeatureMode(ctx, prodDgraphClient)
+	if err != nil {
+		return fmt.Errorf("performIntegratorsTransition: QueryFeatureMode: could'nt query old prod features to initiate transition error: %s", err.Error())
+	}
+
+	featureModeIntegratorTypeGrouping := make(map[string][]*july2024.FeatureModeRef)
+	if len(existingFeatureModes.QueryFeatureMode) > 0 {
+
+		for _, eachFeatureMode := range existingFeatureModes.QueryFeatureMode {
+
+			translatedScanName := getTranslatedScanName(eachFeatureMode.Scan)
+			temp := july2024.FeatureModeRef{
+				Key:       translatedScanName,
+				Value:     getValue(translatedScanName),
+				Category:  eachFeatureMode.Category,
+				CreatedAt: eachFeatureMode.CreatedAt,
+				UpdatedAt: eachFeatureMode.UpdatedAt,
+			}
+
+			if val, ok := featureModeIntegratorTypeGrouping[eachFeatureMode.Type]; ok {
+				val = append(val, &temp)
+				featureModeIntegratorTypeGrouping[eachFeatureMode.Type] = val
+			} else {
+				featureModeIntegratorTypeGrouping[eachFeatureMode.Type] = []*july2024.FeatureModeRef{&temp}
+			}
+		}
+	}
+
 	existingIntegrators, err := june2024v2.QueryExistingIntegrators(ctx, prodDgraphClient)
 	if err != nil {
 		return fmt.Errorf("performIntegratorsTransition: QueryExistingIntegrators: could'nt query old prod integrators to initiate transition error: %s", err.Error())
@@ -39,6 +67,9 @@ func performIntegratorsTransition(prodDgraphClient, expDgraphClient graphql.Clie
 
 		var configValues []*july2024.IntegratorKeyValuesRef
 		for key, eachConfigData := range existingIntegratorData {
+			if eachConfigData == "" {
+				continue
+			}
 			encrypt := IsEncryptionRequired(key)
 			configValues = append(configValues, &july2024.IntegratorKeyValuesRef{
 				Key:     key,
@@ -59,6 +90,12 @@ func performIntegratorsTransition(prodDgraphClient, expDgraphClient graphql.Clie
 
 		} else {
 
+			var currFeatureConfigs []*july2024.FeatureModeRef
+			if val, ok := featureModeIntegratorTypeGrouping[eachIntegrator.Type]; ok {
+				currFeatureConfigs = val
+				delete(featureModeIntegratorTypeGrouping, eachIntegrator.Type)
+			}
+
 			integratorTypeGrouping[eachIntegrator.Type] = july2024.AddIntegratorInput{
 				Organization: &july2024.OrganizationRef{
 					Id: eachIntegrator.Organization.Id,
@@ -69,6 +106,7 @@ func performIntegratorsTransition(prodDgraphClient, expDgraphClient graphql.Clie
 				CreatedAt:         eachIntegrator.CreatedAt,
 				UpdatedAt:         eachIntegrator.UpdatedAt,
 				IntegratorConfigs: []*july2024.IntegratorConfigsRef{&configTemp},
+				FeatureConfigs:    currFeatureConfigs,
 			}
 		}
 		logger.Sl.Debugf("existing integrators Iteration %d completed", iter)
@@ -87,6 +125,30 @@ func performIntegratorsTransition(prodDgraphClient, expDgraphClient graphql.Clie
 	logger.Sl.Debug("added Integrators to the database")
 
 	logger.Logger.Info("------------Integrators upgrade complete-------------------------")
+
+	logger.Sl.Debug("adding remaining Fetaure Mode to the database")
+
+	var translatedFeatureModes []*july2024.AddFeatureModeInput
+	for _, val := range featureModeIntegratorTypeGrouping {
+
+		for _, eachFeatureMode := range val {
+			temp := july2024.AddFeatureModeInput{
+				Key:       eachFeatureMode.Key,
+				Value:     eachFeatureMode.Value,
+				Category:  eachFeatureMode.Category,
+				CreatedAt: eachFeatureMode.CreatedAt,
+				UpdatedAt: eachFeatureMode.UpdatedAt,
+			}
+			translatedFeatureModes = append(translatedFeatureModes, &temp)
+		}
+	}
+
+	if _, err := july2024.AddFeatureMode(ctx, expDgraphClient, translatedFeatureModes); err != nil {
+		return fmt.Errorf("error: performIntegratorsTransition: AddIntegrator error: %s", err.Error())
+	}
+	logger.Sl.Debug("added remaining Fetaure Mode to the database")
+
+	logger.Logger.Info("------------Feature Mode upgrade complete-------------------------")
 
 	return nil
 }

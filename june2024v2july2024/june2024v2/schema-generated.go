@@ -154,6 +154,44 @@ func (v *QueryExistingIntegratorsResponse) GetQueryIntegrator() []*QueryExisting
 	return v.QueryIntegrator
 }
 
+// QueryFeatureModeQueryFeatureMode includes the requested fields of the GraphQL type FeatureMode.
+type QueryFeatureModeQueryFeatureMode struct {
+	Scan      string     `json:"scan"`
+	Type      string     `json:"type"`
+	Enabled   *bool      `json:"enabled"`
+	Category  string     `json:"category"`
+	CreatedAt *time.Time `json:"createdAt"`
+	UpdatedAt *time.Time `json:"updatedAt"`
+}
+
+// GetScan returns QueryFeatureModeQueryFeatureMode.Scan, and is useful for accessing the field via an interface.
+func (v *QueryFeatureModeQueryFeatureMode) GetScan() string { return v.Scan }
+
+// GetType returns QueryFeatureModeQueryFeatureMode.Type, and is useful for accessing the field via an interface.
+func (v *QueryFeatureModeQueryFeatureMode) GetType() string { return v.Type }
+
+// GetEnabled returns QueryFeatureModeQueryFeatureMode.Enabled, and is useful for accessing the field via an interface.
+func (v *QueryFeatureModeQueryFeatureMode) GetEnabled() *bool { return v.Enabled }
+
+// GetCategory returns QueryFeatureModeQueryFeatureMode.Category, and is useful for accessing the field via an interface.
+func (v *QueryFeatureModeQueryFeatureMode) GetCategory() string { return v.Category }
+
+// GetCreatedAt returns QueryFeatureModeQueryFeatureMode.CreatedAt, and is useful for accessing the field via an interface.
+func (v *QueryFeatureModeQueryFeatureMode) GetCreatedAt() *time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns QueryFeatureModeQueryFeatureMode.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *QueryFeatureModeQueryFeatureMode) GetUpdatedAt() *time.Time { return v.UpdatedAt }
+
+// QueryFeatureModeResponse is returned by QueryFeatureMode on success.
+type QueryFeatureModeResponse struct {
+	QueryFeatureMode []*QueryFeatureModeQueryFeatureMode `json:"queryFeatureMode"`
+}
+
+// GetQueryFeatureMode returns QueryFeatureModeResponse.QueryFeatureMode, and is useful for accessing the field via an interface.
+func (v *QueryFeatureModeResponse) GetQueryFeatureMode() []*QueryFeatureModeQueryFeatureMode {
+	return v.QueryFeatureMode
+}
+
 // The query or mutation executed by QueryAllArtifactScanData.
 const QueryAllArtifactScanData_Operation = `
 query QueryAllArtifactScanData {
@@ -226,6 +264,42 @@ func QueryExistingIntegrators(
 	var err_ error
 
 	var data_ QueryExistingIntegratorsResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by QueryFeatureMode.
+const QueryFeatureMode_Operation = `
+query QueryFeatureMode {
+	queryFeatureMode {
+		scan
+		type
+		enabled
+		category
+		createdAt
+		updatedAt
+	}
+}
+`
+
+func QueryFeatureMode(
+	ctx_ context.Context,
+	client_ graphql.Client,
+) (*QueryFeatureModeResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "QueryFeatureMode",
+		Query:  QueryFeatureMode_Operation,
+	}
+	var err_ error
+
+	var data_ QueryFeatureModeResponse
 	resp_ := &graphql.Response{Data: &data_}
 
 	err_ = client_.MakeRequest(
