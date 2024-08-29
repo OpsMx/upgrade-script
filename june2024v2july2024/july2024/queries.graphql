@@ -24,3 +24,9 @@ mutation UpdateVulnScanState {
         numUids
     }
 }
+
+mutation AddIntegrator($value: [AddIntegratorInput!]!) {
+    addIntegrator(input: $value) {
+        numUids
+    }
+}

@@ -18,6 +18,10 @@ func UpgradeToJuly2024(prodGraphUrl, prodToken, expDgraphUrl, restoreServiceUrl 
 		return fmt.Errorf("UpgradeToJuly2024: %s", err.Error())
 	}
 
+	if err := performIntegratorsTransition(prodDgraphClient, expDgraphClient); err != nil {
+		return fmt.Errorf("UpgradeToJuly2024: %s", err.Error())
+	}
+
 	if err := graphqlfunc.BackupAndRestoreDgraph(expDgraphUrl, restoreServiceUrl); err != nil {
 		return fmt.Errorf("UpgradeToJuly2024: BackupAndRestoreDgraph: %s", err.Error())
 	}
