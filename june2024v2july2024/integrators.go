@@ -65,7 +65,9 @@ func performIntegratorsTransition(prodDgraphClient, expDgraphClient graphql.Clie
 				},
 				Type:              eachIntegrator.Type,
 				Category:          eachIntegrator.Category,
-				Status:            "not-connected",
+				Status:            "disabled",
+				CreatedAt:         eachIntegrator.CreatedAt,
+				UpdatedAt:         eachIntegrator.UpdatedAt,
 				IntegratorConfigs: []*july2024.IntegratorConfigsRef{&configTemp},
 			}
 		}
