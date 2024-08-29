@@ -90,22 +90,3 @@ func performIntegratorsTransition(prodDgraphClient, expDgraphClient graphql.Clie
 
 	return nil
 }
-
-func IsEncryptionRequired(configKey string) (isRequired bool) {
-
-	switch configKey {
-	case "token":
-		isRequired = true
-	case "password":
-		isRequired = true
-	case "awsAccessKey":
-		isRequired = true
-	case "awsSecretKey":
-		isRequired = true
-	case "key":
-		isRequired = true
-	default:
-		isRequired = false
-	}
-	return isRequired
-}
