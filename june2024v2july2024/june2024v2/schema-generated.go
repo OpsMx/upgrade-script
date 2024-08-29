@@ -4,6 +4,7 @@ package june2024v2
 
 import (
 	"context"
+	"time"
 
 	"github.com/Khan/genqlient/graphql"
 )
@@ -90,6 +91,69 @@ func (v *QueryAllArtifactScanDataResponse) GetQueryArtifactScanData() []*QueryAl
 	return v.QueryArtifactScanData
 }
 
+// QueryExistingIntegratorsQueryIntegrator includes the requested fields of the GraphQL type Integrator.
+type QueryExistingIntegratorsQueryIntegrator struct {
+	Organization *QueryExistingIntegratorsQueryIntegratorOrganization `json:"organization"`
+	Category     string                                               `json:"category"`
+	Credentials  *QueryExistingIntegratorsQueryIntegratorCredentials  `json:"credentials"`
+	CreatedAt    *time.Time                                           `json:"createdAt"`
+	UpdatedAt    *time.Time                                           `json:"updatedAt"`
+	Type         string                                               `json:"type"`
+	Name         string                                               `json:"name"`
+}
+
+// GetOrganization returns QueryExistingIntegratorsQueryIntegrator.Organization, and is useful for accessing the field via an interface.
+func (v *QueryExistingIntegratorsQueryIntegrator) GetOrganization() *QueryExistingIntegratorsQueryIntegratorOrganization {
+	return v.Organization
+}
+
+// GetCategory returns QueryExistingIntegratorsQueryIntegrator.Category, and is useful for accessing the field via an interface.
+func (v *QueryExistingIntegratorsQueryIntegrator) GetCategory() string { return v.Category }
+
+// GetCredentials returns QueryExistingIntegratorsQueryIntegrator.Credentials, and is useful for accessing the field via an interface.
+func (v *QueryExistingIntegratorsQueryIntegrator) GetCredentials() *QueryExistingIntegratorsQueryIntegratorCredentials {
+	return v.Credentials
+}
+
+// GetCreatedAt returns QueryExistingIntegratorsQueryIntegrator.CreatedAt, and is useful for accessing the field via an interface.
+func (v *QueryExistingIntegratorsQueryIntegrator) GetCreatedAt() *time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns QueryExistingIntegratorsQueryIntegrator.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *QueryExistingIntegratorsQueryIntegrator) GetUpdatedAt() *time.Time { return v.UpdatedAt }
+
+// GetType returns QueryExistingIntegratorsQueryIntegrator.Type, and is useful for accessing the field via an interface.
+func (v *QueryExistingIntegratorsQueryIntegrator) GetType() string { return v.Type }
+
+// GetName returns QueryExistingIntegratorsQueryIntegrator.Name, and is useful for accessing the field via an interface.
+func (v *QueryExistingIntegratorsQueryIntegrator) GetName() string { return v.Name }
+
+// QueryExistingIntegratorsQueryIntegratorCredentials includes the requested fields of the GraphQL type Credentials.
+type QueryExistingIntegratorsQueryIntegratorCredentials struct {
+	Data string `json:"data"`
+}
+
+// GetData returns QueryExistingIntegratorsQueryIntegratorCredentials.Data, and is useful for accessing the field via an interface.
+func (v *QueryExistingIntegratorsQueryIntegratorCredentials) GetData() string { return v.Data }
+
+// QueryExistingIntegratorsQueryIntegratorOrganization includes the requested fields of the GraphQL type Organization.
+type QueryExistingIntegratorsQueryIntegratorOrganization struct {
+	// id is randomly assigned
+	Id string `json:"id"`
+}
+
+// GetId returns QueryExistingIntegratorsQueryIntegratorOrganization.Id, and is useful for accessing the field via an interface.
+func (v *QueryExistingIntegratorsQueryIntegratorOrganization) GetId() string { return v.Id }
+
+// QueryExistingIntegratorsResponse is returned by QueryExistingIntegrators on success.
+type QueryExistingIntegratorsResponse struct {
+	QueryIntegrator []*QueryExistingIntegratorsQueryIntegrator `json:"queryIntegrator"`
+}
+
+// GetQueryIntegrator returns QueryExistingIntegratorsResponse.QueryIntegrator, and is useful for accessing the field via an interface.
+func (v *QueryExistingIntegratorsResponse) GetQueryIntegrator() []*QueryExistingIntegratorsQueryIntegrator {
+	return v.QueryIntegrator
+}
+
 // The query or mutation executed by QueryAllArtifactScanData.
 const QueryAllArtifactScanData_Operation = `
 query QueryAllArtifactScanData {
@@ -121,6 +185,47 @@ func QueryAllArtifactScanData(
 	var err_ error
 
 	var data_ QueryAllArtifactScanDataResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by QueryExistingIntegrators.
+const QueryExistingIntegrators_Operation = `
+query QueryExistingIntegrators {
+	queryIntegrator {
+		organization {
+			id
+		}
+		category
+		credentials {
+			data
+		}
+		createdAt
+		updatedAt
+		type
+		name
+	}
+}
+`
+
+func QueryExistingIntegrators(
+	ctx_ context.Context,
+	client_ graphql.Client,
+) (*QueryExistingIntegratorsResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "QueryExistingIntegrators",
+		Query:  QueryExistingIntegrators_Operation,
+	}
+	var err_ error
+
+	var data_ QueryExistingIntegratorsResponse
 	resp_ := &graphql.Response{Data: &data_}
 
 	err_ = client_.MakeRequest(

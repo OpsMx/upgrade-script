@@ -14,3 +14,19 @@ query QueryAllArtifactScanData {
         id
     }
 }
+
+query QueryExistingIntegrators {
+    queryIntegrator {
+        organization {
+            id
+        }
+        category
+        credentials {
+            data
+        }
+        createdAt
+        updatedAt
+        type
+        name
+    }
+}
