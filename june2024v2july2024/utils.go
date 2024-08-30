@@ -3,15 +3,7 @@ package june2024v2july2024
 func IsEncryptionRequired(configKey string) (isRequired bool) {
 
 	switch configKey {
-	case "token":
-		isRequired = true
-	case "password":
-		isRequired = true
-	case "awsAccessKey":
-		isRequired = true
-	case "awsSecretKey":
-		isRequired = true
-	case "key":
+	case "token", "password", "awsAccessKey", "awsSecretKey", "key":
 		isRequired = true
 	default:
 		isRequired = false
@@ -39,18 +31,22 @@ func getTranslatedScanName(scanName string) (newScanName string) {
 func getValue(scanName string) (value string) {
 
 	switch scanName {
-	case "sonarqubeFileInsertion":
+	case "sonarqubeFileInsertion", "vulnerabilityscan":
 		value = "inactive"
-	case "vulnerabilityscan":
-		value = "inactive"
-	case "sastsnykscan":
-		value = "Local Mode"
-	case "sastsemgrepscan":
-		value = "Local Mode"
-	case "sastcodacyscan":
+	case "sastsnykscan", "sastsemgrepscan", "sastcodacyscan":
 		value = "Local Mode"
 	default:
 		value = "active"
 	}
 	return value
+}
+
+func supportMultipleInsertion(integratorType string) (areSupported bool) {
+	switch integratorType {
+	case "jenkins", "docker", "quay", "ecr", "jfrog":
+		areSupported = true
+	default:
+		areSupported = false
+	}
+	return areSupported
 }
