@@ -35,6 +35,10 @@ func getValue(scanName string) (value string) {
 		value = "inactive"
 	case "sastsnykscan", "sastsemgrepscan", "sastcodacyscan":
 		value = "Local Mode"
+	case "bitbucketAuthMode":
+		value = "bearer"
+	case "accessLevel":
+		value = "Workspace"
 	default:
 		value = "active"
 	}
