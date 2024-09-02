@@ -33,6 +33,9 @@ query QueryExistingIntegrators {
 
 query QueryFeatureMode {    
     queryFeatureMode {
+        organization {
+            id
+        }
         scan
         type
         enabled

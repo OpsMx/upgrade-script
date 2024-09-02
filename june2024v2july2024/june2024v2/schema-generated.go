@@ -156,12 +156,18 @@ func (v *QueryExistingIntegratorsResponse) GetQueryIntegrator() []*QueryExisting
 
 // QueryFeatureModeQueryFeatureMode includes the requested fields of the GraphQL type FeatureMode.
 type QueryFeatureModeQueryFeatureMode struct {
-	Scan      string     `json:"scan"`
-	Type      string     `json:"type"`
-	Enabled   *bool      `json:"enabled"`
-	Category  string     `json:"category"`
-	CreatedAt *time.Time `json:"createdAt"`
-	UpdatedAt *time.Time `json:"updatedAt"`
+	Organization *QueryFeatureModeQueryFeatureModeOrganization `json:"organization"`
+	Scan         string                                        `json:"scan"`
+	Type         string                                        `json:"type"`
+	Enabled      *bool                                         `json:"enabled"`
+	Category     string                                        `json:"category"`
+	CreatedAt    *time.Time                                    `json:"createdAt"`
+	UpdatedAt    *time.Time                                    `json:"updatedAt"`
+}
+
+// GetOrganization returns QueryFeatureModeQueryFeatureMode.Organization, and is useful for accessing the field via an interface.
+func (v *QueryFeatureModeQueryFeatureMode) GetOrganization() *QueryFeatureModeQueryFeatureModeOrganization {
+	return v.Organization
 }
 
 // GetScan returns QueryFeatureModeQueryFeatureMode.Scan, and is useful for accessing the field via an interface.
@@ -181,6 +187,15 @@ func (v *QueryFeatureModeQueryFeatureMode) GetCreatedAt() *time.Time { return v.
 
 // GetUpdatedAt returns QueryFeatureModeQueryFeatureMode.UpdatedAt, and is useful for accessing the field via an interface.
 func (v *QueryFeatureModeQueryFeatureMode) GetUpdatedAt() *time.Time { return v.UpdatedAt }
+
+// QueryFeatureModeQueryFeatureModeOrganization includes the requested fields of the GraphQL type Organization.
+type QueryFeatureModeQueryFeatureModeOrganization struct {
+	// id is randomly assigned
+	Id string `json:"id"`
+}
+
+// GetId returns QueryFeatureModeQueryFeatureModeOrganization.Id, and is useful for accessing the field via an interface.
+func (v *QueryFeatureModeQueryFeatureModeOrganization) GetId() string { return v.Id }
 
 // QueryFeatureModeResponse is returned by QueryFeatureMode on success.
 type QueryFeatureModeResponse struct {
@@ -279,6 +294,9 @@ func QueryExistingIntegrators(
 const QueryFeatureMode_Operation = `
 query QueryFeatureMode {
 	queryFeatureMode {
+		organization {
+			id
+		}
 		scan
 		type
 		enabled
