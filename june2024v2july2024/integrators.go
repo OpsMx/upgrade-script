@@ -22,7 +22,7 @@ func performIntegratorsTransition(prodDgraphClient, expDgraphClient graphql.Clie
 		return fmt.Errorf("performIntegratorsTransition: QueryFeatureMode: could'nt query old prod features to initiate transition error: %s", err.Error())
 	}
 
-	logger.Sl.Debugf("--------------Existing feature mode transition in old db %d -----------------", len(existingFeatureModes.QueryFeatureMode))
+	logger.Sl.Debugf("-----------Number Of Existing feature mode transition in old db: %d -------------", len(existingFeatureModes.QueryFeatureMode))
 
 	featureModeOldSchemaTypeGrouping := make(map[string][]june2024v2.QueryFeatureModeQueryFeatureMode)
 
@@ -44,10 +44,10 @@ func performIntegratorsTransition(prodDgraphClient, expDgraphClient graphql.Clie
 		return fmt.Errorf("performIntegratorsTransition: QueryExistingIntegrators: could'nt query old prod integrators to initiate transition error: %s", err.Error())
 	}
 
-	logger.Sl.Debugf("--------------Existing integrators configs transition in old db %d -----------------", len(existingIntegrators.QueryIntegrator))
+	logger.Sl.Debugf("----------Number Of Existing integrators configs transition in old db %d --------------", len(existingIntegrators.QueryIntegrator))
 
 	integratorOldSchemaTypeGrouping := make(map[string][]june2024v2.QueryExistingIntegratorsQueryIntegrator)
-
+	var orgId string
 	if len(existingIntegrators.QueryIntegrator) == 0 {
 
 		for _, eachIntegrator := range existingIntegrators.QueryIntegrator {
@@ -57,11 +57,15 @@ func performIntegratorsTransition(prodDgraphClient, expDgraphClient graphql.Clie
 				if supportMultipleInsertion(eachIntegrator.Type) {
 					val = append(val, *eachIntegrator)
 					integratorOldSchemaTypeGrouping[eachIntegrator.Type] = val
+					continue
 				}
+				return fmt.Errorf("multiple integrator not supported for this type: %s discrepancy in existing data", eachIntegrator.Type)
 			} else {
 				integratorOldSchemaTypeGrouping[eachIntegrator.Type] = []june2024v2.QueryExistingIntegratorsQueryIntegrator{*eachIntegrator}
+				orgId = eachIntegrator.Organization.Id
 			}
 		}
+
 	}
 
 	filepath := "schema.yaml"
@@ -83,27 +87,24 @@ func performIntegratorsTransition(prodDgraphClient, expDgraphClient graphql.Clie
 			currTime := time.Now()
 			newTranslatedIntegrator.CreatedAt = &currTime
 			newTranslatedIntegrator.UpdatedAt = &currTime
+			newTranslatedIntegrator.Organization.Id = orgId
 
-			if mapValue, ok := convMap["integratorType"].(string); ok {
-				newTranslatedIntegrator.Type = mapValue
+			if mapValue, ok := convMap["integratorType"]; ok {
+				newTranslatedIntegrator.Type = mapValue.(string)
 			}
 
-			if mapValue, ok := convMap["category"].(string); ok {
-				newTranslatedIntegrator.Category = mapValue
-			}
-
-			if len(integratorOldSchemaTypeGrouping) > 0 {
-				newTranslatedIntegrator.Organization.Id = integratorOldSchemaTypeGrouping[newTranslatedIntegrator.Type][0].Organization.Id
+			if mapValue, ok := convMap["category"]; ok {
+				newTranslatedIntegrator.Category = mapValue.(string)
 			}
 
 			integratorConfigMapValue, integratorConfigsExists := convMap["integratorConfigs"]
 			if integratorConfigsExists {
+				var err error
 				integratorConfigData := integratorConfigMapValue.(map[string]interface{})
-				newTranslatedIntegrator.IntegratorConfigs = getIntegratorConfigs(newTranslatedIntegrator.Type, integratorConfigData, integratorOldSchemaTypeGrouping)
-			}
-
-			if len(featureModeOldSchemaTypeGrouping) > 0 {
-				newTranslatedIntegrator.Organization.Id = featureModeOldSchemaTypeGrouping[newTranslatedIntegrator.Type][0].Organization.Id
+				newTranslatedIntegrator.IntegratorConfigs, err = getIntegratorConfigs(newTranslatedIntegrator.Type, integratorConfigData, integratorOldSchemaTypeGrouping)
+				if err != nil {
+					return fmt.Errorf("performIntegratorsTransition: getIntegratorConfigs: error %s", err.Error())
+				}
 			}
 
 			featureConfigMapValue, featureConfigsExists := convMap["featureConfigs"]
@@ -114,9 +115,9 @@ func performIntegratorsTransition(prodDgraphClient, expDgraphClient graphql.Clie
 
 			if featureConfigsExists && !integratorConfigsExists {
 				newTranslatedIntegrator.Status = "connected"
-			} else if integratorConfigsExists && len(newTranslatedIntegrator.IntegratorConfigs) > 0 {
+			} else if len(newTranslatedIntegrator.IntegratorConfigs) > 0 {
 				newTranslatedIntegrator.Status = "connected"
-			} else if integratorConfigsExists && len(newTranslatedIntegrator.IntegratorConfigs) == 0 {
+			} else {
 				newTranslatedIntegrator.Status = "disabled"
 			}
 
