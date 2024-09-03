@@ -16,6 +16,38 @@ func supportMultipleInsertion(integratorType string) bool {
 	}
 }
 
+func getTranslatedScanName(scanName string) (newScanName string) {
+	switch scanName {
+	case "compliancescan":
+		newScanName = "openssfcompliancescan"
+	case "sastdastscan":
+		newScanName = "sastsemgrepscan"
+	case "licensescan":
+		newScanName = "licensescanforcontainers"
+	case "sastsonarscan":
+		newScanName = "sonarqubeFileInsertion"
+	default:
+		newScanName = scanName
+	}
+	return newScanName
+}
+
+func getValue(scanName string) (value string) {
+	switch scanName {
+	case "sonarqubeFileInsertion", "vulnerabilityscan":
+		value = "inactive"
+	case "sastsnykscan", "sastsemgrepscan", "sastcodacyscan":
+		value = "Local Mode"
+	case "bitbucketAuthMode":
+		value = "bearer"
+	case "accessLevel":
+		value = "Workspace"
+	default:
+		value = "active"
+	}
+	return value
+}
+
 func getIntegratorConfigs(integratorType string, yamlIntegratorConfigSchema map[interface{}]interface{}, integratorOldSchemaTypeGrouping map[string][]june2024v2.QueryExistingIntegratorsQueryIntegrator) (output []*july2024.IntegratorConfigsRef, err error) {
 
 	if mapValue, ok := integratorOldSchemaTypeGrouping[integratorType]; ok { //if integrator type exists in old database
