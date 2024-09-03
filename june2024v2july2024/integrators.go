@@ -3,7 +3,6 @@ package june2024v2july2024
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 	"upgradationScript/june2024v2july2024/july2024"
 	"upgradationScript/june2024v2july2024/june2024v2"
@@ -68,14 +67,9 @@ func performIntegratorsTransition(prodDgraphClient, expDgraphClient graphql.Clie
 
 	}
 
-	filepath := "schema.yaml"
-	integrationStages, err := readAndUnmarshalyaml(filepath)
+	integrationStages, err := readAndUnmarshalyaml()
 	if err != nil {
 		return fmt.Errorf("performIntegratorsTransition: readAndUnmarshalyaml: error %s", err.Error())
-	}
-
-	if len(integrationStages) == 0 {
-		return fmt.Errorf("yaml doesn't contain integrations details: filepath: %s", filepath)
 	}
 
 	var translatedInput []*july2024.AddIntegratorInput
@@ -136,23 +130,15 @@ func performIntegratorsTransition(prodDgraphClient, expDgraphClient graphql.Clie
 	return nil
 }
 
-func readAndUnmarshalyaml(filepath string) (IntegrationStages, error) {
-	readData, err := os.ReadFile(filepath)
-	if err != nil {
-		return nil, fmt.Errorf("error: ReadFile: filepath: %s , %s", filepath, err.Error())
-	}
-
-	var decodedData ConfigData
-	if err := yaml.Unmarshal(readData, &decodedData); err != nil {
-		return nil, fmt.Errorf("error: Unmarshal: ConfigData: %s", err.Error())
-	}
-
-	subField := decodedData.Data.SSDIntegrationsYAML.(string)
+func readAndUnmarshalyaml() (IntegrationStages, error) {
 
 	var configs SSDIntegrations
-	if err := yaml.Unmarshal([]byte(subField), &configs); err != nil {
+	if err := yaml.Unmarshal([]byte(schemaYaml), &configs); err != nil {
 		return nil, fmt.Errorf("error: Unmarshal: SSDIntegrations: %s", err.Error())
 	}
 
+	if len(configs.IntegrationData) == 0 {
+		return nil, fmt.Errorf("error: no integrations found after unmarshal: %s", configs)
+	}
 	return configs.IntegrationData, nil
 }
