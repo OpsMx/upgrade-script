@@ -16,7 +16,7 @@ func supportMultipleInsertion(integratorType string) bool {
 	}
 }
 
-func getIntegratorConfigs(integratorType string, yamlIntegratorConfigSchema map[string]interface{}, integratorOldSchemaTypeGrouping map[string][]june2024v2.QueryExistingIntegratorsQueryIntegrator) (output []*july2024.IntegratorConfigsRef, err error) {
+func getIntegratorConfigs(integratorType string, yamlIntegratorConfigSchema map[interface{}]interface{}, integratorOldSchemaTypeGrouping map[string][]june2024v2.QueryExistingIntegratorsQueryIntegrator) (output []*july2024.IntegratorConfigsRef, err error) {
 
 	if mapValue, ok := integratorOldSchemaTypeGrouping[integratorType]; ok { //if integrator type exists in old database
 		for _, eachEntry := range mapValue {
@@ -37,7 +37,7 @@ func getIntegratorConfigs(integratorType string, yamlIntegratorConfigSchema map[
 				}
 				var configKeyTemp july2024.IntegratorKeyValuesRef
 				if schemaKeyValue, ok := yamlIntegratorConfigSchema[dataKey]; ok { //get this data key in new schema map
-					mapEachConfigData := schemaKeyValue.(map[string]interface{})
+					mapEachConfigData := schemaKeyValue.(map[interface{}]interface{})
 					if encryptValue, ok := mapEachConfigData["encrypt"]; ok {
 						ptr := encryptValue.(bool)
 						configKeyTemp.Encrypt = &ptr
@@ -57,7 +57,7 @@ func getIntegratorConfigs(integratorType string, yamlIntegratorConfigSchema map[
 	return output, nil
 }
 
-func getFeatureConfigs(integratorType string, yamlFeatureConfigSchema map[string]interface{}, featureModeOldSchemaTypeGrouping map[string][]june2024v2.QueryFeatureModeQueryFeatureMode) (output []*july2024.FeatureModeRef) {
+func getFeatureConfigs(integratorType string, yamlFeatureConfigSchema map[interface{}]interface{}, featureModeOldSchemaTypeGrouping map[string][]june2024v2.QueryFeatureModeQueryFeatureMode) (output []*july2024.FeatureModeRef) {
 
 	if mapValue, ok := featureModeOldSchemaTypeGrouping[integratorType]; ok {
 		for _, eachEntry := range mapValue {
@@ -66,11 +66,11 @@ func getFeatureConfigs(integratorType string, yamlFeatureConfigSchema map[string
 				var featureModeTemp july2024.FeatureModeRef
 
 				featureModeTemp.Organization.Id = eachEntry.Organization.Id
-				featureModeTemp.Key = key
+				featureModeTemp.Key = key.(string)
 				featureModeTemp.CreatedAt = eachEntry.CreatedAt
 				featureModeTemp.UpdatedAt = eachEntry.UpdatedAt
 
-				mapEachConfigData := eachConfigData.(map[string]interface{})
+				mapEachConfigData := eachConfigData.(map[interface{}]interface{})
 				if defaultValue, ok := mapEachConfigData["default"]; ok {
 					featureModeTemp.Value = defaultValue.(string)
 				}
@@ -80,3 +80,212 @@ func getFeatureConfigs(integratorType string, yamlFeatureConfigSchema map[string
 	}
 	return output
 }
+
+const schemaYaml = `
+integrationData:
+  - stage: Source
+    integrations:
+      - integratorType: gitlab
+        category: sourcetool
+        integratorConfigs:
+          url:
+            encrypt: false
+          token:
+            encrypt: true
+      - integratorType: github
+        category: sourcetool
+        integratorConfigs:
+          url:
+            encrypt: false
+          token:
+            encrypt: true
+      - integratorType: bitbucket
+        category: sourcetool
+        integratorConfigs:
+          url:
+            encrypt: false
+          token:
+            encrypt: true
+          username:
+            encrypt: false
+          password:
+            encrypt: true
+          workspaceId:
+            encrypt: false
+          projectKey:
+            encrypt: false
+          repository:
+            encrypt: false
+        featureConfigs:
+          bitbucketAuthMode:
+            default: bearer
+          accessLevel:
+            default: Workspace
+      - integratorType: sonarqube
+        category: scanningtool
+        integratorConfigs:
+          url:
+            encrypt: false
+          token:
+            encrypt: true
+        featureConfigs:
+          sonarqubeFileInsertion:
+            default: inactive
+      - integratorType: openssf
+        category: scanningtool
+        featureConfigs:
+          openssfcompliancescan:
+            default: active
+      - integratorType: virustotal
+        category: sourcetool
+        integratorConfigs:
+          token:
+            encrypt: true
+      - integratorType: snyk
+        category: sourcetool
+        integratorConfigs:
+          snykOrgId:
+            encrypt: false
+          token:
+            encrypt: true
+          url:
+            encrypt: false
+        featureConfigs:
+          sastsnykscan:
+            default: Local Mode
+      - integratorType: semgrep
+        category: sourcetool
+        integratorConfigs:
+          token:
+            encrypt: true
+        featureConfigs:
+          sastsemgrepscan:
+            default: Local Mode
+      - integratorType: codacy
+        category: sourcetool
+        integratorConfigs:
+          token:
+            encrypt: true
+        featureConfigs:
+          sastcodacyscan:
+            default: Local Mode
+  - stage: Build
+    integrations:
+      - integratorType: jenkins
+        category: citool
+        integratorConfigs:
+          url:
+            encrypt: false
+          approved_user:
+            encrypt: false
+          username:
+            encrypt: false
+          password:
+            encrypt: true
+  - stage: Artifact
+    integrations:
+      - integratorType: trivy
+        category: scanningtool
+        featureConfigs:
+          vulnerabilityscan:
+            default: active
+          helmscan:
+            default: active
+          secretscanforsource:
+            default: active
+          secretscanforcontainers:
+            default: active
+          licensescanforsource:
+            default: active
+          licensescanforcontainers:
+            default: active
+      - integratorType: docker
+        category: dockerregistry
+        integratorConfigs:
+          url:
+            encrypt: false
+          repo:
+            encrypt: false
+          username:
+            encrypt: false
+          password:
+            encrypt: true
+      - integratorType: ecr
+        category: dockerregistry
+        integratorConfigs:
+          url:
+            encrypt: false
+          repo:
+            encrypt: false
+          region:
+            encrypt: false
+          awsAccessKey:
+            encrypt: true
+          awsSecretKey:
+            encrypt: true
+      - integratorType: quay
+        integratorConfigs:
+          url:
+            encrypt: false
+          repo:
+            encrypt: false
+          username:
+            encrypt: false
+          password:
+            encrypt: true
+      - integratorType: jfrog
+        category: dockerregistry
+        integratorConfigs:
+          url:
+            encrypt: false
+          repo:
+            encrypt: false
+          username:
+            encrypt: false
+          password:
+            encrypt: true
+      - integratorType: google-artifact-registry
+        category: aptregistry
+        integratorConfigs:
+          key:
+            encrypt: true
+          source:
+            encrypt: false
+      - integratorType: grype
+        category: scanningtool
+        featureConfigs:
+          vulnerabilityscan:
+            default: inactive
+  - stage: Others
+    integrations:
+      - integratorType: chatgpt
+        category: communications
+        integratorConfigs:
+          token:
+            encrypt: true
+      - integratorType: slack
+        category: communications
+        integratorConfigs:
+          channel:
+            encrypt: false
+          token:
+            encrypt: true
+      - integratorType: jira
+        category: communications
+        integratorConfigs:
+          projectKey:
+            encrypt: false
+          username:
+            encrypt: false
+          url:
+            encrypt: false
+          token:
+            encrypt: true
+      - integratorType: custompolicy
+        category: managementtool
+        integratorConfigs:
+          url:
+            encrypt: false
+          token:
+            encrypt: true
+`

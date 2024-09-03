@@ -83,7 +83,7 @@ func performIntegratorsTransition(prodDgraphClient, expDgraphClient graphql.Clie
 		for _, eachIntegrator := range eachStage.Integrations {
 
 			var newTranslatedIntegrator july2024.AddIntegratorInput
-			convMap := eachIntegrator.(map[string]interface{})
+			convMap := eachIntegrator.(map[interface{}]interface{})
 			currTime := time.Now()
 			newTranslatedIntegrator.CreatedAt = &currTime
 			newTranslatedIntegrator.UpdatedAt = &currTime
@@ -100,7 +100,7 @@ func performIntegratorsTransition(prodDgraphClient, expDgraphClient graphql.Clie
 			integratorConfigMapValue, integratorConfigsExists := convMap["integratorConfigs"]
 			if integratorConfigsExists {
 				var err error
-				integratorConfigData := integratorConfigMapValue.(map[string]interface{})
+				integratorConfigData := integratorConfigMapValue.(map[interface{}]interface{})
 				newTranslatedIntegrator.IntegratorConfigs, err = getIntegratorConfigs(newTranslatedIntegrator.Type, integratorConfigData, integratorOldSchemaTypeGrouping)
 				if err != nil {
 					return fmt.Errorf("performIntegratorsTransition: getIntegratorConfigs: error %s", err.Error())
@@ -109,7 +109,7 @@ func performIntegratorsTransition(prodDgraphClient, expDgraphClient graphql.Clie
 
 			featureConfigMapValue, featureConfigsExists := convMap["featureConfigs"]
 			if featureConfigsExists {
-				featureConfigsData := featureConfigMapValue.(map[string]interface{})
+				featureConfigsData := featureConfigMapValue.(map[interface{}]interface{})
 				newTranslatedIntegrator.FeatureConfigs = getFeatureConfigs(newTranslatedIntegrator.Type, featureConfigsData, featureModeOldSchemaTypeGrouping)
 			}
 
