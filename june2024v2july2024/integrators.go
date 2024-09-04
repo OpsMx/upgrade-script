@@ -62,6 +62,10 @@ func performIntegratorsTransition(prodDgraphClient, expDgraphClient graphql.Clie
 
 	for _, eachIntegrator := range existingIntegrators.QueryIntegrator {
 
+		if eachIntegrator.Type == "" {
+			continue
+		}
+
 		if val, ok := integratorOldSchemaTypeGrouping[eachIntegrator.Type]; ok {
 
 			if supportMultipleInsertion(eachIntegrator.Type) {

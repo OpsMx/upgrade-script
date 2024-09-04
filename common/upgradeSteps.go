@@ -129,7 +129,7 @@ func upgradePoliciesAndFeat() error {
 		logger.Logger.Info("------------Completed Upgrade of Policies--------------------")
 	}
 
-	logger.Logger.Info("------------Comepleted Upgrade--------------------")
+	logger.Logger.Info("------------Completed Upgrade--------------------")
 
 	return nil
 }
