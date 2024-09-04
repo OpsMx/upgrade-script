@@ -30,3 +30,17 @@ query QueryExistingIntegrators {
         name
     }
 }
+
+query QueryFeatureMode {    
+    queryFeatureMode {
+        organization {
+            id
+        }
+        scan
+        type
+        enabled
+        category
+        createdAt
+        updatedAt
+    }
+}

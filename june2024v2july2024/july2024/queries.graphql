@@ -30,3 +30,9 @@ mutation AddIntegrator($value: [AddIntegratorInput!]!) {
         numUids
     }
 }
+
+mutation AddFeatureMode($value: [AddFeatureModeInput!]!) {
+    addFeatureMode(input: $value) {
+        numUids
+    }
+}

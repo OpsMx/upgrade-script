@@ -114,11 +114,21 @@ func upgradePoliciesAndFeat() error {
 		return fmt.Errorf("upgradePoliciesAndFeat: %s", err.Error())
 	}
 
-	if err := featuretable.FeatTableUpgradeSteps(graphqlClient, orgId); err != nil {
-		return fmt.Errorf("upgradePoliciesAndFeat: FeatTableUpgradeSteps: error: %s", err.Error())
+	shouldUpdate, err := shouldUpdateFeatTable()
+	if err != nil {
+		return fmt.Errorf("upgradePoliciesAndFeat: %s", err.Error())
 	}
 
-	logger.Logger.Info("------------Completed Upgrade of Policies & feat--------------------")
+	if shouldUpdate {
+		if err := featuretable.FeatTableUpgradeSteps(graphqlClient, orgId); err != nil {
+			return fmt.Errorf("upgradePoliciesAndFeat: FeatTableUpgradeSteps: error: %s", err.Error())
+		}
+
+		logger.Logger.Info("------------Completed Upgrade of Policies & feat--------------------")
+	} else {
+		logger.Logger.Info("------------Completed Upgrade of Policies--------------------")
+	}
+
 	logger.Logger.Info("------------Comepleted Upgrade--------------------")
 
 	return nil
