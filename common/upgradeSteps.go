@@ -8,6 +8,7 @@ import (
 	"upgradationScript/april2024june2024"
 	featuretable "upgradationScript/featureTable"
 	graphqlfunc "upgradationScript/graphqlFunc"
+	"upgradationScript/july2024august2024"
 	"upgradationScript/june2024june2024v2"
 	"upgradationScript/june2024v2july2024"
 
@@ -92,6 +93,15 @@ func beginProcessOfUpgrade(upgradeTo SchemaOrder) error {
 		expGraphqlClient := graphqlfunc.NewClient(Conf.ExpGraphQLAddr, Conf.ExpDgraphToken)
 
 		return june2024v2july2024.UpgradeToJuly2024(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, Conf.ExpGraphQLAddr, Conf.RemoteDgraphRestoreUrl, prodGraphqlClient, expGraphqlClient)
+
+	case August2024Version:
+		if err := allChecksForExpDgraph(July2024Version); err != nil {
+			return err
+		}
+
+		expGraphqlClient := graphqlfunc.NewClient(Conf.ExpGraphQLAddr, Conf.ExpDgraphToken)
+
+		return july2024august2024.UpgradeToAugust2024(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, Conf.ExpGraphQLAddr, Conf.RemoteDgraphRestoreUrl, prodGraphqlClient, expGraphqlClient)
 	}
 
 	logger.Sl.Debugf("no upgrade steps for %s", upgradeTo.NameOfSchema())

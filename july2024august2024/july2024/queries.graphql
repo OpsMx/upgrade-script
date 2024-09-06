@@ -1,0 +1,6 @@
+query GetAttachedJiraUrl {
+    queryRunHistory {
+        id
+        JiraUrl
+    }
+}

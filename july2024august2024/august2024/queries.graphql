@@ -1,0 +1,5 @@
+mutation AttachJiraToRunHistory($jira: [AddJiraInput!]!) {
+    addJira(input: $jira) {
+        numUids
+    }
+}
