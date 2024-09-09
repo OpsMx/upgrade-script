@@ -21,7 +21,7 @@ func UpgradeToAugust2024(prodGraphUrl, prodToken, expDgraphUrl, restoreServiceUr
 		return fmt.Errorf("UpgradeToAugust2024: BackupAndRestoreDgraph: %s", err.Error())
 	}
 
-	if err := graphqlfunc.UpdateSchema(prodGraphUrl, prodToken, []byte(schemas.July2024Schema)); err != nil {
+	if err := graphqlfunc.UpdateSchema(prodGraphUrl, prodToken, []byte(schemas.August2024Schema)); err != nil {
 		return fmt.Errorf("UpgradeToAugust2024: UpdateSchema: %s", err.Error())
 	}
 
