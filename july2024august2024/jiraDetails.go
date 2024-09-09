@@ -3,6 +3,8 @@ package july2024august2024
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
 	"upgradationScript/july2024august2024/august2024"
 	"upgradationScript/july2024august2024/july2024"
 	"upgradationScript/logger"
@@ -16,117 +18,69 @@ func performJiraDetailsTransition(prodDgraphClient, expDgraphClient graphql.Clie
 
 	prodArtifactScanDataFiles, err := july2024.GetAttachedJiraUrl(ctx, prodDgraphClient)
 	if err != nil {
-		return fmt.Errorf("performJiraDetailsTransition: could'nt query old prod jira url from run history to initiate transition error: %s", err.Error())
+		return fmt.Errorf("error: could'nt query old prod jira url from run history to initiate transition: %s", err.Error())
 	}
 
-	logger.Sl.Debugf("--------------Commencing scanned files transition iterations to complete %d -----------------", len(prodArtifactScanDataFiles.QueryArtifactScanData))
-
-	for iter, eachArtifactScanData := range prodArtifactScanDataFiles.QueryArtifactScanData {
-		logger.Logger.Debug("---------------------------------------------")
-		logger.Sl.Debugf("Scanned files Iteration %d to begin", iter)
-
-		scannedFilesList := make([]*july2024.ScanFileResultRef, 0, 12)
-
-		if eachArtifactScanData.SbomUrl != "" {
-
-			scannedFilesList = append(scannedFilesList, &july2024.ScanFileResultRef{
-				Name: "sbom",
-				Url:  eachArtifactScanData.SbomUrl,
-			})
-		}
-
-		if eachArtifactScanData.ArtifactLicenseScanUrl != "" {
-
-			scannedFilesList = append(scannedFilesList, &july2024.ScanFileResultRef{
-				Name: "artifactLicenseScan",
-				Url:  eachArtifactScanData.ArtifactLicenseScanUrl,
-			})
-		}
-
-		if eachArtifactScanData.ArtifactSecretScanUrl != "" {
-
-			scannedFilesList = append(scannedFilesList, &july2024.ScanFileResultRef{
-				Name: "artifactSecretScan",
-				Url:  eachArtifactScanData.ArtifactSecretScanUrl,
-			})
-		}
-
-		if eachArtifactScanData.SourceLicenseScanUrl != "" {
-
-			scannedFilesList = append(scannedFilesList, &july2024.ScanFileResultRef{
-				Name: "sourceLicenseScan",
-				Url:  eachArtifactScanData.SourceLicenseScanUrl,
-			})
-		}
-
-		if eachArtifactScanData.SourceSecretScanUrl != "" {
-
-			scannedFilesList = append(scannedFilesList, &july2024.ScanFileResultRef{
-				Name: "sourceSecretScan",
-				Url:  eachArtifactScanData.SourceSecretScanUrl,
-			})
-		}
-
-		if eachArtifactScanData.SourceScorecardScanUrl != "" {
-
-			scannedFilesList = append(scannedFilesList, &july2024.ScanFileResultRef{
-				Name: "sourceScorecardScan",
-				Url:  eachArtifactScanData.SourceScorecardScanUrl,
-			})
-		}
-
-		if eachArtifactScanData.SourceSemgrepHighSeverityScanUrl != "" {
-
-			scannedFilesList = append(scannedFilesList, &july2024.ScanFileResultRef{
-				Name: "sourceSemgrepHighSeverityScan",
-				Url:  eachArtifactScanData.SourceSemgrepHighSeverityScanUrl,
-			})
-		}
-
-		if eachArtifactScanData.SourceSemgrepMediumSeverityScanUrl != "" {
-
-			scannedFilesList = append(scannedFilesList, &july2024.ScanFileResultRef{
-				Name: "sourceSemgrepMediumSeverityScan",
-				Url:  eachArtifactScanData.SourceSemgrepMediumSeverityScanUrl,
-			})
-		}
-
-		if eachArtifactScanData.SourceSemgrepLowSeverityScanUrl != "" {
-
-			scannedFilesList = append(scannedFilesList, &july2024.ScanFileResultRef{
-				Name: "sourceSemgrepLowSeverityScan",
-				Url:  eachArtifactScanData.SourceSemgrepLowSeverityScanUrl,
-			})
-		}
-
-		if eachArtifactScanData.SourceSnykScanUrl != "" {
-
-			scannedFilesList = append(scannedFilesList, &july2024.ScanFileResultRef{
-				Name: "sourceSnykScan",
-				Url:  eachArtifactScanData.SourceSnykScanUrl,
-			})
-		}
-
-		if eachArtifactScanData.VirusTotalUrlScan != "" {
-
-			scannedFilesList = append(scannedFilesList, &july2024.ScanFileResultRef{
-				Name: "virusTotalScan",
-				Url:  eachArtifactScanData.VirusTotalUrlScan,
-			})
-		}
-
-		logger.Sl.Debug("updating scan files of artifact scan data id: %s", eachArtifactScanData.Id)
-
-		if _, err := august2024.AttachJiraToRunHistory(ctx, expDgraphClient, scannedFilesList, eachArtifactScanData.Id); err != nil {
-			return fmt.Errorf("performScanFilesTransition: UpdateScannedFilesInArtifactScanData error: %s", err.Error())
-		}
-		logger.Sl.Debug("updated scanned files successfully")
-
-		logger.Sl.Debugf("scan files Iteration %d completed", iter)
-		logger.Logger.Debug("---------------------------------------------")
+	if prodArtifactScanDataFiles == nil {
+		logger.Logger.Info("No record for runhistory found in db while excetuing performJiraDetailsTransition")
+		return nil
 	}
 
-	logger.Logger.Info("------------Artifact-Scanned Files upgrade complete-------------------------")
+	if len(prodArtifactScanDataFiles.QueryRunHistory) == 0 {
+		logger.Logger.Info("No record for runhistory found in db while excetuing performJiraDetailsTransition")
+		return nil
+	}
+
+	logger.Sl.Debugf("--------------Number of jira urls for transition iterations are %d -----------------", len(prodArtifactScanDataFiles.QueryRunHistory))
+
+	orgName := prodArtifactScanDataFiles.QueryRunHistory[0].PolicyEnforcements.EnforcedOrg.Name
+	secretData, err := getCredentials(orgName, "jira", prodDgraphClient)
+	if err != nil {
+		return fmt.Errorf("error: getCredentials: orgName: %s type: %s %s", orgName, "jira", err.Error())
+	}
+
+	var translatedJiraDetails []*august2024.AddJiraInput
+	for iter, eachRunHistory := range prodArtifactScanDataFiles.QueryRunHistory {
+		logger.Logger.Debug("---------------------------------------------")
+		logger.Sl.Debugf("Jira Transaltion Iteration %d to begin", iter)
+
+		jiraTicketUrl := eachRunHistory.JiraUrl
+
+		splittedArr := strings.Split(jiraTicketUrl, "/")
+		extractedTicketKey := splittedArr[len(splittedArr)-1]
+
+		ticketDetails, err := getJiraTicketDetails(extractedTicketKey, secretData.Jira.Url, secretData.Jira.Username, secretData.Jira.Token)
+		if err != nil {
+			return fmt.Errorf("error: getJiraTicketDetails: %s", err.Error())
+		}
+
+		currTime := time.Now()
+		entryDetails := august2024.AddJiraInput{
+			JiraId:    ticketDetails.Id,
+			Url:       jiraTicketUrl,
+			Status:    ticketDetails.Fields.Status.Name,
+			CreatedAt: &currTime,
+			UpdatedAt: &currTime,
+			AffectsIndividualComponent: &august2024.RunHistoryRef{
+				Id: eachRunHistory.Id,
+			},
+		}
+		translatedJiraDetails = append(translatedJiraDetails, &entryDetails)
+
+		logger.Sl.Debugf("jira translation Iteration %d completed", iter)
+
+	}
+
+	logger.Sl.Debug("updating jira translated values into new jira sturct")
+
+	if _, err := august2024.AttachJiraToRunHistory(ctx, expDgraphClient, translatedJiraDetails); err != nil {
+		return fmt.Errorf("error: AttachJiraToRunHistory: %s", err.Error())
+	}
+	logger.Sl.Debug("updating jira translated values into new jira sturct")
+
+	logger.Logger.Debug("---------------------------------------------")
+
+	logger.Logger.Info("------------Jira New Struct UPGRADE COMPLETE-------------------------")
 
 	return nil
 }

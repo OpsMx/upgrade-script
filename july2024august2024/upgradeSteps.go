@@ -14,7 +14,7 @@ func UpgradeToAugust2024(prodGraphUrl, prodToken, expDgraphUrl, restoreServiceUr
 	logger.Logger.Info("--------------Starting performScanJiraDetailsTransition------------------")
 
 	if err := performJiraDetailsTransition(prodDgraphClient, expDgraphClient); err != nil {
-		return fmt.Errorf("UpgradeToAugust2024: %s", err.Error())
+		return fmt.Errorf("UpgradeToAugust2024: performJiraDetailsTransition: %s", err.Error())
 	}
 
 	if err := graphqlfunc.BackupAndRestoreDgraph(expDgraphUrl, restoreServiceUrl); err != nil {
