@@ -95,7 +95,7 @@ func beginProcessOfUpgrade(upgradeTo SchemaOrder) error {
 		return june2024v2july2024.UpgradeToJuly2024(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, Conf.ExpGraphQLAddr, Conf.RemoteDgraphRestoreUrl, prodGraphqlClient, expGraphqlClient)
 
 	case August2024Version:
-		if err := allChecksForExpDgraph(July2024Version); err != nil {
+		if err := allChecksForExpDgraph(August2024Version); err != nil {
 			return err
 		}
 
