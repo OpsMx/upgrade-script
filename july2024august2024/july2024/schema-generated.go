@@ -10,8 +10,9 @@ import (
 
 // GetAttachedJiraUrlQueryRunHistory includes the requested fields of the GraphQL type RunHistory.
 type GetAttachedJiraUrlQueryRunHistory struct {
-	Id      *string `json:"id"`
-	JiraUrl string  `json:"JiraUrl"`
+	Id                 *string                                                               `json:"id"`
+	JiraUrl            string                                                                `json:"JiraUrl"`
+	PolicyEnforcements *GetAttachedJiraUrlQueryRunHistoryPolicyEnforcementsPolicyEnforcement `json:"policyEnforcements"`
 }
 
 // GetId returns GetAttachedJiraUrlQueryRunHistory.Id, and is useful for accessing the field via an interface.
@@ -19,6 +20,38 @@ func (v *GetAttachedJiraUrlQueryRunHistory) GetId() *string { return v.Id }
 
 // GetJiraUrl returns GetAttachedJiraUrlQueryRunHistory.JiraUrl, and is useful for accessing the field via an interface.
 func (v *GetAttachedJiraUrlQueryRunHistory) GetJiraUrl() string { return v.JiraUrl }
+
+// GetPolicyEnforcements returns GetAttachedJiraUrlQueryRunHistory.PolicyEnforcements, and is useful for accessing the field via an interface.
+func (v *GetAttachedJiraUrlQueryRunHistory) GetPolicyEnforcements() *GetAttachedJiraUrlQueryRunHistoryPolicyEnforcementsPolicyEnforcement {
+	return v.PolicyEnforcements
+}
+
+// GetAttachedJiraUrlQueryRunHistoryPolicyEnforcementsPolicyEnforcement includes the requested fields of the GraphQL type PolicyEnforcement.
+type GetAttachedJiraUrlQueryRunHistoryPolicyEnforcementsPolicyEnforcement struct {
+	EnforcedOrg *GetAttachedJiraUrlQueryRunHistoryPolicyEnforcementsPolicyEnforcementEnforcedOrgOrganization `json:"enforcedOrg"`
+}
+
+// GetEnforcedOrg returns GetAttachedJiraUrlQueryRunHistoryPolicyEnforcementsPolicyEnforcement.EnforcedOrg, and is useful for accessing the field via an interface.
+func (v *GetAttachedJiraUrlQueryRunHistoryPolicyEnforcementsPolicyEnforcement) GetEnforcedOrg() *GetAttachedJiraUrlQueryRunHistoryPolicyEnforcementsPolicyEnforcementEnforcedOrgOrganization {
+	return v.EnforcedOrg
+}
+
+// GetAttachedJiraUrlQueryRunHistoryPolicyEnforcementsPolicyEnforcementEnforcedOrgOrganization includes the requested fields of the GraphQL type Organization.
+type GetAttachedJiraUrlQueryRunHistoryPolicyEnforcementsPolicyEnforcementEnforcedOrgOrganization struct {
+	// id is randomly assigned
+	Id   string `json:"id"`
+	Name string `json:"name"`
+}
+
+// GetId returns GetAttachedJiraUrlQueryRunHistoryPolicyEnforcementsPolicyEnforcementEnforcedOrgOrganization.Id, and is useful for accessing the field via an interface.
+func (v *GetAttachedJiraUrlQueryRunHistoryPolicyEnforcementsPolicyEnforcementEnforcedOrgOrganization) GetId() string {
+	return v.Id
+}
+
+// GetName returns GetAttachedJiraUrlQueryRunHistoryPolicyEnforcementsPolicyEnforcementEnforcedOrgOrganization.Name, and is useful for accessing the field via an interface.
+func (v *GetAttachedJiraUrlQueryRunHistoryPolicyEnforcementsPolicyEnforcementEnforcedOrgOrganization) GetName() string {
+	return v.Name
+}
 
 // GetAttachedJiraUrlResponse is returned by GetAttachedJiraUrl on success.
 type GetAttachedJiraUrlResponse struct {
@@ -146,6 +179,12 @@ query GetAttachedJiraUrl {
 	queryRunHistory @cascade {
 		id
 		JiraUrl
+		policyEnforcements {
+			enforcedOrg {
+				id
+				name
+			}
+		}
 	}
 }
 `
