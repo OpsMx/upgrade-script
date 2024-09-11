@@ -40,6 +40,11 @@ func performJiraDetailsTransition(prodDgraphClient, expDgraphClient graphql.Clie
 
 	var translatedJiraDetails []*august2024.AddJiraInput
 	for iter, eachRunHistory := range prodArtifactScanDataFiles.QueryRunHistory {
+
+		if strings.TrimSpace(eachRunHistory.JiraUrl) == "" {
+			continue
+		}
+
 		logger.Logger.Debug("---------------------------------------------")
 		logger.Sl.Debugf("Jira Transaltion Iteration %d to begin", iter)
 

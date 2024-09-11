@@ -1,7 +1,7 @@
 package july2024august2024
 
 const (
-	encryptionKeyPath = "/app/secrets/encryptionKey"
+	encryptionKeyPath = "/app/secrets/encryptionKey/AESEncryptionKey"
 	JiraIssueApi      = "rest/api/2/issue"
 )
 
