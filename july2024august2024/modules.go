@@ -29,8 +29,10 @@ type JiraIssueDetails struct {
 	Id     string `json:"id,omitempty" yaml:"id,omitempty"`
 	Key    string `json:"key,omitempty" yaml:"key,omitempty"`
 	Fields struct {
-		Labels []string `json:"labels,omitempty" yaml:"labels,omitempty"`
-		Status struct {
+		Created string   `json:"created,omitempty" yaml:"created,omitempty"`
+		Updated string   `json:"updated,omitempty" yaml:"updated,omitempty"`
+		Labels  []string `json:"labels,omitempty" yaml:"labels,omitempty"`
+		Status  struct {
 			Name string `json:"name,omitempty" yaml:"name,omitempty"`
 		} `json:"status,omitempty" yaml:"status,omitempty"`
 	} `json:"fields,omitempty" yaml:"fields,omitempty"`

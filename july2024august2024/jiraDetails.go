@@ -60,13 +60,23 @@ func performJiraDetailsTransition(prodDgraphClient, expDgraphClient graphql.Clie
 			return fmt.Errorf("error: getJiraTicketDetails: %s", err.Error())
 		}
 
-		currTime := time.Now()
+		layout := "2006-01-02T15:04:05.000-0700"
+		createdAt, err := time.Parse(layout, ticketDetails.Fields.Created)
+		if err != nil {
+			return fmt.Errorf("error: time.Parse: for created at %s", err.Error())
+		}
+
+		updatedAt, err := time.Parse(layout, ticketDetails.Fields.Updated)
+		if err != nil {
+			return fmt.Errorf("error: time.Parse: for updated at %s", err.Error())
+		}
+
 		entryDetails := august2024.AddJiraInput{
 			JiraId:    ticketDetails.Id,
 			Url:       jiraTicketUrl,
 			Status:    ticketDetails.Fields.Status.Name,
-			CreatedAt: &currTime,
-			UpdatedAt: &currTime,
+			CreatedAt: &createdAt,
+			UpdatedAt: &updatedAt,
 			AffectsIndividualComponent: &august2024.RunHistoryRef{
 				Id: eachRunHistory.Id,
 			},
