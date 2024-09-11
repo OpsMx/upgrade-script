@@ -1,0 +1,29 @@
+query GetAttachedJiraUrl {
+    queryRunHistory @cascade{
+        id
+        JiraUrl
+    }
+}
+
+query QueryIntegratorsForOrgByTypeIfConnected(
+    $typefilter: String!
+) {
+    queryOrganization @cascade(fields: "integrators") {
+        integrators(filter: { type: { eq: $typefilter }, status: { eq: "connected" } }) {
+            type
+            category
+            integratorConfigs {
+                name
+                configs {
+                    key
+                    value
+                    encrypt
+                }
+            }
+            featureConfigs {
+                key
+                value
+            }
+        }
+    }
+}
