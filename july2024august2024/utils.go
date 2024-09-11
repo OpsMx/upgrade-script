@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"upgradationScript/july2024august2024/july2024"
 
 	"github.com/Khan/genqlient/graphql"
@@ -166,4 +167,14 @@ func makeHTTPCallAndReadResponse(req *http.Request) ([]byte, error) {
 	}
 
 	return content, fmt.Errorf("%s", resp.Status)
+}
+
+func filterEmptyJiraUrls(runHsitory []*july2024.GetAttachedJiraUrlQueryRunHistory) (newArr []*july2024.GetAttachedJiraUrlQueryRunHistory) {
+
+	for _, val := range runHsitory {
+		if strings.TrimSpace(val.JiraUrl) != "" {
+			newArr = append(newArr, val)
+		}
+	}
+	return newArr
 }

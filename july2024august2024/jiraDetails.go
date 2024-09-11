@@ -31,7 +31,8 @@ func performJiraDetailsTransition(prodDgraphClient, expDgraphClient graphql.Clie
 		return nil
 	}
 
-	logger.Sl.Debugf("--------------Number of jira urls for transition iterations are %d -----------------", len(prodArtifactScanDataFiles.QueryRunHistory))
+	filteredRunHistory := filterEmptyJiraUrls(prodArtifactScanDataFiles.QueryRunHistory)
+	logger.Sl.Debugf("--------------Number of jira urls for transition iterations are %d -----------------", len(filteredRunHistory))
 
 	secretData, err := getCredentials("jira", prodDgraphClient)
 	if err != nil {
@@ -39,7 +40,7 @@ func performJiraDetailsTransition(prodDgraphClient, expDgraphClient graphql.Clie
 	}
 
 	var translatedJiraDetails []*august2024.AddJiraInput
-	for iter, eachRunHistory := range prodArtifactScanDataFiles.QueryRunHistory {
+	for iter, eachRunHistory := range filteredRunHistory {
 		logger.Logger.Debug("---------------------------------------------")
 		logger.Sl.Debugf("Jira Transaltion Iteration %d to begin", iter)
 
