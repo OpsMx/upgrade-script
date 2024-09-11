@@ -8584,19 +8584,19 @@ var scriptMap = map[int]string{
 
 	license_count = count(licenses)
 
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
 			license_count == 0
-			title := "Artifact License Scan: No license found."
-			msg := sprintf("Artifact License Scan: No license found to be associated with artifact %v:%v.",[input.metadata.image, input.metadata.image_tag])
+		        not policy_name in exception_list
+			msg := sprintf("Artifact License Scan: No license found to be associated with artifact %v.",[input.metadata.image])
 			sugg := "Please associate appropriate license with artifact to be able to evaluate quality of license."
 			error := ""
 			alertStatus := "active"
 	}
 
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": policy_name, "alertStatus": alertStatus}]{
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": policy_name, "alertStatus": alertStatus}]{
 			license_count == 0
-			title := "Artifact License Scan: No license found."
-			msg := sprintf("Artifact License Scan: No license found to be associated with artifact %v:%v.",[input.metadata.image, input.metadata.image_tag])
+			policy_name in exception_list
+			msg := sprintf("Artifact License Scan: No license found to be associated with artifact %v.",[input.metadata.image])
 			sugg := "Please associate appropriate license with artifact to be able to evaluate quality of license."
 			error := ""
 			alertStatus := "exception"
@@ -8635,9 +8635,9 @@ var scriptMap = map[int]string{
 	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
 			license_count == 0
 			title := "Artifact License Scan: No license found."
-			msg := sprintf("Artifact License Scan: No license found to be associated with artifact %v:%v.",[input.metadata.image, input.metadata.image_tag])
+			msg := sprintf("Artifact License Scan: No license found to be associated with artifact %v.",[input.metadata.image])
 			sugg := "Please associate appropriate license with artifact to be able to evaluate quality of license."
-			error := sprintf("No licenses found to be associated with artifact %v:%v.", [input.metadata.image, input.metadata.image_tag])
+			error := sprintf("No licenses found to be associated with artifact %v.", [input.metadata.image])
 			alertStatus := "error"
 	}
 
@@ -8701,9 +8701,9 @@ var scriptMap = map[int]string{
 	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
 			license_count == 0
 			title := "Artifact License Scan: No license found."
-			msg := sprintf("Artifact License Scan: No license found to be associated with artifact %v:%v.",[input.metadata.image, input.metadata.image_tag])
+			msg := sprintf("Artifact License Scan: No license found to be associated with artifact %v.",[input.metadata.image])
 			sugg := "Please associate appropriate license with artifact to be able to evaluate quality of license."
-			error := sprintf("No licenses found to be associated with artifact %v:%v.", [input.metadata.image, input.metadata.image_tag])
+			error := sprintf("No licenses found to be associated with artifact %v.", [input.metadata.image])
 			alertStatus := "error"
 	}
 
@@ -8767,9 +8767,9 @@ var scriptMap = map[int]string{
 	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
 			license_count == 0
 			title := "Artifact License Scan: No license found."
-			msg := sprintf("Artifact License Scan: No license found to be associated with artifact %v:%v.",[input.metadata.image, input.metadata.image_tag])
+			msg := sprintf("Artifact License Scan: No license found to be associated with artifact %v.",[input.metadata.image])
 			sugg := "Please associate appropriate license with artifact to be able to evaluate quality of license."
-			error := sprintf("No licenses found to be associated with artifact %v:%v.", [input.metadata.image, input.metadata.image_tag])
+			error := sprintf("No licenses found to be associated with artifact %v.", [input.metadata.image])
 			alertStatus := "error"
 	}
 
@@ -8833,9 +8833,9 @@ var scriptMap = map[int]string{
 	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
 			license_count == 0
 			title := "Artifact License Scan: No license found."
-			msg := sprintf("Artifact License Scan: No license found to be associated with artifact %v:%v.",[input.metadata.image, input.metadata.image_tag])
+			msg := sprintf("Artifact License Scan: No license found to be associated with artifact %v.",[input.metadata.image])
 			sugg := "Please associate appropriate license with artifact to be able to evaluate quality of license."
-			error := sprintf("No licenses found to be associated with artifact %v:%v.", [input.metadata.image, input.metadata.image_tag])
+			error := sprintf("No licenses found to be associated with artifact %v.", [input.metadata.image])
 			alertStatus := "error"
 	}
 
@@ -14312,7 +14312,7 @@ var policyDefinition = []string{
 	{
 		 "policyId":"262",
 		 "orgId":"1",
-		 "policyName":"Deploy to Production should be preceeded by Judgements Spinnaker",
+		 "policyName":"Deploy to Production should be preceeded by Judgements",
 		 "category":"Deployment Config",
 		 "stage":"deploy",
 		 "description":"Deployments to sensitive environments should have a manual review and judgement stage in pipeline requiring someone to approve deployment.",
@@ -15978,7 +15978,7 @@ var policyEnforcement = []string{
       "policyId": "46",
       "severity": "Medium",
       "action": "Prevent",
-      "status": true,
+      "status": false,
 	  "datasourceTool": "kubernetes",
       "tags": [
          "5",
@@ -15991,7 +15991,7 @@ var policyEnforcement = []string{
       "policyId": "47",
       "severity": "Medium",
       "action": "Prevent",
-      "status": true,
+      "status": false,
 	  "datasourceTool": "kubernetes",
       "tags": [
 		"5",
@@ -16028,7 +16028,7 @@ var policyEnforcement = []string{
       "policyId": "50",
       "severity": "Low",
       "action": "Prevent",
-      "status": true,
+      "status": false,
 	  "datasourceTool": "kubernetes",
       "tags": [
 		"5",
@@ -16079,7 +16079,7 @@ var policyEnforcement = []string{
       "policyId": "53",
       "severity": "Critical",
       "action": "Prevent",
-      "status": true,
+      "status": false,
 	  "datasourceTool": "kubernetes",
       "tags": [
          "6"
@@ -16089,7 +16089,7 @@ var policyEnforcement = []string{
       "policyId": "54",
       "severity": "Critical",
       "action": "Prevent",
-      "status": true,
+      "status": false,
 	  "datasourceTool": "kubernetes",
       "tags": [
          "6"
@@ -16099,7 +16099,7 @@ var policyEnforcement = []string{
       "policyId": "55",
       "severity": "Critical",
       "action": "Prevent",
-      "status": true,
+      "status": false,
 	  "datasourceTool": "kubernetes",
       "tags": [
          "6"
@@ -16109,7 +16109,7 @@ var policyEnforcement = []string{
       "policyId": "56",
       "severity": "Critical",
       "action": "Prevent",
-      "status": true,
+      "status": false,
 	  "datasourceTool": "kubernetes",
       "tags": [
          "6"
@@ -16119,7 +16119,7 @@ var policyEnforcement = []string{
       "policyId": "57",
       "severity": "Critical",
       "action": "Prevent",
-      "status": true,
+      "status": false,
 	  "datasourceTool": "kubernetes",
       "tags": [
          "6"
@@ -16129,7 +16129,7 @@ var policyEnforcement = []string{
       "policyId": "58",
       "severity": "Critical",
       "action": "Prevent",
-      "status": true,
+      "status": false,
 	  "datasourceTool": "kubernetes",
       "tags": [
          "6"
@@ -16139,7 +16139,7 @@ var policyEnforcement = []string{
       "policyId": "59",
       "severity": "Critical",
       "action": "Prevent",
-      "status": true,
+      "status": false,
 	  "datasourceTool": "kubernetes",
       "tags": [
          "6"
@@ -16149,7 +16149,7 @@ var policyEnforcement = []string{
       "policyId": "60",
       "severity": "Critical",
       "action": "Prevent",
-      "status": true,
+      "status": false,
 	  "datasourceTool": "kubernetes",
       "tags": [
          "6"
@@ -16159,7 +16159,7 @@ var policyEnforcement = []string{
       "policyId": "61",
       "severity": "Critical",
       "action": "Prevent",
-      "status": true,
+      "status": false,
 	  "datasourceTool": "kubernetes",
       "tags": [
          "6"
@@ -16169,7 +16169,7 @@ var policyEnforcement = []string{
       "policyId": "62",
       "severity": "Critical",
       "action": "Prevent",
-      "status": true,
+      "status": false,
 	  "datasourceTool": "kubernetes",
       "tags": [
          "6"
@@ -16179,7 +16179,7 @@ var policyEnforcement = []string{
       "policyId": "63",
       "severity": "Critical",
       "action": "Prevent",
-      "status": true,
+      "status": false,
 	  "datasourceTool": "kubernetes",
       "tags": [
          "6"
@@ -16189,7 +16189,7 @@ var policyEnforcement = []string{
       "policyId": "64",
       "severity": "Critical",
       "action": "Prevent",
-      "status": true,
+      "status": false,
 	  "datasourceTool": "kubernetes",
       "tags": [
          "6"
@@ -16199,7 +16199,7 @@ var policyEnforcement = []string{
       "policyId": "65",
       "severity": "Critical",
       "action": "Prevent",
-      "status": true,
+      "status": false,
 	  "datasourceTool": "kubernetes",
       "tags": [
          "6"

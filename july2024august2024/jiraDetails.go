@@ -33,10 +33,9 @@ func performJiraDetailsTransition(prodDgraphClient, expDgraphClient graphql.Clie
 
 	logger.Sl.Debugf("--------------Number of jira urls for transition iterations are %d -----------------", len(prodArtifactScanDataFiles.QueryRunHistory))
 
-	orgName := prodArtifactScanDataFiles.QueryRunHistory[0].PolicyEnforcements.EnforcedOrg.Name
-	secretData, err := getCredentials(orgName, "jira", prodDgraphClient)
+	secretData, err := getCredentials("jira", prodDgraphClient)
 	if err != nil {
-		return fmt.Errorf("error: getCredentials: orgName: %s type: %s %s", orgName, "jira", err.Error())
+		return fmt.Errorf("error: getCredentials: type: %s %s", "jira", err.Error())
 	}
 
 	var translatedJiraDetails []*august2024.AddJiraInput
@@ -71,12 +70,12 @@ func performJiraDetailsTransition(prodDgraphClient, expDgraphClient graphql.Clie
 
 	}
 
-	logger.Sl.Debug("updating jira translated values into new jira sturct")
+	logger.Sl.Debug("updating jira translated values into new jira struct")
 
 	if _, err := august2024.AttachJiraToRunHistory(ctx, expDgraphClient, translatedJiraDetails); err != nil {
 		return fmt.Errorf("error: AttachJiraToRunHistory: %s", err.Error())
 	}
-	logger.Sl.Debug("updating jira translated values into new jira sturct")
+	logger.Sl.Debug("updated jira translated values into new jira struct")
 
 	logger.Logger.Debug("---------------------------------------------")
 

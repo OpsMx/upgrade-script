@@ -16,27 +16,27 @@ import (
 	"github.com/Khan/genqlient/graphql"
 )
 
-func getCredentials(orgName, key string, gqlClient graphql.Client) (SecretData, error) {
+func getCredentials(key string, gqlClient graphql.Client) (SecretData, error) {
 
-	resp, err := july2024.QueryIntegratorsForOrgByTypeIfConnected(context.TODO(), gqlClient, orgName, key, nil)
+	resp, err := july2024.QueryIntegratorsForOrgByTypeIfConnected(context.TODO(), gqlClient, key)
 	if err != nil {
-		return SecretData{}, fmt.Errorf("error: QueryIntegratorsForOrgByTypeIfConnected: orgName: %s type: %s %s", orgName, key, err.Error())
+		return SecretData{}, fmt.Errorf("error: QueryIntegratorsForOrgByTypeIfConnected: type: %s %s", key, err.Error())
 	}
 
 	if len(resp.QueryOrganization) == 0 {
-		return SecretData{}, fmt.Errorf("getIntegratorDataForNonMulti: orgName: %s type: %s error: integrator might not be enabled", orgName, key)
+		return SecretData{}, fmt.Errorf("getIntegratorDataForNonMulti: type: %s error: integrator might not be enabled", key)
 	}
 
 	if len(resp.QueryOrganization[0].Integrators[0].IntegratorConfigs) == 0 {
-		return SecretData{}, fmt.Errorf("getIntegratorDataForNonMulti: orgName: %s type: %s error: integrator might not be connected", orgName, key)
+		return SecretData{}, fmt.Errorf("getIntegratorDataForNonMulti: type: %s error: integrator might not be connected", key)
 	}
 
 	if len(resp.QueryOrganization) == 0 {
-		return SecretData{}, fmt.Errorf("getIntegratorDataForNonMulti: orgName: %s type: %s error: integrator might not be enabled", orgName, key)
+		return SecretData{}, fmt.Errorf("getIntegratorDataForNonMulti: type: %s error: integrator might not be enabled", key)
 	}
 
 	if len(resp.QueryOrganization[0].Integrators[0].IntegratorConfigs) == 0 {
-		return SecretData{}, fmt.Errorf("getIntegratorDataForNonMulti: orgName: %s type: %s error: integrator might not be connected", orgName, key)
+		return SecretData{}, fmt.Errorf("getIntegratorDataForNonMulti: type: %s error: integrator might not be connected", key)
 	}
 
 	integrator := Integrator{

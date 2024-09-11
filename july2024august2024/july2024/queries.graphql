@@ -2,25 +2,17 @@ query GetAttachedJiraUrl {
     queryRunHistory @cascade{
         id
         JiraUrl
-        policyEnforcements {
-            enforcedOrg {
-                id
-                name
-            }
-        }
     }
 }
 
 query QueryIntegratorsForOrgByTypeIfConnected(
-    $org: String!
     $typefilter: String!
-    $integratorName: [String!]
 ) {
-    queryOrganization(filter: { name: { eq: $org } }) @cascade(fields: "integrators") {
+    queryOrganization @cascade(fields: "integrators") {
         integrators(filter: { type: { eq: $typefilter }, status: { eq: "connected" } }) {
             type
             category
-            integratorConfigs(filter: { name: { in: $integratorName } }) {
+            integratorConfigs {
                 name
                 configs {
                     key

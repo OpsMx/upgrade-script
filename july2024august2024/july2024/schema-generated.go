@@ -10,9 +10,8 @@ import (
 
 // GetAttachedJiraUrlQueryRunHistory includes the requested fields of the GraphQL type RunHistory.
 type GetAttachedJiraUrlQueryRunHistory struct {
-	Id                 *string                                                               `json:"id"`
-	JiraUrl            string                                                                `json:"JiraUrl"`
-	PolicyEnforcements *GetAttachedJiraUrlQueryRunHistoryPolicyEnforcementsPolicyEnforcement `json:"policyEnforcements"`
+	Id      *string `json:"id"`
+	JiraUrl string  `json:"JiraUrl"`
 }
 
 // GetId returns GetAttachedJiraUrlQueryRunHistory.Id, and is useful for accessing the field via an interface.
@@ -20,38 +19,6 @@ func (v *GetAttachedJiraUrlQueryRunHistory) GetId() *string { return v.Id }
 
 // GetJiraUrl returns GetAttachedJiraUrlQueryRunHistory.JiraUrl, and is useful for accessing the field via an interface.
 func (v *GetAttachedJiraUrlQueryRunHistory) GetJiraUrl() string { return v.JiraUrl }
-
-// GetPolicyEnforcements returns GetAttachedJiraUrlQueryRunHistory.PolicyEnforcements, and is useful for accessing the field via an interface.
-func (v *GetAttachedJiraUrlQueryRunHistory) GetPolicyEnforcements() *GetAttachedJiraUrlQueryRunHistoryPolicyEnforcementsPolicyEnforcement {
-	return v.PolicyEnforcements
-}
-
-// GetAttachedJiraUrlQueryRunHistoryPolicyEnforcementsPolicyEnforcement includes the requested fields of the GraphQL type PolicyEnforcement.
-type GetAttachedJiraUrlQueryRunHistoryPolicyEnforcementsPolicyEnforcement struct {
-	EnforcedOrg *GetAttachedJiraUrlQueryRunHistoryPolicyEnforcementsPolicyEnforcementEnforcedOrgOrganization `json:"enforcedOrg"`
-}
-
-// GetEnforcedOrg returns GetAttachedJiraUrlQueryRunHistoryPolicyEnforcementsPolicyEnforcement.EnforcedOrg, and is useful for accessing the field via an interface.
-func (v *GetAttachedJiraUrlQueryRunHistoryPolicyEnforcementsPolicyEnforcement) GetEnforcedOrg() *GetAttachedJiraUrlQueryRunHistoryPolicyEnforcementsPolicyEnforcementEnforcedOrgOrganization {
-	return v.EnforcedOrg
-}
-
-// GetAttachedJiraUrlQueryRunHistoryPolicyEnforcementsPolicyEnforcementEnforcedOrgOrganization includes the requested fields of the GraphQL type Organization.
-type GetAttachedJiraUrlQueryRunHistoryPolicyEnforcementsPolicyEnforcementEnforcedOrgOrganization struct {
-	// id is randomly assigned
-	Id   string `json:"id"`
-	Name string `json:"name"`
-}
-
-// GetId returns GetAttachedJiraUrlQueryRunHistoryPolicyEnforcementsPolicyEnforcementEnforcedOrgOrganization.Id, and is useful for accessing the field via an interface.
-func (v *GetAttachedJiraUrlQueryRunHistoryPolicyEnforcementsPolicyEnforcementEnforcedOrgOrganization) GetId() string {
-	return v.Id
-}
-
-// GetName returns GetAttachedJiraUrlQueryRunHistoryPolicyEnforcementsPolicyEnforcementEnforcedOrgOrganization.Name, and is useful for accessing the field via an interface.
-func (v *GetAttachedJiraUrlQueryRunHistoryPolicyEnforcementsPolicyEnforcementEnforcedOrgOrganization) GetName() string {
-	return v.Name
-}
 
 // GetAttachedJiraUrlResponse is returned by GetAttachedJiraUrl on success.
 type GetAttachedJiraUrlResponse struct {
@@ -167,21 +134,11 @@ func (v *QueryIntegratorsForOrgByTypeIfConnectedResponse) GetQueryOrganization()
 
 // __QueryIntegratorsForOrgByTypeIfConnectedInput is used internally by genqlient
 type __QueryIntegratorsForOrgByTypeIfConnectedInput struct {
-	Org            string   `json:"org"`
-	Typefilter     string   `json:"typefilter"`
-	IntegratorName []string `json:"integratorName"`
+	Typefilter string `json:"typefilter"`
 }
-
-// GetOrg returns __QueryIntegratorsForOrgByTypeIfConnectedInput.Org, and is useful for accessing the field via an interface.
-func (v *__QueryIntegratorsForOrgByTypeIfConnectedInput) GetOrg() string { return v.Org }
 
 // GetTypefilter returns __QueryIntegratorsForOrgByTypeIfConnectedInput.Typefilter, and is useful for accessing the field via an interface.
 func (v *__QueryIntegratorsForOrgByTypeIfConnectedInput) GetTypefilter() string { return v.Typefilter }
-
-// GetIntegratorName returns __QueryIntegratorsForOrgByTypeIfConnectedInput.IntegratorName, and is useful for accessing the field via an interface.
-func (v *__QueryIntegratorsForOrgByTypeIfConnectedInput) GetIntegratorName() []string {
-	return v.IntegratorName
-}
 
 // The query or mutation executed by GetAttachedJiraUrl.
 const GetAttachedJiraUrl_Operation = `
@@ -189,12 +146,6 @@ query GetAttachedJiraUrl {
 	queryRunHistory @cascade {
 		id
 		JiraUrl
-		policyEnforcements {
-			enforcedOrg {
-				id
-				name
-			}
-		}
 	}
 }
 `
@@ -223,12 +174,12 @@ func GetAttachedJiraUrl(
 
 // The query or mutation executed by QueryIntegratorsForOrgByTypeIfConnected.
 const QueryIntegratorsForOrgByTypeIfConnected_Operation = `
-query QueryIntegratorsForOrgByTypeIfConnected ($org: String!, $typefilter: String!, $integratorName: [String!]) {
-	queryOrganization(filter: {name:{eq:$org}}) @cascade(fields: "integrators") {
+query QueryIntegratorsForOrgByTypeIfConnected ($typefilter: String!) {
+	queryOrganization @cascade(fields: "integrators") {
 		integrators(filter: {type:{eq:$typefilter},status:{eq:"connected"}}) {
 			type
 			category
-			integratorConfigs(filter: {name:{in:$integratorName}}) {
+			integratorConfigs {
 				name
 				configs {
 					key
@@ -248,17 +199,13 @@ query QueryIntegratorsForOrgByTypeIfConnected ($org: String!, $typefilter: Strin
 func QueryIntegratorsForOrgByTypeIfConnected(
 	ctx_ context.Context,
 	client_ graphql.Client,
-	org string,
 	typefilter string,
-	integratorName []string,
 ) (*QueryIntegratorsForOrgByTypeIfConnectedResponse, error) {
 	req_ := &graphql.Request{
 		OpName: "QueryIntegratorsForOrgByTypeIfConnected",
 		Query:  QueryIntegratorsForOrgByTypeIfConnected_Operation,
 		Variables: &__QueryIntegratorsForOrgByTypeIfConnectedInput{
-			Org:            org,
-			Typefilter:     typefilter,
-			IntegratorName: integratorName,
+			Typefilter: typefilter,
 		},
 	}
 	var err_ error
