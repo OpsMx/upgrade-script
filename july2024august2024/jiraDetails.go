@@ -34,6 +34,11 @@ func performJiraDetailsTransition(prodDgraphClient, expDgraphClient graphql.Clie
 	filteredRunHistory := filterEmptyJiraUrls(prodArtifactScanDataFiles.QueryRunHistory)
 	logger.Sl.Debugf("--------------Number of jira urls for transition iterations are %d -----------------", len(filteredRunHistory))
 
+	if len(filteredRunHistory) == 0 {
+		logger.Logger.Info("No non-empty record for jiraurl found in db while excetuing performJiraDetailsTransition")
+		return nil
+	}
+
 	secretData, err := getCredentials("jira", prodDgraphClient)
 	if err != nil {
 		return fmt.Errorf("error: getCredentials: type: %s %s", "jira", err.Error())
