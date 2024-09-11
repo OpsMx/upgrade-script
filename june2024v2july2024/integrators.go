@@ -85,6 +85,8 @@ func performIntegratorsTransition(prodDgraphClient, expDgraphClient graphql.Clie
 		return fmt.Errorf("performIntegratorsTransition: readAndUnmarshalyaml: error %s", err.Error())
 	}
 
+	integratorId := 1
+	featId := 1
 	var translatedInput []*july2024.AddIntegratorInput
 	for _, eachStage := range integrationStages {
 		for _, eachIntegrator := range eachStage.Integrations {
@@ -94,7 +96,9 @@ func performIntegratorsTransition(prodDgraphClient, expDgraphClient graphql.Clie
 			currTime := time.Now()
 			newTranslatedIntegrator.CreatedAt = &currTime
 			newTranslatedIntegrator.UpdatedAt = &currTime
-			newTranslatedIntegrator.Organization.Id = orgId
+			newTranslatedIntegrator.Organization = &july2024.OrganizationRef{
+				Id: orgId,
+			}
 			newTranslatedIntegrator.Status = "disabled"
 
 			if mapValue, ok := convMap["integratorType"]; ok {
@@ -118,7 +122,7 @@ func performIntegratorsTransition(prodDgraphClient, expDgraphClient graphql.Clie
 			_, featureConfigsExists := convMap["featureConfigs"]
 			if featureConfigsExists {
 
-				newTranslatedIntegrator.FeatureConfigs = getFeatureConfigs(newTranslatedIntegrator.Type, newTranslatedIntegrator.Category, featureModeOldSchemaTypeGrouping)
+				newTranslatedIntegrator.FeatureConfigs, featId = getFeatureConfigs(newTranslatedIntegrator.Type, newTranslatedIntegrator.Category, featureModeOldSchemaTypeGrouping, featId)
 
 				if newTranslatedIntegrator.Type == "bitbucket" && len(newTranslatedIntegrator.IntegratorConfigs) > 0 {
 					now := time.Now()
@@ -193,7 +197,9 @@ func performIntegratorsTransition(prodDgraphClient, expDgraphClient graphql.Clie
 				continue
 			}
 
+			newTranslatedIntegrator.Id = fmt.Sprintf("%d", integratorId)
 			translatedInput = append(translatedInput, &newTranslatedIntegrator)
+			integratorId += 1
 		}
 	}
 

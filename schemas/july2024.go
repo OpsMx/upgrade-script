@@ -603,6 +603,7 @@ type ArtifactScanData {
     lastScannedAt: DateTime
     createdAt: DateTime
     vulnTrackingId: String
+    vulnScanState: String @search(by: [exact])
     components: [Component!]
     vulnCriticalCount: Int @search
     vulnHighCount: Int @search

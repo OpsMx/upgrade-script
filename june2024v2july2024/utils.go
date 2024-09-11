@@ -148,23 +148,26 @@ func getIntegratorConfigs(integratorType string, yamlIntegratorConfigSchema map[
 	return output, nil
 }
 
-func getFeatureConfigs(integratorType, category string, featureModeOldSchemaTypeGrouping map[string][]june2024v2.QueryFeatureModeQueryFeatureMode) (output []*july2024.FeatureModeRef) {
+func getFeatureConfigs(integratorType, category string, featureModeOldSchemaTypeGrouping map[string][]june2024v2.QueryFeatureModeQueryFeatureMode, currentFeatId int) (output []*july2024.FeatureModeRef, featId int) {
 
 	if mapValue, ok := featureModeOldSchemaTypeGrouping[integratorType]; ok {
 		for _, eachEntry := range mapValue {
 
 			var featureModeTemp july2024.FeatureModeRef
 
-			featureModeTemp.Organization.Id = eachEntry.Organization.Id
+			featureModeTemp.Organization = &july2024.OrganizationRef{
+				Id: eachEntry.Organization.Id,
+			}
 			featureModeTemp.Key = getTranslatedScanName(eachEntry.Scan)
 			featureModeTemp.CreatedAt = eachEntry.CreatedAt
 			featureModeTemp.UpdatedAt = eachEntry.UpdatedAt
 			featureModeTemp.Category = category
 			featureModeTemp.Value = getValue(integratorType, *eachEntry.Enabled)
-
+			featureModeTemp.Id = fmt.Sprintf("%d", currentFeatId)
 			output = append(output, &featureModeTemp)
+			currentFeatId += 1
 
 		}
 	}
-	return output
+	return output, currentFeatId
 }

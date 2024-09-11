@@ -231,7 +231,6 @@ func UpdateSchema(url, authToken string, schema []byte) error {
 	}
 
 	if len(schemaResult.Errors) != 0 {
-		fmt.Println()
 		for _, e := range schemaResult.Errors {
 			log.Printf("ERROR: %s", e.Message)
 		}
