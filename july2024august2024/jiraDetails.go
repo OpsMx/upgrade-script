@@ -48,7 +48,7 @@ func performJiraDetailsTransition(prodDgraphClient, expDgraphClient graphql.Clie
 	var translatedJiraDetails []*august2024.AddJiraInput
 	for iter, eachRunHistory := range filteredRunHistory {
 		logger.Logger.Debug("---------------------------------------------")
-		logger.Sl.Debugf("Jira Transaltion Iteration %d to begin", iter)
+		logger.Sl.Debugf("Jira Translation Iteration %d to begin", iter)
 
 		jiraTicketUrl := eachRunHistory.JiraUrl
 
