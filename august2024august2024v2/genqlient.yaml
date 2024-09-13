@@ -2,7 +2,7 @@ schema: schema.graphql
 operations:
 - queries.graphql
 generated: schema-generated.go
-package: august2024v2
+package: august2024august2024v2
 use_struct_references: true
 bindings:
   Boolean:
