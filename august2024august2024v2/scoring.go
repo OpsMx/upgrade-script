@@ -112,6 +112,11 @@ func calculateScoring(prodDgraphClient graphql.Client) error {
 
 		}
 
+		if !updateImageRisk {
+			logger.Sl.Debug("artifactRisk is already set to Apocalypserisk skipping for calculation of total score")
+			return nil
+		}
+
 		artifactRisk, err := getArtifactRiskScoreDetails(ctx, prodDgraphClient, *eachArtifactScanData.ArtifactRisk.Id)
 		if err != nil {
 			return fmt.Errorf("%s", err.Error())
