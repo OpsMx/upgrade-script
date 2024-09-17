@@ -237,6 +237,8 @@ func UpdateSchema(url, authToken string, schema []byte) error {
 		return fmt.Errorf("submit returned errors")
 	}
 
+	time.Sleep(10 * time.Second)
+
 	return nil
 }
 

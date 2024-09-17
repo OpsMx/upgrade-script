@@ -1,0 +1,103 @@
+query GetArtifactScanDataId {
+    queryArtifactScanData @cascade{
+        id
+        artifactRisk {
+            id
+        }
+    }
+}
+
+query QueryArtifactScanDataRunHistory ($scanDataId: String!) {
+	queryArtifactScanData(filter: {id:{eq:$scanDataId}}) @cascade(fields: ["artifactRunHistory"]) {
+		artifactRunHistory @cascade(fields: ["id"]) {
+			id
+			policyId
+			PolicyName
+			Stage
+			Artifact
+			ArtifactTag
+			ArtifactSha
+			CreatedAt
+			UpdatedAt
+			DeployedAt
+			Hash
+			Pass
+			MetaData
+			scheduledPolicy
+			DatasourceTool
+			Status
+			securityIssue {
+				AlertTitle
+				AlertMessage
+				Suggestions
+				Severity
+				Action
+				Error
+			}
+			policyEnforcements {
+				id
+				status
+				severity
+				action
+				conditionValue
+				policy {
+					id
+					policyName
+					category
+					stage
+					scheduledPolicy
+					script
+					variables
+					conditionName
+					suggestion
+				}
+			}
+		}
+	}
+}
+
+query GetArtifactRisk($id: ID!) {
+    getArtifactRisk(id: $id) {
+        sourceCodeAlertsScore
+        buildAlertsScore
+        artifactAlertsScore
+        deploymentAlertsScore
+        artifactRiskStatus
+    }
+}
+
+mutation UpdateArtifactScanDataRiskScoreAndStatus(
+    $id: ID!
+    $riskStatus: RiskStatus!
+    $buildAlertsScore: Int
+    $sourceCodeAlertsScore: Int
+    $artifactAlertsScore: Int
+    $deploymentAlertsScore: Int
+) {
+    updateArtifactRisk(
+        input: {
+            set: {
+                artifactRiskStatus: $riskStatus
+                sourceCodeAlertsScore: $sourceCodeAlertsScore
+                buildAlertsScore: $buildAlertsScore
+                artifactAlertsScore: $artifactAlertsScore
+                deploymentAlertsScore: $deploymentAlertsScore
+            }
+            filter: { id: [$id] }
+        }
+    ) {
+        numUids
+    }
+}
+
+
+mutation UpdateArtifactScanDataRisk {
+    updateArtifactScanData(
+        input: {
+            set: { artifactRisk: { artifactRiskStatus: scanning } }
+            filter: { has: id }
+        }
+    ) {
+        numUids
+    }
+}
