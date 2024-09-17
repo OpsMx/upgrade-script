@@ -25,15 +25,16 @@ func calculateScoring(prodDgraphClient graphql.Client) error {
 	}
 
 	if prodArtifactScanDataIds == nil || len(prodArtifactScanDataIds.QueryArtifactScanData) == 0 {
-		logger.Logger.Info("No record for artifact scan data found in db while excetuing calculateScoring")
+		logger.Logger.Info("No record of artifact scan data found in db to perform artifactRiskScore calculation")
 		return nil
 	}
 
-	logger.Sl.Debugf("----------Number of artifact scan data for scoring iterations are %d -----------", len(prodArtifactScanDataIds.QueryArtifactScanData))
+	logger.Sl.Debugf("----------Number of artifact scan data to perform artifactRiskScore calculation are %d -----------", len(prodArtifactScanDataIds.QueryArtifactScanData))
 
 	for iter, eachArtifactScanData := range prodArtifactScanDataIds.QueryArtifactScanData {
 
-		logger.Sl.Debugf("calculating score for each artifact scan data current iteration: %d", iter)
+		logger.Sl.Debug("----------------------------------------------")
+		logger.Sl.Debugf("calculating score for artifact scan data id: %s current iteration: %d", eachArtifactScanData.Id, iter)
 
 		scoring := Scoring{
 			Policy: make(map[string][]PolicyDetail),
@@ -47,15 +48,13 @@ func calculateScoring(prodDgraphClient graphql.Client) error {
 		}
 
 		if len(artifactRunHistories.QueryArtifactScanData) == 0 {
-			logger.Sl.Debug("No record for run history for scandata so continue to next iteration")
+			logger.Sl.Debugf("Skipping iteration of scandata id: %s as runhistory record not found", eachArtifactScanData.Id)
 			continue
 		}
 
 		logger.Sl.Debugf("---Total run histories found for this scan_data: %d---", len(artifactRunHistories.QueryArtifactScanData[0].ArtifactRunHistory))
 
-		for i, val := range artifactRunHistories.QueryArtifactScanData[0].ArtifactRunHistory {
-
-			logger.Sl.Debugf("policy maping with each run_history current iteration: %d", i)
+		for _, val := range artifactRunHistories.QueryArtifactScanData[0].ArtifactRunHistory {
 
 			if uniquePolicyIdMap[val.PolicyId] {
 				continue
@@ -89,7 +88,7 @@ func calculateScoring(prodDgraphClient graphql.Client) error {
 
 		if scoring.Policy == nil {
 			logger.Sl.Debug("No Policy To Calculate Score")
-			return nil
+			continue
 		}
 
 		stageCount := 0
@@ -103,15 +102,9 @@ func calculateScoring(prodDgraphClient graphql.Client) error {
 			policyStatusCount := PolicyStatusCount{}
 
 			// step 1a : calculating severity based policy counts
-			for i, policyDetail := range policiesDetail {
-				logger.Sl.Debugf("start policy_status_count: current policy: %s", policyDetail.PolicyName)
-
+			for _, policyDetail := range policiesDetail {
 				policyStatusCount = ProcessPolicyData(policyDetail, policyStatusCount)
-
-				logger.Sl.Debugf("each incremental addition: currnet policy_status_count: %d for iteration: %d", policyStatusCount, i)
 			}
-
-			logger.Sl.Debugf("start the comparison between critical_count: %d and critical_pass_count: %d", policyStatusCount.CriticalCount, policyStatusCount.CriticalPassCount)
 
 			if policyStatusCount.CriticalCount != policyStatusCount.CriticalPassCount {
 				stageScore := 0
@@ -120,8 +113,10 @@ func calculateScoring(prodDgraphClient graphql.Client) error {
 
 				if err := setArtifactRisk(ctx, prodDgraphClient, stage, *eachArtifactScanData.ArtifactRisk.Id, stageScore, &riskStatus); err != nil {
 					return fmt.Errorf("setArtifactRisk: scanDataId: %s riskStatus: %s err: %s", eachArtifactScanData.Id, RiskStatusApocalypserisk, err.Error())
-
 				}
+
+				logger.Sl.Debugf("critical policy failed for stage: %s setting riskStatus as Apocalypserisk", stage)
+				continue
 			}
 
 			stageScore := calculateStageScore(policyStatusCount)
@@ -131,15 +126,12 @@ func calculateScoring(prodDgraphClient graphql.Client) error {
 				return fmt.Errorf("setArtifactRisk: scanDataId: %s while setting stage score err: %s", eachArtifactScanData.Id, err.Error())
 			}
 
-			logger.Sl.Debugf("computation level at policy and stage: %s iteration done", stage)
 		}
 
 		if !updateImageRisk {
 			logger.Sl.Debug("artifactRisk is already set to Apocalypserisk skipping for calculation of total score")
-			return nil
+			continue
 		}
-
-		logger.Sl.Debug("Get artifact risk score details from db")
 
 		artifactRisk, err := getArtifactRiskScoreDetails(ctx, prodDgraphClient, *eachArtifactScanData.ArtifactRisk.Id)
 		if err != nil {
@@ -150,8 +142,6 @@ func calculateScoring(prodDgraphClient graphql.Client) error {
 		if artifactRisk == nil {
 			return fmt.Errorf("artifactRisk status details are not present while executing getArtifactRiskScoreDetails scan data id %s", eachArtifactScanData.Id)
 		}
-
-		logger.Sl.Debug("retrieved artifact risk score details from db: %v", artifactRisk)
 
 		if artifactRisk.BuildAlertsScore != nil {
 			stageCount++
@@ -290,16 +280,10 @@ func calculateStageScore(policyStatusCount PolicyStatusCount) int {
 
 func setArtifactRisk(ctx context.Context, prodDgraphClient graphql.Client, stage, riskId string, score int, riskStatus *RiskStatus) error {
 
-	logger.Sl.Debug("starting execution of setArtifactRisk")
-
-	logger.Sl.Debug("Get artifact risk score details from db riskId: %s", riskId)
-
 	artifactRisk, err := getArtifactRiskScoreDetails(ctx, prodDgraphClient, riskId)
 	if err != nil {
 		return fmt.Errorf("%s", err.Error())
 	}
-
-	logger.Sl.Debug("retrieved artifact risk score details from db: %v", artifactRisk)
 
 	if riskStatus == nil {
 		scanning := RiskStatusScanning
@@ -309,7 +293,7 @@ func setArtifactRisk(ctx context.Context, prodDgraphClient graphql.Client, stage
 		}
 	}
 
-	logger.Sl.Debug("updating these values in db stage: %s risk_status: %s artifact_risk: %v", stage, riskStatus, artifactRisk)
+	logger.Sl.Debugf("updating these values in db stage: %s score: %d risk_status: %s", stage, score, riskStatus)
 
 	switch stage {
 	case SOURCE:
@@ -329,8 +313,6 @@ func setArtifactRisk(ctx context.Context, prodDgraphClient graphql.Client, stage
 
 func getArtifactRiskScoreDetails(ctx context.Context, prodDgraphClient graphql.Client, artifactRiskId string) (*GetArtifactRiskGetArtifactRisk, error) {
 
-	logger.Sl.Debug("starting execution of getArtifactRiskScoreDetails")
-
 	data, err := GetArtifactRisk(ctx, prodDgraphClient, &artifactRiskId)
 	if err != nil {
 		return nil, fmt.Errorf("error: GetArtifactRisk: artifactRiskId: %s: %s", artifactRiskId, err.Error())
@@ -340,8 +322,6 @@ func getArtifactRiskScoreDetails(ctx context.Context, prodDgraphClient graphql.C
 }
 
 func updateArtifactScoreStatus(ctx context.Context, prodDgraphClient graphql.Client, riskId string, sourceCodeAlertsScore *int, buildAlertsScore *int, artifactAlertsScore *int, deploymentAlertsScore *int, imageRiskStatus RiskStatus) error {
-
-	logger.Sl.Debug("starting execution of updateArtifactScoreStatus")
 
 	_, err := UpdateArtifactScanDataRiskScoreAndStatus(ctx, prodDgraphClient, &riskId, imageRiskStatus, sourceCodeAlertsScore, buildAlertsScore, artifactAlertsScore, deploymentAlertsScore)
 	if err != nil {
