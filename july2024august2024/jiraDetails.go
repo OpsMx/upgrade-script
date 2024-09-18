@@ -21,12 +21,7 @@ func performJiraDetailsTransition(prodDgraphClient, expDgraphClient graphql.Clie
 		return fmt.Errorf("error: could'nt query old prod jira url from run history to initiate transition: %s", err.Error())
 	}
 
-	if prodArtifactScanDataFiles == nil {
-		logger.Logger.Info("No record for runhistory found in db while excetuing performJiraDetailsTransition")
-		return nil
-	}
-
-	if len(prodArtifactScanDataFiles.QueryRunHistory) == 0 {
+	if prodArtifactScanDataFiles == nil || len(prodArtifactScanDataFiles.QueryRunHistory) == 0 {
 		logger.Logger.Info("No record for runhistory found in db while excetuing performJiraDetailsTransition")
 		return nil
 	}

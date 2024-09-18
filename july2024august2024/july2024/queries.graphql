@@ -2,6 +2,12 @@ query GetAttachedJiraUrl {
     queryRunHistory @cascade{
         id
         JiraUrl
+        policyEnforcements {
+            enforcedOrg {
+                id
+                name
+            }
+        }
     }
 }
 

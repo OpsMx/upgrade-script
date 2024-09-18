@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"upgradationScript/april2024june2024"
+	"upgradationScript/august2024august2024v2"
 	featuretable "upgradationScript/featureTable"
 	graphqlfunc "upgradationScript/graphqlFunc"
 	"upgradationScript/july2024august2024"
@@ -55,7 +56,7 @@ func StartUpgrade() error {
 
 	for i := range totalUpgradeSteps(schemaVersion) {
 
-		logger.Sl.Infof("STEP %d of upgradin schema", i)
+		logger.Sl.Infof("STEP %d of upgrading schema", i)
 
 		if err := beginProcessOfUpgrade(upgradeSchemaBasedOnStep(schemaVersion, i)); err != nil {
 			return fmt.Errorf("StartUpgrade: beginProcessOfUpgrade: %s", err.Error())
@@ -102,6 +103,9 @@ func beginProcessOfUpgrade(upgradeTo SchemaOrder) error {
 		expGraphqlClient := graphqlfunc.NewClient(Conf.ExpGraphQLAddr, Conf.ExpDgraphToken)
 
 		return july2024august2024.UpgradeToAugust2024(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, Conf.ExpGraphQLAddr, Conf.RemoteDgraphRestoreUrl, prodGraphqlClient, expGraphqlClient)
+
+	case August2024Version2:
+		return august2024august2024v2.UpgradeToAugust2024v2(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, prodGraphqlClient)
 	}
 
 	logger.Sl.Debugf("no upgrade steps for %s", upgradeTo.NameOfSchema())
