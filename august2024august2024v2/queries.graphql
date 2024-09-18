@@ -1,5 +1,5 @@
 query GetArtifactScanDataId {
-    queryArtifactScanData @cascade{
+    queryArtifactScanData {
         id
         artifactRisk {
             id
@@ -91,13 +91,17 @@ mutation UpdateArtifactScanDataRiskScoreAndStatus(
 }
 
 
-mutation UpdateArtifactScanDataRisk {
+mutation UpdateArtifactScanData($artifactScanDataId: String!) {
     updateArtifactScanData(
         input: {
             set: { artifactRisk: { artifactRiskStatus: scanning } }
-            filter: { has: id }
+            filter: { id: { eq: $artifactScanDataId } }
         }
     ) {
-        numUids
+        artifactScanData {
+            artifactRisk {
+                id
+            }
+        }
     }
 }

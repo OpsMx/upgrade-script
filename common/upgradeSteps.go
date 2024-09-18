@@ -56,7 +56,7 @@ func StartUpgrade() error {
 
 	for i := range totalUpgradeSteps(schemaVersion) {
 
-		logger.Sl.Infof("STEP %d of upgradin schema", i)
+		logger.Sl.Infof("STEP %d of upgrading schema", i)
 
 		if err := beginProcessOfUpgrade(upgradeSchemaBasedOnStep(schemaVersion, i)); err != nil {
 			return fmt.Errorf("StartUpgrade: beginProcessOfUpgrade: %s", err.Error())

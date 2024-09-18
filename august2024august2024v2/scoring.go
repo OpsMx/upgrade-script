@@ -14,11 +14,6 @@ func calculateScoring(prodDgraphClient graphql.Client) error {
 
 	ctx := context.Background()
 
-	_, err := UpdateArtifactScanDataRisk(ctx, prodDgraphClient)
-	if err != nil {
-		return fmt.Errorf("error: couldn't create risk for artifact scan data: %s", err.Error())
-	}
-
 	prodArtifactScanDataIds, err := GetArtifactScanDataId(ctx, prodDgraphClient)
 	if err != nil {
 		return fmt.Errorf("error: could'nt query prod artifact scan data id: %s", err.Error())
@@ -35,6 +30,16 @@ func calculateScoring(prodDgraphClient graphql.Client) error {
 
 		logger.Sl.Debug("----------------------------------------------")
 		logger.Sl.Debugf("calculating score for artifact scan data id: %s current iteration: %d", eachArtifactScanData.Id, iter)
+
+		logger.Sl.Debug("creating artifact risk id")
+		updateResp, err := UpdateArtifactScanData(ctx, prodDgraphClient, eachArtifactScanData.Id)
+		if err != nil {
+			return fmt.Errorf("error: UpdateArtifactScanData: artifact scan data id: %s err: %s", eachArtifactScanData.Id, err.Error())
+		}
+
+		eachArtifactScanData.ArtifactRisk = (*GetArtifactScanDataIdQueryArtifactScanDataArtifactRisk)(updateResp.UpdateArtifactScanData.ArtifactScanData[0].ArtifactRisk)
+
+		logger.Sl.Debug("created artifact risk id", eachArtifactScanData.ArtifactRisk.Id)
 
 		scoring := Scoring{
 			Policy: make(map[string][]PolicyDetail),

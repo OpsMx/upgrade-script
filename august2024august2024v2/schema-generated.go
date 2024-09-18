@@ -374,13 +374,13 @@ const (
 	SeverityUnknown  Severity = "unknown"
 )
 
-// UpdateArtifactScanDataRiskResponse is returned by UpdateArtifactScanDataRisk on success.
-type UpdateArtifactScanDataRiskResponse struct {
-	UpdateArtifactScanData *UpdateArtifactScanDataRiskUpdateArtifactScanDataUpdateArtifactScanDataPayload `json:"updateArtifactScanData"`
+// UpdateArtifactScanDataResponse is returned by UpdateArtifactScanData on success.
+type UpdateArtifactScanDataResponse struct {
+	UpdateArtifactScanData *UpdateArtifactScanDataUpdateArtifactScanDataUpdateArtifactScanDataPayload `json:"updateArtifactScanData"`
 }
 
-// GetUpdateArtifactScanData returns UpdateArtifactScanDataRiskResponse.UpdateArtifactScanData, and is useful for accessing the field via an interface.
-func (v *UpdateArtifactScanDataRiskResponse) GetUpdateArtifactScanData() *UpdateArtifactScanDataRiskUpdateArtifactScanDataUpdateArtifactScanDataPayload {
+// GetUpdateArtifactScanData returns UpdateArtifactScanDataResponse.UpdateArtifactScanData, and is useful for accessing the field via an interface.
+func (v *UpdateArtifactScanDataResponse) GetUpdateArtifactScanData() *UpdateArtifactScanDataUpdateArtifactScanDataUpdateArtifactScanDataPayload {
 	return v.UpdateArtifactScanData
 }
 
@@ -404,14 +404,34 @@ func (v *UpdateArtifactScanDataRiskScoreAndStatusUpdateArtifactRiskUpdateArtifac
 	return v.NumUids
 }
 
-// UpdateArtifactScanDataRiskUpdateArtifactScanDataUpdateArtifactScanDataPayload includes the requested fields of the GraphQL type UpdateArtifactScanDataPayload.
-type UpdateArtifactScanDataRiskUpdateArtifactScanDataUpdateArtifactScanDataPayload struct {
-	NumUids *int `json:"numUids"`
+// UpdateArtifactScanDataUpdateArtifactScanDataUpdateArtifactScanDataPayload includes the requested fields of the GraphQL type UpdateArtifactScanDataPayload.
+type UpdateArtifactScanDataUpdateArtifactScanDataUpdateArtifactScanDataPayload struct {
+	ArtifactScanData []*UpdateArtifactScanDataUpdateArtifactScanDataUpdateArtifactScanDataPayloadArtifactScanData `json:"artifactScanData"`
 }
 
-// GetNumUids returns UpdateArtifactScanDataRiskUpdateArtifactScanDataUpdateArtifactScanDataPayload.NumUids, and is useful for accessing the field via an interface.
-func (v *UpdateArtifactScanDataRiskUpdateArtifactScanDataUpdateArtifactScanDataPayload) GetNumUids() *int {
-	return v.NumUids
+// GetArtifactScanData returns UpdateArtifactScanDataUpdateArtifactScanDataUpdateArtifactScanDataPayload.ArtifactScanData, and is useful for accessing the field via an interface.
+func (v *UpdateArtifactScanDataUpdateArtifactScanDataUpdateArtifactScanDataPayload) GetArtifactScanData() []*UpdateArtifactScanDataUpdateArtifactScanDataUpdateArtifactScanDataPayloadArtifactScanData {
+	return v.ArtifactScanData
+}
+
+// UpdateArtifactScanDataUpdateArtifactScanDataUpdateArtifactScanDataPayloadArtifactScanData includes the requested fields of the GraphQL type ArtifactScanData.
+type UpdateArtifactScanDataUpdateArtifactScanDataUpdateArtifactScanDataPayloadArtifactScanData struct {
+	ArtifactRisk *UpdateArtifactScanDataUpdateArtifactScanDataUpdateArtifactScanDataPayloadArtifactScanDataArtifactRisk `json:"artifactRisk"`
+}
+
+// GetArtifactRisk returns UpdateArtifactScanDataUpdateArtifactScanDataUpdateArtifactScanDataPayloadArtifactScanData.ArtifactRisk, and is useful for accessing the field via an interface.
+func (v *UpdateArtifactScanDataUpdateArtifactScanDataUpdateArtifactScanDataPayloadArtifactScanData) GetArtifactRisk() *UpdateArtifactScanDataUpdateArtifactScanDataUpdateArtifactScanDataPayloadArtifactScanDataArtifactRisk {
+	return v.ArtifactRisk
+}
+
+// UpdateArtifactScanDataUpdateArtifactScanDataUpdateArtifactScanDataPayloadArtifactScanDataArtifactRisk includes the requested fields of the GraphQL type ArtifactRisk.
+type UpdateArtifactScanDataUpdateArtifactScanDataUpdateArtifactScanDataPayloadArtifactScanDataArtifactRisk struct {
+	Id *string `json:"id"`
+}
+
+// GetId returns UpdateArtifactScanDataUpdateArtifactScanDataUpdateArtifactScanDataPayloadArtifactScanDataArtifactRisk.Id, and is useful for accessing the field via an interface.
+func (v *UpdateArtifactScanDataUpdateArtifactScanDataUpdateArtifactScanDataPayloadArtifactScanDataArtifactRisk) GetId() *string {
+	return v.Id
 }
 
 // __GetArtifactRiskInput is used internally by genqlient
@@ -429,6 +449,14 @@ type __QueryArtifactScanDataRunHistoryInput struct {
 
 // GetScanDataId returns __QueryArtifactScanDataRunHistoryInput.ScanDataId, and is useful for accessing the field via an interface.
 func (v *__QueryArtifactScanDataRunHistoryInput) GetScanDataId() string { return v.ScanDataId }
+
+// __UpdateArtifactScanDataInput is used internally by genqlient
+type __UpdateArtifactScanDataInput struct {
+	ArtifactScanDataId string `json:"artifactScanDataId"`
+}
+
+// GetArtifactScanDataId returns __UpdateArtifactScanDataInput.ArtifactScanDataId, and is useful for accessing the field via an interface.
+func (v *__UpdateArtifactScanDataInput) GetArtifactScanDataId() string { return v.ArtifactScanDataId }
 
 // __UpdateArtifactScanDataRiskScoreAndStatusInput is used internally by genqlient
 type __UpdateArtifactScanDataRiskScoreAndStatusInput struct {
@@ -510,7 +538,7 @@ func GetArtifactRisk(
 // The query or mutation executed by GetArtifactScanDataId.
 const GetArtifactScanDataId_Operation = `
 query GetArtifactScanDataId {
-	queryArtifactScanData @cascade {
+	queryArtifactScanData {
 		id
 		artifactRisk {
 			id
@@ -619,26 +647,34 @@ func QueryArtifactScanDataRunHistory(
 	return &data_, err_
 }
 
-// The query or mutation executed by UpdateArtifactScanDataRisk.
-const UpdateArtifactScanDataRisk_Operation = `
-mutation UpdateArtifactScanDataRisk {
-	updateArtifactScanData(input: {set:{artifactRisk:{artifactRiskStatus:scanning}},filter:{has:id}}) {
-		numUids
+// The query or mutation executed by UpdateArtifactScanData.
+const UpdateArtifactScanData_Operation = `
+mutation UpdateArtifactScanData ($artifactScanDataId: String!) {
+	updateArtifactScanData(input: {set:{artifactRisk:{artifactRiskStatus:scanning}},filter:{id:{eq:$artifactScanDataId}}}) {
+		artifactScanData {
+			artifactRisk {
+				id
+			}
+		}
 	}
 }
 `
 
-func UpdateArtifactScanDataRisk(
+func UpdateArtifactScanData(
 	ctx_ context.Context,
 	client_ graphql.Client,
-) (*UpdateArtifactScanDataRiskResponse, error) {
+	artifactScanDataId string,
+) (*UpdateArtifactScanDataResponse, error) {
 	req_ := &graphql.Request{
-		OpName: "UpdateArtifactScanDataRisk",
-		Query:  UpdateArtifactScanDataRisk_Operation,
+		OpName: "UpdateArtifactScanData",
+		Query:  UpdateArtifactScanData_Operation,
+		Variables: &__UpdateArtifactScanDataInput{
+			ArtifactScanDataId: artifactScanDataId,
+		},
 	}
 	var err_ error
 
-	var data_ UpdateArtifactScanDataRiskResponse
+	var data_ UpdateArtifactScanDataResponse
 	resp_ := &graphql.Response{Data: &data_}
 
 	err_ = client_.MakeRequest(
