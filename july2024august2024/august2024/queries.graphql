@@ -3,3 +3,9 @@ mutation AttachJiraToRunHistory($jira: [AddJiraInput!]!) {
         numUids
     }
 }
+
+mutation UpdateRunHistory {
+    updateRunHistory(input: { set: { Status: "active" }, filter: {} }) {
+        numUids
+    }
+}

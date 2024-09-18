@@ -1457,6 +1457,24 @@ func (v *ToolsUsedRef) GetSbom() string { return v.Sbom }
 // GetMisc returns ToolsUsedRef.Misc, and is useful for accessing the field via an interface.
 func (v *ToolsUsedRef) GetMisc() []string { return v.Misc }
 
+// UpdateRunHistoryResponse is returned by UpdateRunHistory on success.
+type UpdateRunHistoryResponse struct {
+	UpdateRunHistory *UpdateRunHistoryUpdateRunHistoryUpdateRunHistoryPayload `json:"updateRunHistory"`
+}
+
+// GetUpdateRunHistory returns UpdateRunHistoryResponse.UpdateRunHistory, and is useful for accessing the field via an interface.
+func (v *UpdateRunHistoryResponse) GetUpdateRunHistory() *UpdateRunHistoryUpdateRunHistoryUpdateRunHistoryPayload {
+	return v.UpdateRunHistory
+}
+
+// UpdateRunHistoryUpdateRunHistoryUpdateRunHistoryPayload includes the requested fields of the GraphQL type UpdateRunHistoryPayload.
+type UpdateRunHistoryUpdateRunHistoryUpdateRunHistoryPayload struct {
+	NumUids *int `json:"numUids"`
+}
+
+// GetNumUids returns UpdateRunHistoryUpdateRunHistoryUpdateRunHistoryPayload.NumUids, and is useful for accessing the field via an interface.
+func (v *UpdateRunHistoryUpdateRunHistoryUpdateRunHistoryPayload) GetNumUids() *int { return v.NumUids }
+
 type VulnerabilityRef struct {
 	Id             string          `json:"id"`
 	Parent         string          `json:"parent"`
@@ -1552,6 +1570,37 @@ func AttachJiraToRunHistory(
 	var err_ error
 
 	var data_ AttachJiraToRunHistoryResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by UpdateRunHistory.
+const UpdateRunHistory_Operation = `
+mutation UpdateRunHistory {
+	updateRunHistory(input: {set:{Status:"active"},filter:{}}) {
+		numUids
+	}
+}
+`
+
+func UpdateRunHistory(
+	ctx_ context.Context,
+	client_ graphql.Client,
+) (*UpdateRunHistoryResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "UpdateRunHistory",
+		Query:  UpdateRunHistory_Operation,
+	}
+	var err_ error
+
+	var data_ UpdateRunHistoryResponse
 	resp_ := &graphql.Response{Data: &data_}
 
 	err_ = client_.MakeRequest(
