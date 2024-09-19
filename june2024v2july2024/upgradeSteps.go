@@ -22,20 +22,20 @@ func UpgradeToJuly2024(prodGraphUrl, prodToken, expDgraphUrl, restoreServiceUrl 
 		return fmt.Errorf("UpgradeToJuly2024: %s", err.Error())
 	}
 
+	if err := populateSeverityNumber(expDgraphClient); err != nil {
+		return fmt.Errorf("UpgradeToJuly2024: %s", err.Error())
+	}
+
+	if err := populateVulnerabilityScanState(expDgraphClient); err != nil {
+		return fmt.Errorf("UpgradeToJuly2024: %s", err.Error())
+	}
+
 	if err := graphqlfunc.BackupAndRestoreDgraph(expDgraphUrl, restoreServiceUrl); err != nil {
 		return fmt.Errorf("UpgradeToJuly2024: BackupAndRestoreDgraph: %s", err.Error())
 	}
 
 	if err := graphqlfunc.UpdateSchema(prodGraphUrl, prodToken, []byte(schemas.July2024Schema)); err != nil {
 		return fmt.Errorf("UpgradeToJuly2024: UpdateSchema: %s", err.Error())
-	}
-
-	if err := populateSeverityNumber(prodDgraphClient); err != nil {
-		return fmt.Errorf("UpgradeToJuly2024: %s", err.Error())
-	}
-
-	if err := populateVulnerabilityScanState(prodDgraphClient); err != nil {
-		return fmt.Errorf("UpgradeToJuly2024: %s", err.Error())
 	}
 
 	logger.Logger.Info("--------------Completed UpgradeToJuly2024------------------")

@@ -18,16 +18,16 @@ func UpgradeToJune2024(prodGraphUrl, prodToken, expDgraphUrl, restoreServiceUrl 
 		return fmt.Errorf("UpgradeToJune2024: %s", err.Error())
 	}
 
+	if err := populateAppLevelTools(expDgraphClient); err != nil {
+		return fmt.Errorf("UpgradeToJune2024: %s", err.Error())
+	}
+
 	if err := graphqlfunc.BackupAndRestoreDgraph(expDgraphUrl, restoreServiceUrl); err != nil {
 		return fmt.Errorf("UpgradeToJune2024: BackupAndRestoreDgraph: %s", err.Error())
 	}
 
 	if err := graphqlfunc.UpdateSchema(prodGraphUrl, prodToken, []byte(schemas.June2024Schema)); err != nil {
 		return fmt.Errorf("UpgradeToJune2024: UpdateSchema: %s", err.Error())
-	}
-
-	if err := populateAppLevelTools(prodDgraphClient); err != nil {
-		return fmt.Errorf("UpgradeToJune2024: %s", err.Error())
 	}
 
 	logger.Logger.Info("--------------Completed UpgradeToJune2024------------------")
