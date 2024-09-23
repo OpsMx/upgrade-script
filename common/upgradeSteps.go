@@ -54,6 +54,15 @@ func StartUpgrade() error {
 
 	logger.Logger.Info("------------All pre checks of schema passed starting with upgrading process--------------------")
 
+	if isExpDgraphRequired(schemaVersion.Int(), UpgradeToVersion.Int()) {
+		logger.Sl.Info("second dgraph setup is required checking for connectivity")
+
+		if err := checkDgraphConnection(); err != nil {
+			return fmt.Errorf("cannot connect to second dgraph: %s", err.Error())
+		}
+		logger.Sl.Info("second dgraph setup is connected")
+	}
+
 	for i := range totalUpgradeSteps(schemaVersion) {
 
 		logger.Sl.Infof("STEP %d of upgrading schema", i)
