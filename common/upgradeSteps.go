@@ -54,11 +54,31 @@ func StartUpgrade() error {
 
 	logger.Logger.Info("------------All pre checks of schema passed starting with upgrading process--------------------")
 
+	isSecondDgraphRequired, err := isExpDgraphRequired(schemaVersion.Int(), UpgradeToVersion.Int())
+	if err != nil {
+		return fmt.Errorf("isExpDgraphRequired: %s", err.Error())
+	}
+
+	if isSecondDgraphRequired {
+
+		logger.Sl.Info("second dgraph setup is required. checking for connectivity")
+
+		if err := allChecksForExpDgraph(schemaVersion); err != nil {
+			return fmt.Errorf("allChecksForExpDgraph: cannot connect to second dgraph: %s", err.Error())
+		}
+		logger.Sl.Info("second dgraph is reachable & all checks passed")
+	}
+
 	for i := range totalUpgradeSteps(schemaVersion) {
 
 		logger.Sl.Infof("STEP %d of upgrading schema", i)
 
-		if err := beginProcessOfUpgrade(upgradeSchemaBasedOnStep(schemaVersion, i)); err != nil {
+		var isLastStep bool
+		if i == totalUpgradeSteps(schemaVersion)-1 {
+			isLastStep = true
+		}
+
+		if err := beginProcessOfUpgrade(upgradeSchemaBasedOnStep(schemaVersion, i), isSecondDgraphRequired, isLastStep); err != nil {
 			return fmt.Errorf("StartUpgrade: beginProcessOfUpgrade: %s", err.Error())
 		}
 
@@ -68,7 +88,7 @@ func StartUpgrade() error {
 
 }
 
-func beginProcessOfUpgrade(upgradeTo SchemaOrder) error {
+func beginProcessOfUpgrade(upgradeTo SchemaOrder, isSecondDgraphRequired, isLastStep bool) error {
 
 	prodGraphqlClient := graphqlfunc.NewClient(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken)
 
@@ -84,6 +104,16 @@ func beginProcessOfUpgrade(upgradeTo SchemaOrder) error {
 		return april2024june2024.UpgradeToJune2024(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, Conf.ExpGraphQLAddr, Conf.RemoteDgraphRestoreUrl, prodGraphqlClient, expGraphqlClient)
 
 	case June2024Version2:
+		if isSecondDgraphRequired && !isLastStep {
+
+			if err := allChecksForExpDgraph(June2024Version2); err != nil {
+				return err
+			}
+
+			expGraphqlClient := graphqlfunc.NewClient(Conf.ExpGraphQLAddr, Conf.ExpDgraphToken)
+
+			return june2024june2024v2.UpgradeToJune2024V2(Conf.ExpGraphQLAddr, Conf.ExpDgraphToken, expGraphqlClient)
+		}
 		return june2024june2024v2.UpgradeToJune2024V2(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, prodGraphqlClient)
 
 	case July2024Version:
@@ -105,6 +135,16 @@ func beginProcessOfUpgrade(upgradeTo SchemaOrder) error {
 		return july2024august2024.UpgradeToAugust2024(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, Conf.ExpGraphQLAddr, Conf.RemoteDgraphRestoreUrl, prodGraphqlClient, expGraphqlClient)
 
 	case August2024Version2:
+		if isSecondDgraphRequired && !isLastStep {
+
+			if err := allChecksForExpDgraph(August2024Version2); err != nil {
+				return err
+			}
+
+			expGraphqlClient := graphqlfunc.NewClient(Conf.ExpGraphQLAddr, Conf.ExpDgraphToken)
+
+			return august2024august2024v2.UpgradeToAugust2024v2(Conf.ExpGraphQLAddr, Conf.ExpDgraphToken, expGraphqlClient)
+		}
 		return august2024august2024v2.UpgradeToAugust2024v2(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, prodGraphqlClient)
 	}
 

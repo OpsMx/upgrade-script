@@ -8,6 +8,7 @@ import (
 )
 
 func allChecksForExpDgraph(schema SchemaOrder) error {
+
 	if Conf.ExpGraphQLAddr == "" {
 		return fmt.Errorf("expGraphQLAddr is required")
 	}

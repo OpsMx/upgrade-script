@@ -1,6 +1,7 @@
 package common
 
 import (
+	"fmt"
 	"upgradationScript/schemas"
 )
 
@@ -32,6 +33,15 @@ var schemaOrderMap = map[string]SchemaOrder{
 	"July2024":     July2024Version,
 	"August2024":   August2024Version,
 	"August2024V2": August2024Version2,
+}
+
+var expDgraphSchemaMap = map[int]bool{
+	April2024Version.Int():   false,
+	June2024Version.Int():    true,
+	June2024Version2.Int():   false,
+	July2024Version.Int():    true,
+	August2024Version.Int():  true,
+	August2024Version2.Int(): false,
 }
 
 func (e SchemaOrder) NameOfSchema() string {
@@ -79,4 +89,18 @@ func totalUpgradeSteps(schemaVersion SchemaOrder) int {
 func upgradeSchemaBasedOnStep(schemaVersion SchemaOrder, step int) SchemaOrder {
 	step += 1
 	return SchemaOrder(schemaVersion.Int() + step)
+}
+
+func isExpDgraphRequired(currentVersionNum, upgradeToVersionNum int) (bool, error) {
+
+	for i := currentVersionNum + 1; i <= upgradeToVersionNum; i++ {
+		keyExists, mapVal := expDgraphSchemaMap[i]
+		if !keyExists {
+			return false, fmt.Errorf("couln't find schema verison in exp dgraph map iteration: %d", i)
+		}
+		if mapVal {
+			return true, nil
+		}
+	}
+	return false, nil
 }
