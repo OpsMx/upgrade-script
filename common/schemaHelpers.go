@@ -1,6 +1,7 @@
 package common
 
 import (
+	"fmt"
 	"upgradationScript/schemas"
 )
 
@@ -90,14 +91,16 @@ func upgradeSchemaBasedOnStep(schemaVersion SchemaOrder, step int) SchemaOrder {
 	return SchemaOrder(schemaVersion.Int() + step)
 }
 
-func isExpDgraphRequired(currentVersionNum, upgradeToVersionNum int) bool {
+func isExpDgraphRequired(currentVersionNum, upgradeToVersionNum int) (bool, error) {
 
 	for i := currentVersionNum + 1; i <= upgradeToVersionNum; i++ {
-		if ok, needed := expDgraphSchemaMap[i]; ok {
-			if needed {
-				return true
-			}
+		keyExists, mapVal := expDgraphSchemaMap[i]
+		if !keyExists {
+			return false, fmt.Errorf("couln't find schema verison in exp dgraph map iteration: %d", i)
+		}
+		if mapVal {
+			return true, nil
 		}
 	}
-	return false
+	return false, nil
 }

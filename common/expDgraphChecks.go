@@ -9,32 +9,6 @@ import (
 
 func allChecksForExpDgraph(schema SchemaOrder) error {
 
-	if err := checkDgraphConnection(); err != nil {
-		return err
-	}
-
-	schemaPresent, err := graphqlfunc.RetrieveSchema(Conf.ExpGraphQLAddr)
-	if err != nil {
-		return fmt.Errorf("allChecksForExpDgraph: RetrieveSchema: %s", err.Error())
-	}
-
-	if getTheSchemaVersion(schemaPresent) == schema {
-		return nil
-	}
-
-	logger.Logger.Info("-------Updating schema of exp dgraph--------------")
-
-	if err := graphqlfunc.UpdateSchema(Conf.ExpGraphQLAddr, Conf.ExpDgraphToken, []byte(schema.String())); err != nil {
-		return fmt.Errorf("allChecksForExpDgraph: UpdateSchema: %s", err.Error())
-	}
-
-	logger.Logger.Info("-------All checks passed of exp dgraph--------------")
-
-	return nil
-}
-
-func checkDgraphConnection() error {
-
 	if Conf.ExpGraphQLAddr == "" {
 		return fmt.Errorf("expGraphQLAddr is required")
 	}
@@ -69,6 +43,23 @@ func checkDgraphConnection() error {
 	if _, found := os.LookupEnv("AWS_SECRET_ACCESS_KEY"); !found {
 		return fmt.Errorf("envar AWS_SECRET_ACCESS_KEY is not set")
 	}
+
+	schemaPresent, err := graphqlfunc.RetrieveSchema(Conf.ExpGraphQLAddr)
+	if err != nil {
+		return fmt.Errorf("allChecksForExpDgraph: RetrieveSchema: %s", err.Error())
+	}
+
+	if getTheSchemaVersion(schemaPresent) == schema {
+		return nil
+	}
+
+	logger.Logger.Info("-------Updating schema of exp dgraph--------------")
+
+	if err := graphqlfunc.UpdateSchema(Conf.ExpGraphQLAddr, Conf.ExpDgraphToken, []byte(schema.String())); err != nil {
+		return fmt.Errorf("allChecksForExpDgraph: UpdateSchema: %s", err.Error())
+	}
+
+	logger.Logger.Info("-------All checks passed of exp dgraph--------------")
 
 	return nil
 }
