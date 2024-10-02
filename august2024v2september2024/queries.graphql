@@ -1,0 +1,116 @@
+mutation UpdateVulnerabilityForCritical {
+    updateVulnerability(
+        input: { set: { ratingsInt: 0 }, filter: { ratings: { eq: critical } } }
+    ) {
+        numUids
+    }
+}
+
+mutation UpdateVulnerabilityForHigh {
+    updateVulnerability(
+        input: { set: { ratingsInt: 1 }, filter: { ratings: { eq: high } } }
+    ) {
+        numUids
+    }
+}
+
+mutation UpdateVulnerabilityForMedium {
+    updateVulnerability(
+        input: { set: { ratingsInt: 2 }, filter: { ratings: { eq: medium } } }
+    ) {
+        numUids
+    }
+}
+
+mutation UpdateVulnerabilityForLow {
+    updateVulnerability(
+        input: { set: { ratingsInt: 3 }, filter: { ratings: { eq: low } } }
+    ) {
+        numUids
+    }
+}
+
+mutation UpdateVulnerabilityForUnknown {
+    updateVulnerability(
+        input: { set: { ratingsInt: 4 }, filter: { ratings: { eq: unknown } } }
+    ) {
+        numUids
+    }
+}
+
+mutation UpdateVulnerabilityForOthers {
+    updateVulnerability(
+        input: {
+            set: { ratingsInt: 5 }
+            filter: { not: { ratings: { in: [critical, high, medium, low, unknown] } } }
+        }
+    ) {
+        numUids
+    }
+}
+
+mutation UpdateVulnerabilityPriority1plus {
+    updateVulnerability(
+        input: { filter: { priority: { eq: "Priority 1+" } }, set: { priorityInt: 0 } }
+    ) {
+        numUids
+    }
+}
+
+mutation UpdateVulnerabilityPriority1 {
+    updateVulnerability(
+        input: { filter: { priority: { eq: "Priority 1" } }, set: { priorityInt: 1 } }
+    ) {
+        numUids
+    }
+}
+
+mutation UpdateVulnerabilityPriority2 {
+    updateVulnerability(
+        input: { filter: { priority: { eq: "Priority 2" } }, set: { priorityInt: 2 } }
+    ) {
+        numUids
+    }
+}
+
+mutation UpdateVulnerabilityPriority3 {
+    updateVulnerability(
+        input: { filter: { priority: { eq: "Priority 3" } }, set: { priorityInt: 3 } }
+    ) {
+        numUids
+    }
+}
+
+mutation UpdateVulnerabilityPriority4 {
+    updateVulnerability(
+        input: { filter: { priority: { eq: "Priority 4" } }, set: { priorityInt: 4 } }
+    ) {
+        numUids
+    }
+}
+
+mutation UpdateForcePolicyForGraphqlTool {
+    updatePolicyEnforcement(
+        input: { set: { forceApply: true }, filter: { datasourceTool: { eq: "graphql" } } }
+    ) {
+        numUids
+    }
+}
+
+query QueryArtifactNameAndTag {
+    queryArtifactScanData {
+        id
+        artifactDetails {
+            artifactName
+            artifactTag
+        }
+    }
+}
+
+mutation UpdateArtifactNameTag($id:String!, $artifactNameTag:String!) {
+    updateArtifactScanData(
+        input: { set: { artifactNameTag: $artifactNameTag }, filter: { id: { eq: $id } } }
+    ) {
+        numUids
+    }
+}
