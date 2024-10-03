@@ -8,7 +8,43 @@ import (
 	"github.com/Khan/genqlient/graphql"
 )
 
-func MigratePolicyEnfToSecurityIssues(gqlClient graphql.Client) error {
+func migratePolicyEnfToSecurityIssues(gqlClient graphql.Client) error {
+
+	ctx := context.Background()
+
+	resp, err := GetPolicyEnfIdFromRunHistory(ctx, gqlClient)
+	if err != nil {
+		return fmt.Errorf("error in getting policy enforcemnet id from run history: %s", err.Error())
+	}
+
+	if resp == nil {
+		logger.Sl.Debugf("No record for policy enforcment ids within run history found in db")
+		return nil
+	}
+
+	logger.Sl.Debugf("all policy enforcment ids found in db", len(resp.QuerySecurityIssue))
+
+	type scanDataUpdate struct {
+		securityIssueId   string
+		policyEnformentId string
+	}
+
+	scanDataUpdates := make([]scanDataUpdate, 0, len(resp.QuerySecurityIssue))
+
+	for _, eachSecurityIssue := range resp.QuerySecurityIssue {
+		if eachSecurityIssue.Id != nil && eachSecurityIssue.Affects != nil {
+			scanDataUpdates = append(scanDataUpdates, scanDataUpdate{
+				securityIssueId:   *eachSecurityIssue.Id,
+				policyEnformentId: *eachSecurityIssue.Affects[0].PolicyEnforcements.Id,
+			})
+		}
+	}
+
+	for _, value := range scanDataUpdates {
+		if _, err := UpdatePolicyEnfInSecurityIssue(ctx, gqlClient, &value.securityIssueId, &value.policyEnformentId); err != nil {
+			return fmt.Errorf("error in updating the policy enforcement id in security issues: %s", err.Error())
+		}
+	}
 
 	return nil
 }
@@ -34,6 +70,7 @@ func ingestArtifactNameTag(gqlClient graphql.Client) error {
 	}
 
 	if resp == nil {
+		logger.Sl.Debugf("No record for artifact name and tag within artifact scan data found in db")
 		return nil
 	}
 

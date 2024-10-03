@@ -114,3 +114,25 @@ mutation UpdateArtifactNameTag($id:String!, $artifactNameTag:String!) {
         numUids
     }
 }
+
+query GetPolicyEnfIdFromRunHistory {
+    querySecurityIssue(filter: { has: Affects }) @cascade{
+        id
+        Affects(first: 1) {
+            policyEnforcements {
+                id
+            }
+        }
+    }
+}
+
+mutation UpdatePolicyEnfInSecurityIssue($securityIssueId: ID!, $policyEnfId: ID!) {
+    updateSecurityIssue(
+        input: {
+            filter: { id: [$securityIssueId] }
+            set: { policyEnforcements: { id: $policyEnfId } }
+        }
+    ) {
+        numUids
+    }
+}

@@ -8,6 +8,50 @@ import (
 	"github.com/Khan/genqlient/graphql"
 )
 
+// GetPolicyEnfIdFromRunHistoryQuerySecurityIssue includes the requested fields of the GraphQL type SecurityIssue.
+type GetPolicyEnfIdFromRunHistoryQuerySecurityIssue struct {
+	Id      *string                                                            `json:"id"`
+	Affects []*GetPolicyEnfIdFromRunHistoryQuerySecurityIssueAffectsRunHistory `json:"Affects"`
+}
+
+// GetId returns GetPolicyEnfIdFromRunHistoryQuerySecurityIssue.Id, and is useful for accessing the field via an interface.
+func (v *GetPolicyEnfIdFromRunHistoryQuerySecurityIssue) GetId() *string { return v.Id }
+
+// GetAffects returns GetPolicyEnfIdFromRunHistoryQuerySecurityIssue.Affects, and is useful for accessing the field via an interface.
+func (v *GetPolicyEnfIdFromRunHistoryQuerySecurityIssue) GetAffects() []*GetPolicyEnfIdFromRunHistoryQuerySecurityIssueAffectsRunHistory {
+	return v.Affects
+}
+
+// GetPolicyEnfIdFromRunHistoryQuerySecurityIssueAffectsRunHistory includes the requested fields of the GraphQL type RunHistory.
+type GetPolicyEnfIdFromRunHistoryQuerySecurityIssueAffectsRunHistory struct {
+	PolicyEnforcements *GetPolicyEnfIdFromRunHistoryQuerySecurityIssueAffectsRunHistoryPolicyEnforcementsPolicyEnforcement `json:"policyEnforcements"`
+}
+
+// GetPolicyEnforcements returns GetPolicyEnfIdFromRunHistoryQuerySecurityIssueAffectsRunHistory.PolicyEnforcements, and is useful for accessing the field via an interface.
+func (v *GetPolicyEnfIdFromRunHistoryQuerySecurityIssueAffectsRunHistory) GetPolicyEnforcements() *GetPolicyEnfIdFromRunHistoryQuerySecurityIssueAffectsRunHistoryPolicyEnforcementsPolicyEnforcement {
+	return v.PolicyEnforcements
+}
+
+// GetPolicyEnfIdFromRunHistoryQuerySecurityIssueAffectsRunHistoryPolicyEnforcementsPolicyEnforcement includes the requested fields of the GraphQL type PolicyEnforcement.
+type GetPolicyEnfIdFromRunHistoryQuerySecurityIssueAffectsRunHistoryPolicyEnforcementsPolicyEnforcement struct {
+	Id *string `json:"id"`
+}
+
+// GetId returns GetPolicyEnfIdFromRunHistoryQuerySecurityIssueAffectsRunHistoryPolicyEnforcementsPolicyEnforcement.Id, and is useful for accessing the field via an interface.
+func (v *GetPolicyEnfIdFromRunHistoryQuerySecurityIssueAffectsRunHistoryPolicyEnforcementsPolicyEnforcement) GetId() *string {
+	return v.Id
+}
+
+// GetPolicyEnfIdFromRunHistoryResponse is returned by GetPolicyEnfIdFromRunHistory on success.
+type GetPolicyEnfIdFromRunHistoryResponse struct {
+	QuerySecurityIssue []*GetPolicyEnfIdFromRunHistoryQuerySecurityIssue `json:"querySecurityIssue"`
+}
+
+// GetQuerySecurityIssue returns GetPolicyEnfIdFromRunHistoryResponse.QuerySecurityIssue, and is useful for accessing the field via an interface.
+func (v *GetPolicyEnfIdFromRunHistoryResponse) GetQuerySecurityIssue() []*GetPolicyEnfIdFromRunHistoryQuerySecurityIssue {
+	return v.QuerySecurityIssue
+}
+
 // QueryArtifactNameAndTagQueryArtifactScanData includes the requested fields of the GraphQL type ArtifactScanData.
 type QueryArtifactNameAndTagQueryArtifactScanData struct {
 	Id              string                                                               `json:"id"`
@@ -85,6 +129,26 @@ type UpdateForcePolicyForGraphqlToolUpdatePolicyEnforcementUpdatePolicyEnforceme
 
 // GetNumUids returns UpdateForcePolicyForGraphqlToolUpdatePolicyEnforcementUpdatePolicyEnforcementPayload.NumUids, and is useful for accessing the field via an interface.
 func (v *UpdateForcePolicyForGraphqlToolUpdatePolicyEnforcementUpdatePolicyEnforcementPayload) GetNumUids() *int {
+	return v.NumUids
+}
+
+// UpdatePolicyEnfInSecurityIssueResponse is returned by UpdatePolicyEnfInSecurityIssue on success.
+type UpdatePolicyEnfInSecurityIssueResponse struct {
+	UpdateSecurityIssue *UpdatePolicyEnfInSecurityIssueUpdateSecurityIssueUpdateSecurityIssuePayload `json:"updateSecurityIssue"`
+}
+
+// GetUpdateSecurityIssue returns UpdatePolicyEnfInSecurityIssueResponse.UpdateSecurityIssue, and is useful for accessing the field via an interface.
+func (v *UpdatePolicyEnfInSecurityIssueResponse) GetUpdateSecurityIssue() *UpdatePolicyEnfInSecurityIssueUpdateSecurityIssueUpdateSecurityIssuePayload {
+	return v.UpdateSecurityIssue
+}
+
+// UpdatePolicyEnfInSecurityIssueUpdateSecurityIssueUpdateSecurityIssuePayload includes the requested fields of the GraphQL type UpdateSecurityIssuePayload.
+type UpdatePolicyEnfInSecurityIssueUpdateSecurityIssueUpdateSecurityIssuePayload struct {
+	NumUids *int `json:"numUids"`
+}
+
+// GetNumUids returns UpdatePolicyEnfInSecurityIssueUpdateSecurityIssueUpdateSecurityIssuePayload.NumUids, and is useful for accessing the field via an interface.
+func (v *UpdatePolicyEnfInSecurityIssueUpdateSecurityIssueUpdateSecurityIssuePayload) GetNumUids() *int {
 	return v.NumUids
 }
 
@@ -320,6 +384,56 @@ func (v *__UpdateArtifactNameTagInput) GetId() string { return v.Id }
 // GetArtifactNameTag returns __UpdateArtifactNameTagInput.ArtifactNameTag, and is useful for accessing the field via an interface.
 func (v *__UpdateArtifactNameTagInput) GetArtifactNameTag() string { return v.ArtifactNameTag }
 
+// __UpdatePolicyEnfInSecurityIssueInput is used internally by genqlient
+type __UpdatePolicyEnfInSecurityIssueInput struct {
+	SecurityIssueId *string `json:"securityIssueId"`
+	PolicyEnfId     *string `json:"policyEnfId"`
+}
+
+// GetSecurityIssueId returns __UpdatePolicyEnfInSecurityIssueInput.SecurityIssueId, and is useful for accessing the field via an interface.
+func (v *__UpdatePolicyEnfInSecurityIssueInput) GetSecurityIssueId() *string {
+	return v.SecurityIssueId
+}
+
+// GetPolicyEnfId returns __UpdatePolicyEnfInSecurityIssueInput.PolicyEnfId, and is useful for accessing the field via an interface.
+func (v *__UpdatePolicyEnfInSecurityIssueInput) GetPolicyEnfId() *string { return v.PolicyEnfId }
+
+// The query or mutation executed by GetPolicyEnfIdFromRunHistory.
+const GetPolicyEnfIdFromRunHistory_Operation = `
+query GetPolicyEnfIdFromRunHistory {
+	querySecurityIssue(filter: {has:Affects}) @cascade {
+		id
+		Affects(first: 1) {
+			policyEnforcements {
+				id
+			}
+		}
+	}
+}
+`
+
+func GetPolicyEnfIdFromRunHistory(
+	ctx_ context.Context,
+	client_ graphql.Client,
+) (*GetPolicyEnfIdFromRunHistoryResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "GetPolicyEnfIdFromRunHistory",
+		Query:  GetPolicyEnfIdFromRunHistory_Operation,
+	}
+	var err_ error
+
+	var data_ GetPolicyEnfIdFromRunHistoryResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
 // The query or mutation executed by QueryArtifactNameAndTag.
 const QueryArtifactNameAndTag_Operation = `
 query QueryArtifactNameAndTag {
@@ -412,6 +526,43 @@ func UpdateForcePolicyForGraphqlTool(
 	var err_ error
 
 	var data_ UpdateForcePolicyForGraphqlToolResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by UpdatePolicyEnfInSecurityIssue.
+const UpdatePolicyEnfInSecurityIssue_Operation = `
+mutation UpdatePolicyEnfInSecurityIssue ($securityIssueId: ID!, $policyEnfId: ID!) {
+	updateSecurityIssue(input: {filter:{id:[$securityIssueId]},set:{policyEnforcements:{id:$policyEnfId}}}) {
+		numUids
+	}
+}
+`
+
+func UpdatePolicyEnfInSecurityIssue(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	securityIssueId *string,
+	policyEnfId *string,
+) (*UpdatePolicyEnfInSecurityIssueResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "UpdatePolicyEnfInSecurityIssue",
+		Query:  UpdatePolicyEnfInSecurityIssue_Operation,
+		Variables: &__UpdatePolicyEnfInSecurityIssueInput{
+			SecurityIssueId: securityIssueId,
+			PolicyEnfId:     policyEnfId,
+		},
+	}
+	var err_ error
+
+	var data_ UpdatePolicyEnfInSecurityIssueResponse
 	resp_ := &graphql.Response{Data: &data_}
 
 	err_ = client_.MakeRequest(
