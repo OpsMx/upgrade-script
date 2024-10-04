@@ -22,7 +22,7 @@ func migratePolicyEnfToSecurityIssues(gqlClient graphql.Client) error {
 		return nil
 	}
 
-	logger.Sl.Debugf("all policy enforcment ids found in db", len(resp.QuerySecurityIssue))
+	logger.Sl.Debugf("The total number of security issue records to link with the policy enforcement record", len(resp.QuerySecurityIssue))
 
 	type scanDataUpdate struct {
 		securityIssueId   string
@@ -42,7 +42,7 @@ func migratePolicyEnfToSecurityIssues(gqlClient graphql.Client) error {
 
 	for _, value := range scanDataUpdates {
 		if _, err := UpdatePolicyEnfInSecurityIssue(ctx, gqlClient, &value.securityIssueId, &value.policyEnformentId); err != nil {
-			return fmt.Errorf("error in updating the policy enforcement id in security issues: %s", err.Error())
+			return fmt.Errorf("error in updating the policy enforcement id %s in security issue id %s : %s", value.policyEnformentId, value.securityIssueId, err.Error())
 		}
 	}
 
@@ -58,42 +58,4 @@ func setForceApplyForGraphQL(gqlClient graphql.Client) error {
 	}
 	return nil
 
-}
-
-func ingestArtifactNameTag(gqlClient graphql.Client) error {
-
-	ctx := context.Background()
-
-	resp, err := QueryArtifactNameAndTag(ctx, gqlClient)
-	if err != nil {
-		return fmt.Errorf("error in QueryArtifactNameAndTag while fetching records of artifact scan data: %s", err.Error())
-	}
-
-	if resp == nil {
-		logger.Sl.Debugf("No record for artifact name and tag within artifact scan data found in db")
-		return nil
-	}
-
-	logger.Sl.Debugf("artifact scan data found in db", len(resp.QueryArtifactScanData))
-
-	type scanDataUpdate struct {
-		id      string
-		nameTag string
-	}
-
-	nameTagArr := make([]scanDataUpdate, 0, len(resp.QueryArtifactScanData))
-	for _, eachScanData := range resp.QueryArtifactScanData {
-		nameTagArr = append(nameTagArr, scanDataUpdate{
-			id:      eachScanData.Id,
-			nameTag: fmt.Sprintf("%s:%s", eachScanData.ArtifactDetails.ArtifactName, eachScanData.ArtifactDetails.ArtifactTag),
-		})
-	}
-
-	for _, value := range nameTagArr {
-		if _, err := UpdateArtifactNameTag(ctx, gqlClient, value.id, value.nameTag); err != nil {
-			return fmt.Errorf("error in updating the artifact name and tag in artifact scan data: %s", err.Error())
-		}
-	}
-
-	return nil
 }

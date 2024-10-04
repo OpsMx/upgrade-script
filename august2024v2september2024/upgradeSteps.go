@@ -29,6 +29,14 @@ func UpgradeToSeptember2024(prodGraphUrl, prodToken string, prodDgraphClient gra
 		return fmt.Errorf("UpgradeToSeptember2024: ingestArtifactNameTag: %s", err.Error())
 	}
 
+	if err := migratePolicyEnfToSecurityIssues(prodDgraphClient); err != nil {
+		return fmt.Errorf("UpgradeToSeptember2024: migratePolicyEnfToSecurityIssues: %s", err.Error())
+	}
+
+	if err := populateBuildDetailsInArtifact(prodDgraphClient); err != nil {
+		return fmt.Errorf("UpgradeToSeptember2024: populateBuildDetailsInArtifact: %s", err.Error())
+	}
+
 	logger.Logger.Info("--------------Completed UpgradeToSeptember2024------------------")
 
 	return nil

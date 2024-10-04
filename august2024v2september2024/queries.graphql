@@ -136,3 +136,35 @@ mutation UpdatePolicyEnfInSecurityIssue($securityIssueId: ID!, $policyEnfId: ID!
         numUids
     }
 }
+
+query GetArtifactNameAndTag {
+    queryArtifact(filter: { not: { has: buildDetails } }) {
+        artifactName
+        artifactTag
+        id
+    }
+}
+
+query GetBuildToolId(
+    $image:String!
+    $imageTag:String!) {
+    queryBuildTool(
+        filter: {
+            artifact: { eq: $image }
+            artifactTag: { eq: $imageTag }
+        }
+    ) {
+        id
+    }
+}
+
+mutation PopulateArtifactBuildDetails($artifactId: String!, $buildToolId: String!) {
+    updateArtifact(
+        input: {
+            filter: { id: { eq: $artifactId } }
+            set: { buildDetails: { id: $buildToolId } }
+        }
+    ) {
+        numUids
+    }
+}

@@ -8,6 +8,54 @@ import (
 	"github.com/Khan/genqlient/graphql"
 )
 
+// GetArtifactNameAndTagQueryArtifact includes the requested fields of the GraphQL type Artifact.
+type GetArtifactNameAndTagQueryArtifact struct {
+	ArtifactName string `json:"artifactName"`
+	ArtifactTag  string `json:"artifactTag"`
+	Id           string `json:"id"`
+}
+
+// GetArtifactName returns GetArtifactNameAndTagQueryArtifact.ArtifactName, and is useful for accessing the field via an interface.
+func (v *GetArtifactNameAndTagQueryArtifact) GetArtifactName() string { return v.ArtifactName }
+
+// GetArtifactTag returns GetArtifactNameAndTagQueryArtifact.ArtifactTag, and is useful for accessing the field via an interface.
+func (v *GetArtifactNameAndTagQueryArtifact) GetArtifactTag() string { return v.ArtifactTag }
+
+// GetId returns GetArtifactNameAndTagQueryArtifact.Id, and is useful for accessing the field via an interface.
+func (v *GetArtifactNameAndTagQueryArtifact) GetId() string { return v.Id }
+
+// GetArtifactNameAndTagResponse is returned by GetArtifactNameAndTag on success.
+type GetArtifactNameAndTagResponse struct {
+	QueryArtifact []*GetArtifactNameAndTagQueryArtifact `json:"queryArtifact"`
+}
+
+// GetQueryArtifact returns GetArtifactNameAndTagResponse.QueryArtifact, and is useful for accessing the field via an interface.
+func (v *GetArtifactNameAndTagResponse) GetQueryArtifact() []*GetArtifactNameAndTagQueryArtifact {
+	return v.QueryArtifact
+}
+
+// GetBuildToolIdQueryBuildTool includes the requested fields of the GraphQL type BuildTool.
+// The GraphQL type's documentation follows.
+//
+// BuildTool contains data from build tool events.
+type GetBuildToolIdQueryBuildTool struct {
+	// id is randomly assigned
+	Id string `json:"id"`
+}
+
+// GetId returns GetBuildToolIdQueryBuildTool.Id, and is useful for accessing the field via an interface.
+func (v *GetBuildToolIdQueryBuildTool) GetId() string { return v.Id }
+
+// GetBuildToolIdResponse is returned by GetBuildToolId on success.
+type GetBuildToolIdResponse struct {
+	QueryBuildTool []*GetBuildToolIdQueryBuildTool `json:"queryBuildTool"`
+}
+
+// GetQueryBuildTool returns GetBuildToolIdResponse.QueryBuildTool, and is useful for accessing the field via an interface.
+func (v *GetBuildToolIdResponse) GetQueryBuildTool() []*GetBuildToolIdQueryBuildTool {
+	return v.QueryBuildTool
+}
+
 // GetPolicyEnfIdFromRunHistoryQuerySecurityIssue includes the requested fields of the GraphQL type SecurityIssue.
 type GetPolicyEnfIdFromRunHistoryQuerySecurityIssue struct {
 	Id      *string                                                            `json:"id"`
@@ -50,6 +98,26 @@ type GetPolicyEnfIdFromRunHistoryResponse struct {
 // GetQuerySecurityIssue returns GetPolicyEnfIdFromRunHistoryResponse.QuerySecurityIssue, and is useful for accessing the field via an interface.
 func (v *GetPolicyEnfIdFromRunHistoryResponse) GetQuerySecurityIssue() []*GetPolicyEnfIdFromRunHistoryQuerySecurityIssue {
 	return v.QuerySecurityIssue
+}
+
+// PopulateArtifactBuildDetailsResponse is returned by PopulateArtifactBuildDetails on success.
+type PopulateArtifactBuildDetailsResponse struct {
+	UpdateArtifact *PopulateArtifactBuildDetailsUpdateArtifactUpdateArtifactPayload `json:"updateArtifact"`
+}
+
+// GetUpdateArtifact returns PopulateArtifactBuildDetailsResponse.UpdateArtifact, and is useful for accessing the field via an interface.
+func (v *PopulateArtifactBuildDetailsResponse) GetUpdateArtifact() *PopulateArtifactBuildDetailsUpdateArtifactUpdateArtifactPayload {
+	return v.UpdateArtifact
+}
+
+// PopulateArtifactBuildDetailsUpdateArtifactUpdateArtifactPayload includes the requested fields of the GraphQL type UpdateArtifactPayload.
+type PopulateArtifactBuildDetailsUpdateArtifactUpdateArtifactPayload struct {
+	NumUids *int `json:"numUids"`
+}
+
+// GetNumUids returns PopulateArtifactBuildDetailsUpdateArtifactUpdateArtifactPayload.NumUids, and is useful for accessing the field via an interface.
+func (v *PopulateArtifactBuildDetailsUpdateArtifactUpdateArtifactPayload) GetNumUids() *int {
+	return v.NumUids
 }
 
 // QueryArtifactNameAndTagQueryArtifactScanData includes the requested fields of the GraphQL type ArtifactScanData.
@@ -372,6 +440,30 @@ func (v *UpdateVulnerabilityPriority4UpdateVulnerabilityUpdateVulnerabilityPaylo
 	return v.NumUids
 }
 
+// __GetBuildToolIdInput is used internally by genqlient
+type __GetBuildToolIdInput struct {
+	Image    string `json:"image"`
+	ImageTag string `json:"imageTag"`
+}
+
+// GetImage returns __GetBuildToolIdInput.Image, and is useful for accessing the field via an interface.
+func (v *__GetBuildToolIdInput) GetImage() string { return v.Image }
+
+// GetImageTag returns __GetBuildToolIdInput.ImageTag, and is useful for accessing the field via an interface.
+func (v *__GetBuildToolIdInput) GetImageTag() string { return v.ImageTag }
+
+// __PopulateArtifactBuildDetailsInput is used internally by genqlient
+type __PopulateArtifactBuildDetailsInput struct {
+	ArtifactId  string `json:"artifactId"`
+	BuildToolId string `json:"buildToolId"`
+}
+
+// GetArtifactId returns __PopulateArtifactBuildDetailsInput.ArtifactId, and is useful for accessing the field via an interface.
+func (v *__PopulateArtifactBuildDetailsInput) GetArtifactId() string { return v.ArtifactId }
+
+// GetBuildToolId returns __PopulateArtifactBuildDetailsInput.BuildToolId, and is useful for accessing the field via an interface.
+func (v *__PopulateArtifactBuildDetailsInput) GetBuildToolId() string { return v.BuildToolId }
+
 // __UpdateArtifactNameTagInput is used internally by genqlient
 type __UpdateArtifactNameTagInput struct {
 	Id              string `json:"id"`
@@ -398,6 +490,76 @@ func (v *__UpdatePolicyEnfInSecurityIssueInput) GetSecurityIssueId() *string {
 // GetPolicyEnfId returns __UpdatePolicyEnfInSecurityIssueInput.PolicyEnfId, and is useful for accessing the field via an interface.
 func (v *__UpdatePolicyEnfInSecurityIssueInput) GetPolicyEnfId() *string { return v.PolicyEnfId }
 
+// The query or mutation executed by GetArtifactNameAndTag.
+const GetArtifactNameAndTag_Operation = `
+query GetArtifactNameAndTag {
+	queryArtifact(filter: {not:{has:buildDetails}}) {
+		artifactName
+		artifactTag
+		id
+	}
+}
+`
+
+func GetArtifactNameAndTag(
+	ctx_ context.Context,
+	client_ graphql.Client,
+) (*GetArtifactNameAndTagResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "GetArtifactNameAndTag",
+		Query:  GetArtifactNameAndTag_Operation,
+	}
+	var err_ error
+
+	var data_ GetArtifactNameAndTagResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by GetBuildToolId.
+const GetBuildToolId_Operation = `
+query GetBuildToolId ($image: String!, $imageTag: String!) {
+	queryBuildTool(filter: {artifact:{eq:$image},artifactTag:{eq:$imageTag}}) {
+		id
+	}
+}
+`
+
+func GetBuildToolId(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	image string,
+	imageTag string,
+) (*GetBuildToolIdResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "GetBuildToolId",
+		Query:  GetBuildToolId_Operation,
+		Variables: &__GetBuildToolIdInput{
+			Image:    image,
+			ImageTag: imageTag,
+		},
+	}
+	var err_ error
+
+	var data_ GetBuildToolIdResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
 // The query or mutation executed by GetPolicyEnfIdFromRunHistory.
 const GetPolicyEnfIdFromRunHistory_Operation = `
 query GetPolicyEnfIdFromRunHistory {
@@ -423,6 +585,43 @@ func GetPolicyEnfIdFromRunHistory(
 	var err_ error
 
 	var data_ GetPolicyEnfIdFromRunHistoryResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by PopulateArtifactBuildDetails.
+const PopulateArtifactBuildDetails_Operation = `
+mutation PopulateArtifactBuildDetails ($artifactId: String!, $buildToolId: String!) {
+	updateArtifact(input: {filter:{id:{eq:$artifactId}},set:{buildDetails:{id:$buildToolId}}}) {
+		numUids
+	}
+}
+`
+
+func PopulateArtifactBuildDetails(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	artifactId string,
+	buildToolId string,
+) (*PopulateArtifactBuildDetailsResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "PopulateArtifactBuildDetails",
+		Query:  PopulateArtifactBuildDetails_Operation,
+		Variables: &__PopulateArtifactBuildDetailsInput{
+			ArtifactId:  artifactId,
+			BuildToolId: buildToolId,
+		},
+	}
+	var err_ error
+
+	var data_ PopulateArtifactBuildDetailsResponse
 	resp_ := &graphql.Response{Data: &data_}
 
 	err_ = client_.MakeRequest(
