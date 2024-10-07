@@ -10,6 +10,8 @@ import (
 
 func migratePolicyEnfToSecurityIssues(gqlClient graphql.Client) error {
 
+	logger.Sl.Debugf("-----migrating PolicyEnf To SecurityIssues--------")
+
 	ctx := context.Background()
 
 	resp, err := GetPolicyEnfIdFromRunHistory(ctx, gqlClient)
@@ -22,7 +24,7 @@ func migratePolicyEnfToSecurityIssues(gqlClient graphql.Client) error {
 		return nil
 	}
 
-	logger.Sl.Debugf("The total number of security issue records to link with the policy enforcement record", len(resp.QuerySecurityIssue))
+	logger.Sl.Debugf("The total number of security issue records to link with the policy enforcement record:", len(resp.QuerySecurityIssue))
 
 	type scanDataUpdate struct {
 		securityIssueId   string
@@ -46,6 +48,8 @@ func migratePolicyEnfToSecurityIssues(gqlClient graphql.Client) error {
 		}
 	}
 
+	logger.Sl.Debugf("-----migrated PolicyEnf To SecurityIssues--------")
+
 	return nil
 }
 
@@ -53,9 +57,13 @@ func setForceApplyForGraphQL(gqlClient graphql.Client) error {
 
 	ctx := context.Background()
 
+	logger.Sl.Debugf("-----Updating ForcePolicy For Graphql Tool--------")
+
 	if _, err := UpdateForcePolicyForGraphqlTool(ctx, gqlClient); err != nil {
 		return fmt.Errorf("error while updating forecpolicy field in policy enforcment for graphql tool: %s", err.Error())
 	}
+
+	logger.Sl.Debugf("-----Updated ForcePolicy For Graphql Tool--------")
 	return nil
 
 }

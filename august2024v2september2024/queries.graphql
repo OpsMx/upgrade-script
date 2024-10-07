@@ -168,3 +168,133 @@ mutation PopulateArtifactBuildDetails($artifactId: String!, $buildToolId: String
         numUids
     }
 }
+
+query GetAllVulnerabilities {
+    queryVulnerability {
+        id
+        parent
+        ratings
+    }
+}
+
+query SecurityIssueOfVuln($vuln: String!) {
+    querySecurityIssue(filter: { AlertTitle: { regexp: $vuln } }) {
+        Affects {
+            id
+            Pass
+            scheduledPolicy
+
+        }
+    }
+}
+
+mutation AddPolicyEvaluationData($input: [AddPolicyEvaluationDataInput!]!) {
+    addPolicyEvaluationData(input: $input) {
+        policyEvaluationData {
+            Id
+        }
+    }
+}
+
+query QuerySecurityIssue($batch: Int!, $offset: Int!) {
+    querySecurityIssue(first: $batch, offset: $offset) {
+        id
+        Severity
+        predeploymentAnalysisNotHavingException: Affects(
+            filter: { not: { has: [applicationDeployment, exception] } }
+        ) @cascade {
+            artifactScan {
+                id
+                createdAt
+            }
+        }
+        predeploymentAnalysisHavingException: Affects(
+            filter: { has: exception, not: { has: [applicationDeployment] } }
+        ) @cascade {
+            exception {
+                id
+            }
+            artifactScan {
+                id
+                createdAt
+            }
+        }
+        deploymentAnalysisHavingExceptions: Affects(
+            filter: { has: [applicationDeployment, exception] }
+        ) @cascade {
+            ArtifactSha
+            exception {
+                id
+            }
+            applicationDeployment {
+                id
+                component
+                deployedAt
+                deploymentStage
+                applicationEnvironment {
+                    id
+                    application {
+                        id
+                        team {
+                            id
+                            organization {
+                                id
+                            }
+                        }
+                    }
+                }
+                toolsUsed {
+                    sbom
+                }
+            }
+        }
+        deploymentAnalysisNotHavingExceptions: Affects(
+            filter: { has: applicationDeployment, not: { has: exception } }
+        ) @cascade {
+            ArtifactSha
+            applicationDeployment {
+                id
+                component
+                deployedAt
+                deploymentStage
+                applicationEnvironment {
+                    id
+                    application {
+                        id
+                        team {
+                            id
+                            organization {
+                                id
+                            }
+                        }
+                    }
+                }
+                toolsUsed {
+                    sbom
+                }
+            }
+        }
+    }
+}
+
+query QueryArtifactScanData($sha: String!, $tool: String!) {
+    queryArtifactScanData(
+        filter: { artifactSha: { eq: $sha }, tool: { eq: $tool } }
+    ) {
+        id
+    }
+}
+
+mutation AddSecurityIssueAffectsSummary(
+    $summary: [AddSecurityIssueAffectsSummaryInput!]!
+) {
+    addSecurityIssueAffectsSummary(input: $summary) {
+        numUids
+    }
+}
+
+query AggregateSecurityIssue {
+    aggregateSecurityIssue {
+        count
+    }
+}

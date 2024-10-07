@@ -10,6 +10,8 @@ import (
 
 func populateBuildDetailsInArtifact(gqlClient graphql.Client) error {
 
+	logger.Sl.Debugf("-----populating BuildDetails In Artifact--------")
+
 	ctx := context.Background()
 
 	resp, err := GetArtifactNameAndTag(ctx, gqlClient)
@@ -22,7 +24,7 @@ func populateBuildDetailsInArtifact(gqlClient graphql.Client) error {
 		return nil
 	}
 
-	logger.Sl.Debugf("artifacts data found in db", len(resp.QueryArtifact))
+	logger.Sl.Debugf("total records of artifacts data found in db:", len(resp.QueryArtifact))
 
 	type artifactData struct {
 		artifactId   string
@@ -53,13 +55,13 @@ func populateBuildDetailsInArtifact(gqlClient graphql.Client) error {
 		}
 
 		if resp == nil {
-			logger.Sl.Debugf("No record for build tool found in db for image %s:%s", eachArtifact.artifactName, eachArtifact.artifactTag)
-			return nil
+			logger.Sl.Debugf("No record of build tool found in db for artifact %s:%s", eachArtifact.artifactName, eachArtifact.artifactTag)
+			continue // because not necessary that all artifacts will have build details available in db
 		}
 
 		if len(resp.GetQueryBuildTool()) == 0 {
-			logger.Sl.Debugf("build information is not yet available for image %s:%s", eachArtifact.artifactName, eachArtifact.artifactTag)
-			return nil
+			logger.Sl.Debugf("build information is not yet available for artifact %s:%s", eachArtifact.artifactName, eachArtifact.artifactTag)
+			continue
 		}
 
 		scanDataUpdates = append(scanDataUpdates, scanDataUpdate{
@@ -68,11 +70,15 @@ func populateBuildDetailsInArtifact(gqlClient graphql.Client) error {
 		})
 	}
 
+	logger.Sl.Debugf("updating total number of Artifact records:", len(scanDataUpdates))
+
 	for _, value := range scanDataUpdates {
 		if _, err := PopulateArtifactBuildDetails(ctx, gqlClient, value.artifactId, value.buildToolId); err != nil {
 			return fmt.Errorf("error in populating build details in artifact: %s", err.Error())
 		}
 	}
+
+	logger.Sl.Debugf("-----populated BuildDetails In Artifact--------")
 
 	return nil
 }

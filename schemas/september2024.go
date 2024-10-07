@@ -292,7 +292,7 @@ type ApplicationDeployment {
     "policyRunHistory is the policy execution history for this deployment"
     policyRunHistory: [RunHistory!] @hasInverse(field: applicationDeployment)
     deploymentTags: [KeyValue!]
-    hasSecurityIssues: SecurityIssueAffectsSummary @hasInverse(field: currentDeployed)
+    hasSecurityIssues: [SecurityIssueAffectsSummary!] @hasInverse(field: currentDeployed)
 }
 
 type ToolsUsed {
@@ -506,7 +506,7 @@ type RunHistory  {
     DeployedAt: DateTime! @search
     Hash: String
     Pass: Boolean! @search
-    EvalData: PolicyEvaluationData! @hasInverse(field: affects)
+    EvalData: PolicyEvaluationData @hasInverse(field: affects)
     FileApi: String
     AttachedJira: Jira @hasInverse(field: affectsIndividualComponent)
     Status: String! @search(by: [exact])
@@ -519,6 +519,7 @@ type RunHistory  {
 type PolicyEvaluationData {
     """data Type is gonna help us identify if a DB record is used to evaluate or a json
    current scope json is for generic policies & vuln policies will attach VulnNode -> pending redis data & other inprogram policies"""   
+    Id: ID!
     dataType: String! @search(by: [exact])
     rawData: String
     vulnNode: Vulnerability @hasInverse(field: policyEvaluation)
@@ -540,7 +541,7 @@ type SecurityIssue {
     policyEnforcements: PolicyEnforcement!
     AttachedJira: Jira @hasInverse(field: affectsSecurityissue)
     Affects: [RunHistory!] @hasInverse(field: securityIssue)
-    Summary: SecurityIssueAffectsSummary! @hasInverse(field: securityIssue)
+    Summary: [SecurityIssueAffectsSummary!] @hasInverse(field: securityIssue)
 }
 
 type SecurityIssueAffectsSummary {
@@ -550,7 +551,7 @@ type SecurityIssueAffectsSummary {
     team: Team @hasInverse(field: hasSecurityIssues)
     application: Application @hasInverse(field: hasSecurityIssues)
     applicationEnvironment: ApplicationEnvironment @hasInverse(field: hasSecurityIssues)
-    service: String
+    service: String  @search(by: [exact,regexp])
     currentDeployed: ApplicationDeployment @hasInverse(field: hasSecurityIssues)
     artifactScanTS: [ArtifactScanDataTS!] @hasInverse(field: summary)
     exception: ExceptionAffects @hasInverse(field: hasSecurityIssues)
@@ -654,7 +655,7 @@ type Artifact {
 
 type ArtifactScanData {
     id: String! @id
-    platform: String! @search(by: [exact])
+    "platform: String! @search(by: [exact]) -> add later"
     artifactSha: String! @search(by: [exact])
     artifactNameTag: String! @search(by: [exact,regexp])
     tool: String! @search(by: [exact])

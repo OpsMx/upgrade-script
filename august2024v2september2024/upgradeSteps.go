@@ -37,6 +37,14 @@ func UpgradeToSeptember2024(prodGraphUrl, prodToken string, prodDgraphClient gra
 		return fmt.Errorf("UpgradeToSeptember2024: populateBuildDetailsInArtifact: %s", err.Error())
 	}
 
+	if err := populatePolicyEvalDataForVulnerabilities(prodDgraphClient); err != nil {
+		return fmt.Errorf("UpgradeToSeptember2024: populatePolicyEvalDataForVulnerabilities: %s", err.Error())
+	}
+
+	if err := setSummaryNodeForSecurityIssue(prodDgraphClient); err != nil {
+		return fmt.Errorf("UpgradeToSeptember2024: setSummaryNodeForSecurityIssue: %s", err.Error())
+	}
+
 	logger.Logger.Info("--------------Completed UpgradeToSeptember2024------------------")
 
 	return nil

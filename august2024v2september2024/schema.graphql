@@ -1,32 +1,32 @@
 directive @remote on OBJECT | INTERFACE | UNION | INPUT_OBJECT | ENUM
 
-directive @remoteResponse(name: String) on FIELD_DEFINITION
-
-directive @hasInverse(field: String!) on FIELD_DEFINITION
-
-directive @search(by: [DgraphIndex!]) on FIELD_DEFINITION
+directive @cascade(fields: [String]) on FIELD
 
 directive @id(interface: Boolean) on FIELD_DEFINITION
 
 directive @withSubscription on OBJECT | INTERFACE | FIELD_DEFINITION
 
-directive @secret(field: String!, pred: String) on OBJECT | INTERFACE
-
-directive @cascade(fields: [String]) on FIELD
-
-directive @generate(query: GenerateQueryParams, mutation: GenerateMutationParams, subscription: Boolean) on OBJECT | INTERFACE
-
-directive @lambdaOnMutate(add: Boolean, update: Boolean, delete: Boolean) on OBJECT | INTERFACE
-
-directive @cacheControl(maxAge: Int!) on QUERY
+directive @custom(http: CustomHTTP, dql: String) on FIELD_DEFINITION
 
 directive @dgraph(type: String, pred: String) on OBJECT | INTERFACE | FIELD_DEFINITION
 
-directive @custom(http: CustomHTTP, dql: String) on FIELD_DEFINITION
+directive @secret(field: String!, pred: String) on OBJECT | INTERFACE
+
+directive @remoteResponse(name: String) on FIELD_DEFINITION
+
+directive @lambdaOnMutate(add: Boolean, update: Boolean, delete: Boolean) on OBJECT | INTERFACE
+
+directive @hasInverse(field: String!) on FIELD_DEFINITION
+
+directive @generate(query: GenerateQueryParams, mutation: GenerateMutationParams, subscription: Boolean) on OBJECT | INTERFACE
+
+directive @auth(password: AuthRule, query: AuthRule, add: AuthRule, update: AuthRule, delete: AuthRule) on OBJECT | INTERFACE
 
 directive @lambda on FIELD_DEFINITION
 
-directive @auth(password: AuthRule, query: AuthRule, add: AuthRule, update: AuthRule, delete: AuthRule) on OBJECT | INTERFACE
+directive @cacheControl(maxAge: Int!) on QUERY
+
+directive @search(by: [DgraphIndex!]) on FIELD_DEFINITION
 
 input AddApplicationDeploymentInput {
   """id is randomly assigned"""
@@ -58,7 +58,7 @@ input AddApplicationDeploymentInput {
   deploymentRisk: ApplicationDeploymentRiskRef
   policyRunHistory: [RunHistoryRef!]
   deploymentTags: [KeyValueRef!]
-  hasSecurityIssues: SecurityIssueAffectsSummaryRef
+  hasSecurityIssues: [SecurityIssueAffectsSummaryRef!]
 }
 
 type AddApplicationDeploymentPayload {
@@ -171,7 +171,8 @@ type AddArtifactRiskPayload {
 
 input AddArtifactScanDataInput {
   id: String!
-  platform: String!
+
+  """platform: String! @search(by: [exact]) -> add later"""
   artifactSha: String!
   artifactNameTag: String!
   tool: String!
@@ -519,11 +520,6 @@ type AddPolicyEnforcementPayload {
 }
 
 input AddPolicyEvaluationDataInput {
-  """
-  data Type is gonna help us identify if a DB record is used to evaluate or a json
-     current scope json is for generic policies & vuln policies will attach
-  VulnNode -> pending redis data & other inprogram policies
-  """
   dataType: String!
   rawData: String
   vulnNode: VulnerabilityRef
@@ -565,7 +561,7 @@ input AddRunHistoryInput {
   DeployedAt: DateTime!
   Hash: String
   Pass: Boolean!
-  EvalData: PolicyEvaluationDataRef!
+  EvalData: PolicyEvaluationDataRef
   FileApi: String
   AttachedJira: JiraRef
   Status: String!
@@ -631,7 +627,7 @@ input AddSecurityIssueInput {
   policyEnforcements: PolicyEnforcementRef!
   AttachedJira: JiraRef
   Affects: [RunHistoryRef!]
-  Summary: SecurityIssueAffectsSummaryRef!
+  Summary: [SecurityIssueAffectsSummaryRef!]
 }
 
 type AddSecurityIssuePayload {
@@ -820,10 +816,11 @@ type ApplicationDeployment {
   """policyRunHistory is the policy execution history for this deployment"""
   policyRunHistory(filter: RunHistoryFilter, order: RunHistoryOrder, first: Int, offset: Int): [RunHistory!]
   deploymentTags(filter: KeyValueFilter, order: KeyValueOrder, first: Int, offset: Int): [KeyValue!]
-  hasSecurityIssues(filter: SecurityIssueAffectsSummaryFilter): SecurityIssueAffectsSummary
+  hasSecurityIssues(filter: SecurityIssueAffectsSummaryFilter, order: SecurityIssueAffectsSummaryOrder, first: Int, offset: Int): [SecurityIssueAffectsSummary!]
   artifactAggregate(filter: ArtifactFilter): ArtifactAggregateResult
   policyRunHistoryAggregate(filter: RunHistoryFilter): RunHistoryAggregateResult
   deploymentTagsAggregate(filter: KeyValueFilter): KeyValueAggregateResult
+  hasSecurityIssuesAggregate(filter: SecurityIssueAffectsSummaryFilter): SecurityIssueAffectsSummaryAggregateResult
 }
 
 type ApplicationDeploymentAggregateResult {
@@ -918,7 +915,7 @@ input ApplicationDeploymentPatch {
   deploymentRisk: ApplicationDeploymentRiskRef
   policyRunHistory: [RunHistoryRef!]
   deploymentTags: [KeyValueRef!]
-  hasSecurityIssues: SecurityIssueAffectsSummaryRef
+  hasSecurityIssues: [SecurityIssueAffectsSummaryRef!]
 }
 
 input ApplicationDeploymentRef {
@@ -951,7 +948,7 @@ input ApplicationDeploymentRef {
   deploymentRisk: ApplicationDeploymentRiskRef
   policyRunHistory: [RunHistoryRef!]
   deploymentTags: [KeyValueRef!]
-  hasSecurityIssues: SecurityIssueAffectsSummaryRef
+  hasSecurityIssues: [SecurityIssueAffectsSummaryRef!]
 }
 
 """
@@ -1476,7 +1473,8 @@ input ArtifactRiskRef {
 
 type ArtifactScanData {
   id: String!
-  platform: String!
+
+  """platform: String! @search(by: [exact]) -> add later"""
   artifactSha: String!
   artifactNameTag: String!
   tool: String!
@@ -1510,8 +1508,6 @@ type ArtifactScanDataAggregateResult {
   count: Int
   idMin: String
   idMax: String
-  platformMin: String
-  platformMax: String
   artifactShaMin: String
   artifactShaMax: String
   artifactNameTagMin: String
@@ -1562,7 +1558,6 @@ type ArtifactScanDataAggregateResult {
 
 input ArtifactScanDataFilter {
   id: StringHashFilter
-  platform: StringExactFilter
   artifactSha: StringExactFilter
   artifactNameTag: StringExactFilter_StringRegExpFilter
   tool: StringExactFilter
@@ -1583,7 +1578,6 @@ input ArtifactScanDataFilter {
 
 enum ArtifactScanDataHasFilter {
   id
-  platform
   artifactSha
   artifactNameTag
   tool
@@ -1616,7 +1610,6 @@ input ArtifactScanDataOrder {
 
 enum ArtifactScanDataOrderable {
   id
-  platform
   artifactSha
   artifactNameTag
   tool
@@ -1635,7 +1628,7 @@ enum ArtifactScanDataOrderable {
 }
 
 input ArtifactScanDataPatch {
-  platform: String
+  """platform: String! @search(by: [exact]) -> add later"""
   artifactSha: String
   artifactNameTag: String
   tool: String
@@ -1662,7 +1655,8 @@ input ArtifactScanDataPatch {
 
 input ArtifactScanDataRef {
   id: String
-  platform: String
+
+  """platform: String! @search(by: [exact]) -> add later"""
   artifactSha: String
   artifactNameTag: String
   tool: String
@@ -3868,6 +3862,7 @@ type PolicyEvaluationData {
      current scope json is for generic policies & vuln policies will attach
   VulnNode -> pending redis data & other inprogram policies
   """
+  Id: ID!
   dataType: String!
   rawData: String
   vulnNode(filter: VulnerabilityFilter): Vulnerability
@@ -3883,6 +3878,7 @@ type PolicyEvaluationDataAggregateResult {
 }
 
 input PolicyEvaluationDataFilter {
+  Id: [ID!]
   dataType: StringExactFilter
   has: [PolicyEvaluationDataHasFilter]
   and: [PolicyEvaluationDataFilter]
@@ -3909,11 +3905,6 @@ enum PolicyEvaluationDataOrderable {
 }
 
 input PolicyEvaluationDataPatch {
-  """
-  data Type is gonna help us identify if a DB record is used to evaluate or a json
-     current scope json is for generic policies & vuln policies will attach
-  VulnNode -> pending redis data & other inprogram policies
-  """
   dataType: String
   rawData: String
   vulnNode: VulnerabilityRef
@@ -3926,6 +3917,7 @@ input PolicyEvaluationDataRef {
      current scope json is for generic policies & vuln policies will attach
   VulnNode -> pending redis data & other inprogram policies
   """
+  Id: ID
   dataType: String
   rawData: String
   vulnNode: VulnerabilityRef
@@ -4014,6 +4006,7 @@ type Query {
   getRunHistory(id: ID!): RunHistory
   queryRunHistory(filter: RunHistoryFilter, order: RunHistoryOrder, first: Int, offset: Int): [RunHistory]
   aggregateRunHistory(filter: RunHistoryFilter): RunHistoryAggregateResult
+  getPolicyEvaluationData(Id: ID!): PolicyEvaluationData
   queryPolicyEvaluationData(filter: PolicyEvaluationDataFilter, order: PolicyEvaluationDataOrder, first: Int, offset: Int): [PolicyEvaluationData]
   aggregatePolicyEvaluationData(filter: PolicyEvaluationDataFilter): PolicyEvaluationDataAggregateResult
   getSecurityIssue(id: ID!): SecurityIssue
@@ -4206,7 +4199,7 @@ type RunHistory {
   DeployedAt: DateTime!
   Hash: String
   Pass: Boolean!
-  EvalData(filter: PolicyEvaluationDataFilter): PolicyEvaluationData!
+  EvalData(filter: PolicyEvaluationDataFilter): PolicyEvaluationData
   FileApi: String
   AttachedJira(filter: JiraFilter): Jira
   Status: String!
@@ -4476,8 +4469,9 @@ type SecurityIssue {
   policyEnforcements(filter: PolicyEnforcementFilter): PolicyEnforcement!
   AttachedJira(filter: JiraFilter): Jira
   Affects(filter: RunHistoryFilter, order: RunHistoryOrder, first: Int, offset: Int): [RunHistory!]
-  Summary(filter: SecurityIssueAffectsSummaryFilter): SecurityIssueAffectsSummary!
+  Summary(filter: SecurityIssueAffectsSummaryFilter, order: SecurityIssueAffectsSummaryOrder, first: Int, offset: Int): [SecurityIssueAffectsSummary!]
   AffectsAggregate(filter: RunHistoryFilter): RunHistoryAggregateResult
+  SummaryAggregate(filter: SecurityIssueAffectsSummaryFilter): SecurityIssueAffectsSummaryAggregateResult
 }
 
 type SecurityIssueAffectsSummary {
@@ -4507,6 +4501,7 @@ type SecurityIssueAffectsSummaryAggregateResult {
 input SecurityIssueAffectsSummaryFilter {
   id: [ID!]
   type: StringExactFilter
+  service: StringExactFilter_StringRegExpFilter
   has: [SecurityIssueAffectsSummaryHasFilter]
   and: [SecurityIssueAffectsSummaryFilter]
   or: [SecurityIssueAffectsSummaryFilter]
@@ -4655,7 +4650,7 @@ input SecurityIssuePatch {
   policyEnforcements: PolicyEnforcementRef
   AttachedJira: JiraRef
   Affects: [RunHistoryRef!]
-  Summary: SecurityIssueAffectsSummaryRef
+  Summary: [SecurityIssueAffectsSummaryRef!]
 }
 
 input SecurityIssueRef {
@@ -4673,7 +4668,7 @@ input SecurityIssueRef {
   policyEnforcements: PolicyEnforcementRef
   AttachedJira: JiraRef
   Affects: [RunHistoryRef!]
-  Summary: SecurityIssueAffectsSummaryRef
+  Summary: [SecurityIssueAffectsSummaryRef!]
 }
 
 enum Severity {

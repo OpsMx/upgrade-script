@@ -10,6 +10,8 @@ import (
 
 func ingestArtifactNameTag(gqlClient graphql.Client) error {
 
+	logger.Sl.Debugf("-----Ingesting ArtifactNameTag--------")
+
 	ctx := context.Background()
 
 	resp, err := QueryArtifactNameAndTag(ctx, gqlClient)
@@ -22,7 +24,7 @@ func ingestArtifactNameTag(gqlClient graphql.Client) error {
 		return nil
 	}
 
-	logger.Sl.Debugf("artifact scan data found in db", len(resp.QueryArtifactScanData))
+	logger.Sl.Debugf("total record of artifact scan data found in db:", len(resp.QueryArtifactScanData))
 
 	type scanDataUpdate struct {
 		id      string
@@ -42,6 +44,8 @@ func ingestArtifactNameTag(gqlClient graphql.Client) error {
 			return fmt.Errorf("error in updating the artifact name and tag in artifact scan data id %s : %s", value.id, err.Error())
 		}
 	}
+
+	logger.Sl.Debugf("-----Ingested ArtifactNameTag--------")
 
 	return nil
 }
