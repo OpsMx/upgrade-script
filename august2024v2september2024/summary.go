@@ -68,7 +68,6 @@ func setSummaryNodeForSecurityIssue(gqlClient graphql.Client) error {
 					return
 				}
 
-				artifactScanIdsInDeployment := []string{}
 				mapIds := make(map[string]*AddSecurityIssueAffectsSummaryInput)
 
 				for _, securityIssue := range securityissueResp.QuerySecurityIssue {
@@ -89,9 +88,6 @@ func setSummaryNodeForSecurityIssue(gqlClient graphql.Client) error {
 						}
 
 						artifactScanId := artifactScanIdResp.QueryArtifactScanData[0].Id
-
-						// if same scan Id in diff deployment data
-						artifactScanIdsInDeployment = appendIfNotPresent(artifactScanIdsInDeployment, artifactScanId)
 
 						mapId := strings.Join([]string{serviceName, appEnvId, appId, teamId, orgId}, "-")
 						element, ok := mapIds[mapId]
@@ -207,9 +203,6 @@ func setSummaryNodeForSecurityIssue(gqlClient graphql.Client) error {
 
 						artifactScanId := artifactScanIdResp.QueryArtifactScanData[0].Id
 
-						// if same scan Id in diff deployment data
-						artifactScanIdsInDeployment = appendIfNotPresent(artifactScanIdsInDeployment, artifactScanId)
-
 						mapId := strings.Join([]string{*exceptionId, serviceName, appEnvId, appId, teamId, orgId}, "-")
 						element, ok := mapIds[mapId]
 						if !ok {
@@ -317,10 +310,6 @@ func setSummaryNodeForSecurityIssue(gqlClient graphql.Client) error {
 					for _, artifactAnalysisDetails := range securityIssue.PredeploymentAnalysisNotHavingException {
 						artifactScanId := artifactAnalysisDetails.ArtifactScan.Id
 
-						if checkIfPresent(artifactScanIdsInDeployment, artifactScanId) {
-							continue
-						}
-
 						summaryForPreDeploymentWOException.ArtifactScanTS = append(summaryForPreDeploymentWOException.ArtifactScanTS, &ArtifactScanDataTSRef{
 							Artifact: &ArtifactScanDataRef{
 								Id: artifactScanId,
@@ -335,10 +324,6 @@ func setSummaryNodeForSecurityIssue(gqlClient graphql.Client) error {
 
 						artifactScanId := artifactAnalysisDetails.ArtifactScan.Id
 						exceptionId := artifactAnalysisDetails.Exception.Id
-
-						if checkIfPresent(artifactScanIdsInDeployment, artifactScanId) {
-							continue
-						}
 
 						mapId := strings.Join([]string{*exceptionId, artifactScanId}, "-")
 						element, ok := mapIds[mapId]
@@ -461,29 +446,6 @@ startIngestingSummary:
 
 	logger.Sl.Debugf("-----populated SummaryNode For SecurityIssues--------")
 	return nil
-}
-
-func checkIfPresent(slice []string, str string) bool {
-	for _, s := range slice {
-		if s == str {
-			return true // String already present, return original slice
-		}
-	}
-	return false
-}
-
-func appendIfNotPresent(slice []string, str string) []string {
-
-	if str == "" || str == "[]" {
-		return slice
-	}
-
-	for _, s := range slice {
-		if s == str {
-			return slice // String already present, return original slice
-		}
-	}
-	return append(slice, str) // String not present, append it to the slice
 }
 
 func saveToFile(filename string, data []byte) error {
