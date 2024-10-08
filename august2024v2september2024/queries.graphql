@@ -1,0 +1,300 @@
+mutation UpdateVulnerabilityForCritical {
+    updateVulnerability(
+        input: { set: { ratingsInt: 0 }, filter: { ratings: { eq: critical } } }
+    ) {
+        numUids
+    }
+}
+
+mutation UpdateVulnerabilityForHigh {
+    updateVulnerability(
+        input: { set: { ratingsInt: 1 }, filter: { ratings: { eq: high } } }
+    ) {
+        numUids
+    }
+}
+
+mutation UpdateVulnerabilityForMedium {
+    updateVulnerability(
+        input: { set: { ratingsInt: 2 }, filter: { ratings: { eq: medium } } }
+    ) {
+        numUids
+    }
+}
+
+mutation UpdateVulnerabilityForLow {
+    updateVulnerability(
+        input: { set: { ratingsInt: 3 }, filter: { ratings: { eq: low } } }
+    ) {
+        numUids
+    }
+}
+
+mutation UpdateVulnerabilityForUnknown {
+    updateVulnerability(
+        input: { set: { ratingsInt: 4 }, filter: { ratings: { eq: unknown } } }
+    ) {
+        numUids
+    }
+}
+
+mutation UpdateVulnerabilityForOthers {
+    updateVulnerability(
+        input: {
+            set: { ratingsInt: 5 }
+            filter: { not: { ratings: { in: [critical, high, medium, low, unknown] } } }
+        }
+    ) {
+        numUids
+    }
+}
+
+mutation UpdateVulnerabilityPriority1plus {
+    updateVulnerability(
+        input: { filter: { priority: { eq: "Priority 1+" } }, set: { priorityInt: 0 } }
+    ) {
+        numUids
+    }
+}
+
+mutation UpdateVulnerabilityPriority1 {
+    updateVulnerability(
+        input: { filter: { priority: { eq: "Priority 1" } }, set: { priorityInt: 1 } }
+    ) {
+        numUids
+    }
+}
+
+mutation UpdateVulnerabilityPriority2 {
+    updateVulnerability(
+        input: { filter: { priority: { eq: "Priority 2" } }, set: { priorityInt: 2 } }
+    ) {
+        numUids
+    }
+}
+
+mutation UpdateVulnerabilityPriority3 {
+    updateVulnerability(
+        input: { filter: { priority: { eq: "Priority 3" } }, set: { priorityInt: 3 } }
+    ) {
+        numUids
+    }
+}
+
+mutation UpdateVulnerabilityPriority4 {
+    updateVulnerability(
+        input: { filter: { priority: { eq: "Priority 4" } }, set: { priorityInt: 4 } }
+    ) {
+        numUids
+    }
+}
+
+mutation UpdateForcePolicyForGraphqlTool {
+    updatePolicyEnforcement(
+        input: { set: { forceApply: true }, filter: { datasourceTool: { eq: "graphql" } } }
+    ) {
+        numUids
+    }
+}
+
+query QueryArtifactNameAndTag {
+    queryArtifactScanData {
+        id
+        artifactDetails {
+            artifactName
+            artifactTag
+        }
+    }
+}
+
+mutation UpdateArtifactNameTag($id:String!, $artifactNameTag:String!) {
+    updateArtifactScanData(
+        input: { set: { artifactNameTag: $artifactNameTag }, filter: { id: { eq: $id } } }
+    ) {
+        numUids
+    }
+}
+
+query GetPolicyEnfIdFromRunHistory {
+    querySecurityIssue(filter: { has: Affects }) @cascade{
+        id
+        Affects(first: 1) {
+            policyEnforcements {
+                id
+            }
+        }
+    }
+}
+
+mutation UpdatePolicyEnfInSecurityIssue($securityIssueId: ID!, $policyEnfId: ID!) {
+    updateSecurityIssue(
+        input: {
+            filter: { id: [$securityIssueId] }
+            set: { policyEnforcements: { id: $policyEnfId } }
+        }
+    ) {
+        numUids
+    }
+}
+
+query GetArtifactNameAndTag {
+    queryArtifact(filter: { not: { has: buildDetails } }) {
+        artifactName
+        artifactTag
+        id
+    }
+}
+
+query GetBuildToolId(
+    $image:String!
+    $imageTag:String!) {
+    queryBuildTool(
+        filter: {
+            artifact: { eq: $image }
+            artifactTag: { eq: $imageTag }
+        }
+    ) {
+        id
+    }
+}
+
+mutation PopulateArtifactBuildDetails($artifactId: String!, $buildToolId: String!) {
+    updateArtifact(
+        input: {
+            filter: { id: { eq: $artifactId } }
+            set: { buildDetails: { id: $buildToolId } }
+        }
+    ) {
+        numUids
+    }
+}
+
+query GetAllVulnerabilities {
+    queryVulnerability {
+        id
+        parent
+        ratings
+    }
+}
+
+query SecurityIssueOfVuln($vuln: String!) {
+    querySecurityIssue(filter: { AlertTitle: { regexp: $vuln } }) {
+        Affects {
+            id
+            Pass
+            scheduledPolicy
+
+        }
+    }
+}
+
+mutation AddPolicyEvaluationData($input: [AddPolicyEvaluationDataInput!]!) {
+    addPolicyEvaluationData(input: $input) {
+        policyEvaluationData {
+            Id
+        }
+    }
+}
+
+query QuerySecurityIssue($batch: Int!, $offset: Int!) {
+    querySecurityIssue(first: $batch, offset: $offset) {
+        id
+        Severity
+        predeploymentAnalysisNotHavingException: Affects(
+            filter: { not: { has: [applicationDeployment, exception] } }
+        ) @cascade {
+            artifactScan {
+                id
+                createdAt
+            }
+        }
+        predeploymentAnalysisHavingException: Affects(
+            filter: { has: exception, not: { has: [applicationDeployment] } }
+        ) @cascade {
+            exception {
+                id
+            }
+            artifactScan {
+                id
+                createdAt
+            }
+        }
+        deploymentAnalysisHavingExceptions: Affects(
+            filter: { has: [applicationDeployment, exception] }
+        ) @cascade {
+            ArtifactSha
+            exception {
+                id
+            }
+            applicationDeployment {
+                id
+                component
+                deployedAt
+                deploymentStage
+                applicationEnvironment {
+                    id
+                    application {
+                        id
+                        team {
+                            id
+                            organization {
+                                id
+                            }
+                        }
+                    }
+                }
+                toolsUsed {
+                    sbom
+                }
+            }
+        }
+        deploymentAnalysisNotHavingExceptions: Affects(
+            filter: { has: applicationDeployment, not: { has: exception } }
+        ) @cascade {
+            ArtifactSha
+            applicationDeployment {
+                id
+                component
+                deployedAt
+                deploymentStage
+                applicationEnvironment {
+                    id
+                    application {
+                        id
+                        team {
+                            id
+                            organization {
+                                id
+                            }
+                        }
+                    }
+                }
+                toolsUsed {
+                    sbom
+                }
+            }
+        }
+    }
+}
+
+query QueryArtifactScanData($sha: String!, $tool: String!) {
+    queryArtifactScanData(
+        filter: { artifactSha: { eq: $sha }, tool: { eq: $tool } }
+    ) {
+        id
+    }
+}
+
+mutation AddSecurityIssueAffectsSummary(
+    $summary: [AddSecurityIssueAffectsSummaryInput!]!
+) {
+    addSecurityIssueAffectsSummary(input: $summary) {
+        numUids
+    }
+}
+
+query AggregateSecurityIssue {
+    aggregateSecurityIssue {
+        count
+    }
+}

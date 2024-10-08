@@ -31,6 +31,7 @@ type PolicyEnforcementScript struct {
 	Action         string   `json:"action,omitempty" yaml:"action,omitempty"`
 	ConditionValue string   `json:"conditionValue,omitempty" yaml:"conditionValue,omitempty"`
 	Status         bool     `json:"status,omitempty" yaml:"status,omitempty"`
+	ForceApply     bool     `json:"forceApply,omitempty" yaml:"forceApply,omitempty"`
 	Tags           []string `json:"tags,omitempty" yaml:"tags,omitempty"`
 	DatasourceTool string   `json:"datasourceTool,omitempty" yaml:"datasourceTool,omitempty"`
 }
@@ -278,6 +279,7 @@ func ingestPolicyEnforcement(graphqlClient graphql.Client, orgId string) error {
 				Id: orgId,
 			},
 			Status:         &policyEnfScript.Status,
+			ForceApply:     &policyEnfScript.ForceApply,
 			Severity:       MapSeverity(policyEnfScript.Severity),
 			Action:         policyEnfScript.Action,
 			ConditionValue: policyEnfScript.ConditionValue,
