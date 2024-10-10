@@ -10448,7 +10448,7 @@ var scriptMap = map[int]string{
 		msg = issues[idx].description
 		sugg = issues[idx].solution
 		error = ""
-		alertStatus := "alert"
+		alertStatus := "active"
 	}`,
 
 	338: `
@@ -10506,7 +10506,7 @@ var scriptMap = map[int]string{
 		msg = issues[idx].description
 		sugg = issues[idx].solution
 		error = ""
-		alertStatus := "alert"
+		alertStatus := "active"
 	}`,
 
 	339: `
@@ -10564,7 +10564,7 @@ var scriptMap = map[int]string{
 		msg = issues[idx].description
 		sugg = issues[idx].solution
 		error = ""
-		alertStatus := "alert"
+		alertStatus := "active"
 	}`,
 
 	340: `
@@ -10622,7 +10622,7 @@ var scriptMap = map[int]string{
 		msg = issues[idx].description
 		sugg = issues[idx].solution
 		error = ""
-		alertStatus := "alert"
+		alertStatus := "active"
 	}`,
 }
 
