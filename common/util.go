@@ -20,6 +20,6 @@ func shouldUpdateFeatTable() (bool, error) {
 	if schemaVersion < 4 { //if schema is before july 2024
 		return true, nil
 	}
-	logger.Sl.Info("Schema Version After July No Update Needed")
+	logger.Sl.Info("Schema Version After July No Update Needed for feat table")
 	return false, nil
 }
