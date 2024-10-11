@@ -98,7 +98,7 @@ func upgradeSchemaBasedOnStep(schemaVersion SchemaOrder, step int) SchemaOrder {
 func isExpDgraphRequired(currentVersionNum, upgradeToVersionNum int) (bool, error) {
 
 	for i := currentVersionNum + 1; i <= upgradeToVersionNum; i++ {
-		keyExists, mapVal := expDgraphSchemaMap[i]
+		mapVal, keyExists := expDgraphSchemaMap[i]
 		if !keyExists {
 			return false, fmt.Errorf("couln't find schema verison in exp dgraph map iteration: %d", i)
 		}

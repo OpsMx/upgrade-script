@@ -71,7 +71,7 @@ func setSummaryNodeForSecurityIssue(gqlClient graphql.Client) error {
 				mapIds := make(map[string]*AddSecurityIssueAffectsSummaryInput)
 
 				for _, securityIssue := range securityissueResp.QuerySecurityIssue {
-					logger.Sl.Debugf("Security Issue id ", *securityIssue.Id)
+					logger.Sl.Debugf("Security Issue id %v", *securityIssue.Id)
 
 					for _, deploymentDetails := range securityIssue.DeploymentAnalysisNotHavingExceptions {
 

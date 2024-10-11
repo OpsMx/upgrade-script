@@ -42,6 +42,7 @@ func StartUpgrade() error {
 	if schemaVersion == UnIdentifiedVersion && Conf.UpgradeFromVersion != "" {
 		logger.Logger.Info("---------------Could'nt Identify Schema version using the provided config------------------")
 		schemaVersion = UpgradeFromVersion
+		logger.Logger.Sugar().Infof("---------------Schema version defaulted to %s------------------", schemaVersion.NameOfSchema())
 	}
 
 	if checkIfSchemaUpgradeNotPossible(schemaVersion) {

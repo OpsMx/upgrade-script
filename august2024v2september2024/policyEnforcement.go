@@ -24,7 +24,7 @@ func migratePolicyEnfToSecurityIssues(gqlClient graphql.Client) error {
 		return nil
 	}
 
-	logger.Sl.Debugf("The total number of security issue records to link with the policy enforcement record:", len(resp.QuerySecurityIssue))
+	logger.Sl.Debugf("The total number of security issue records to link with the policy enforcement record: %v", len(resp.QuerySecurityIssue))
 
 	type scanDataUpdate struct {
 		securityIssueId   string
