@@ -13,12 +13,17 @@ import (
 	"upgradationScript/july2024august2024"
 	"upgradationScript/june2024june2024v2"
 	"upgradationScript/june2024v2july2024"
+	"upgradationScript/netradyne"
 
 	"upgradationScript/logger"
 	policyingenstionscript "upgradationScript/policies"
 )
 
 func StartUpgrade() error {
+
+	if Conf.UpdateOnlyPolicies {
+		return upgradePoliciesAndFeat()
+	}
 
 	logger.Logger.Info("------------Starting Upgrade--------------------")
 
@@ -119,6 +124,7 @@ func beginProcessOfUpgrade(upgradeTo SchemaOrder, isSecondDgraphRequired, isLast
 		return june2024june2024v2.UpgradeToJune2024V2(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, prodGraphqlClient)
 
 	case July2024Version:
+
 		if err := allChecksForExpDgraph(July2024Version); err != nil {
 			return err
 		}
@@ -126,6 +132,21 @@ func beginProcessOfUpgrade(upgradeTo SchemaOrder, isSecondDgraphRequired, isLast
 		expGraphqlClient := graphqlfunc.NewClient(Conf.ExpGraphQLAddr, Conf.ExpDgraphToken)
 
 		return june2024v2july2024.UpgradeToJuly2024(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, Conf.ExpGraphQLAddr, Conf.RemoteDgraphRestoreUrl, prodGraphqlClient, expGraphqlClient)
+
+	case NetradyneVersion:
+
+		if isSecondDgraphRequired && !isLastStep {
+
+			if err := allChecksForExpDgraph(NetradyneVersion); err != nil {
+				return err
+			}
+
+			expGraphqlClient := graphqlfunc.NewClient(Conf.ExpGraphQLAddr, Conf.ExpDgraphToken)
+
+			return netradyne.UpgradeToNetradyne(Conf.ExpGraphQLAddr, Conf.ExpDgraphToken, expGraphqlClient)
+		}
+
+		return netradyne.UpgradeToNetradyne(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, prodGraphqlClient)
 
 	case August2024Version:
 		if err := allChecksForExpDgraph(August2024Version); err != nil {

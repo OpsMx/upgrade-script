@@ -18,6 +18,7 @@ type Configuration struct {
 	UpgradeToVersion       string `json:"upgradeToVersion,omitempty" yaml:"upgradeToVersion,omitempty"`
 	UpgradeFromVersion     string `json:"upgradeFromVersion,omitempty" yaml:"upgradeFromVersion,omitempty"`
 	RemoteDgraphRestoreUrl string `json:"remoteDgraphRestoreUrl,omitempty" yaml:"remoteDgraphRestoreUrl,omitempty"`
+	UpdateOnlyPolicies     bool   `json:"updateOnlyPolicies,omitempty" yaml:"updateOnlyPolicies,omitempty"`
 }
 
 const (
