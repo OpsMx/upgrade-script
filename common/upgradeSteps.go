@@ -20,6 +20,10 @@ import (
 
 func StartUpgrade() error {
 
+	if Conf.UpdateOnlyPolicies {
+		return upgradePoliciesAndFeat()
+	}
+
 	logger.Logger.Info("------------Starting Upgrade--------------------")
 
 	logger.Logger.Info("------------Retrieve Schema from Prod Dgraph--------------------")
