@@ -3,107 +3,82 @@ package policyingenstionscript
 var scriptMap = map[int]string{
 	1: `
 	package opsmx
-
 	import future.keywords.in
-
+	
 	default allow = false
 	default private_repo = ""
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-	request_components = [input.metadata.ssd_secret.github.url, "repos", input.metadata.owner, input.metadata.repository]
-	request_url = concat("/", request_components)
-
-	token := input.metadata.ssd_secret.github.token
-
+	
+	request_components = [input.metadata.ssd_secret.github.url,"repos", input.metadata.owner, input.metadata.repository]
+	request_url = concat("/",request_components)
+	
+	token = input.metadata.ssd_secret.github.token
+	
 	request = {
 		"method": "GET",
 		"url": request_url,
-		"headers": {"Authorization": sprintf("Bearer %v", [token])},
+		"headers": {
+			"Authorization": sprintf("Bearer %v", [token]),
+		},
 	}
-
+	
 	response = http.send(request)
-
+	raw_body = response.raw_body
+	parsed_body = json.unmarshal(raw_body)
 	private_repo = response.body.private
-
+	
 	allow {
-		response.status_code = 200
+	  response.status_code = 200
 	}
-
-	deny[{"alertMsg": msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}] {
-		response.status_code == 401
-		msg := sprintf("Unauthorized to check repository configuration for repository %s/%s due to Bad Credentials.", [input.metadata.owner, input.metadata.repository])
-		error := sprintf("401 Unauthorized. Unauthorized to check repository configuration for repository %s/%s due to Bad Credentials.", [input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check the access token. It must have enough permissions to get repository configurations."
-		alertStatus := "error"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  response.status_code == 401
+	  msg := "Unauthorized to check repository configuration due to Bad Credentials."
+	  error := "401 Unauthorized."
+	  sugg := "Kindly check the access token. It must have enough permissions to get repository configurations."
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}] {
-		response.status_code == 404
-		msg := sprintf("Repository %s/%s not found while trying to fetch Repository Configuration.", [input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository configuration."
-		error := sprintf("Repository %s/%s not found while trying to fetch Repository Configuration.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 404
+	  msg := "Repository not found while trying to fetch Repository Configuration."
+	  sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository configuration."
+	  error := "Repo name or Organisation is incorrect."
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}] {
-		response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := sprintf("500 Internal Server Error. Received Error while checking repository configuration for repository %s/%s.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 500
+	  msg := "Internal Server Error."
+	  sugg := ""
+	  error := "GitHub is not reachable."
 	}
-
-	deny[{"alertMsg": msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}] {
-		codes = [401, 404, 500, 200, 301, 302]
-		not response.status_code in codes
-		msg := "Unable to fetch repository configuration."
-		error := sprintf("Error %v:%v receieved from Github upon trying to fetch Repository Configuration for repository %s/%s.", [response.status_code, response.body.message, input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
-		alertStatus := "error"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  codes = [401, 404, 500, 200, 301, 302]
+	  not response.status_code in codes
+	  msg := "Unable to fetch repository configuration."
+	  error := sprintf("Error %v:%v receieved from Github upon trying to fetch Repository Configuration.", [response.status_code, response.body.message])
+	  sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}] {
-		not policy_name in exception_list
-		private_repo == false
-		msg := sprintf("Repository %v/%v is found to be publically accessible.", [input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Adhere to security standards by restricting public accessibility of Github repository %s/%s.", [input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}] {
-		policy_name in exception_list
-		private_repo == false
-		msg := sprintf("Repository %v/%v is found to be publically accessible.", [input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Adhere to security standards by restricting public accessibility of Github repository %s/%s.", [input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "exception"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  private_repo = false
+	  msg := sprintf("Repository %v/%v is publically accessible.", [input.metadata.owner,input.metadata.repository])
+	  sugg := "Please change the repository visibility to private."
+	  error := ""
 	}`,
 
 	2: `
 	package opsmx
 	import future.keywords.in		
-
+	
 	default allow = false
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
+	
 	required_min_reviewers = {input.conditions[i].condition_value|input.conditions[i].condition_name == "Minimum Reviewers Policy"}
-
+	
 	request_components = [input.metadata.ssd_secret.github.url,"repos", input.metadata.owner, input.metadata.repository,"branches",input.metadata.branch, "protection"]
 	request_url = concat("/",request_components)
-
+	
 	token = input.metadata.ssd_secret.github.token
-
+	
 	request = {
 		"method": "GET",
 		"url": request_url,
@@ -111,99 +86,67 @@ var scriptMap = map[int]string{
 			"Authorization": sprintf("Bearer %v", [token]),
 		},
 	}
-
+	
 	response = http.send(request)
+	raw_body = response.raw_body
+	parsed_body = json.unmarshal(raw_body)
 	reviewers = response.body.required_pull_request_reviews.required_approving_review_count
-
+	
 	allow {
-		response.status_code = 200
+	  response.status_code = 200
 	}
-	deny[{"alertMsg": msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 401
-		error := sprintf("Unauthorized to check repository branch protection policy configuration for branch %s of repository %s/%s due to Bad Credentials.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		msg := ""
-		sugg := "Kindly check the access token. It must have enough permissions to get repository branch protection policy configurations."
-		alertStatus := "error"
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  response.status_code == 401
+	  error := "Unauthorized to check repository branch protection policy configuration due to Bad Credentials."
+	  msg := ""
+	  sugg := "Kindly check the access token. It must have enough permissions to get repository branch protection policy configurations."
 	}
-
-	deny[{"alertMsg": msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 404
-		error := sprintf("The branch protection policy for %s branch for Repository %s/%s not found while trying to fetch repository branch protection policy configuration.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check if the repository provided is correct and the branch protection policy is configured."
-		msg := ""
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 404
+	  error := "The branch protection policy for mentioned branch for Repository not found while trying to fetch repository branch protection policy configuration."
+	  sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository branch protection policy configuration."
+	  msg := ""
 	}
-
-	deny[{"alertMsg": msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := sprintf("500 Internal Server Error. Received Error while checking repository branch configuration for %s/%s.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 500
+	  msg := "Internal Server Error."
+	  sugg := ""
+	  error := "GitHub is not reachable."
 	}
-
-	deny[{"alertMsg": msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		not response.status_code in [401, 404, 500, 200, 301, 302]
-		msg := ""
-		error := sprintf("Error %v:%v receieved from Github upon trying to fetch repository branch protection policy configuration for %v/%v.", [response.status_code, response.body.message, input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
-		alertStatus := "error"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  not response.status_code in [401, 404, 500, 200, 301, 302]
+	  msg := ""
+	  error := sprintf("Error %v:%v receieved from Github upon trying to fetch repository branch protection policy configuration.", [response.status_code, response.body.message])
+	  sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
 	}
-
-	deny[{"alertMsg": msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		reviewers == 0
-		not policy_name in exception_list
-		msg := sprintf("The branch protection policy that mandates a pull request before merging has been deactivated for the %s branch of the %v/%v repository on GitHub.", [input.metadata.branch,input.metadata.repository])
-		sugg := sprintf("Adhere to the company policy by establishing the correct minimum reviewers for %s/%s Github repository.", [input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "active"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  reviewers == 0
+	  msg := sprintf("The branch protection policy that mandates a pull request before merging has been deactivated for the %s branch of the %v on GitHub", [input.metadata.branch,input.metadata.repository])
+	  sugg := sprintf("Adhere to the company policy by establishing the correct minimum reviewers for %s Github repo", [input.metadata.repository])
+	  error := ""
 	}
-
-	deny[{"alertMsg": msg, "suggestions": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		reviewers == 0
-		policy_name in exception_list
-		msg := sprintf("The branch protection policy that mandates a pull request before merging has been deactivated for the %s branch of the %v/%v repository on GitHub.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Adhere to the company policy by establishing the correct minimum reviewers for %s/%s Github repository.", [input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "exception"
-	}
-
-	deny[{"alertMsg": msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		reviewers < required_min_reviewers
-		not policy_name in exception_list
-		msg := sprintf("The branch protection policy that mandates a pull request before merging has mandatory reviewers count less than required for the %s branch of the %v/%v repository on GitHub.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Adhere to the company policy by establishing the correct minimum reviewers for %s/%s Github repository.", [input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestions": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		reviewers < required_min_reviewers
-		policy_name in exception_list
-		msg := sprintf("The branch protection policy that mandates a pull request before merging has mandatory reviewers count less than required for the %s branch of the %v/%v repository on GitHub.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Adhere to the company policy by establishing the correct minimum reviewers for %s /%s Github repository.", [input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "exception"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  reviewers < required_min_reviewers
+	  msg := sprintf("The branch protection policy that mandates a pull request before merging has mandatory reviewers count less than required for the %s branch of the %v on GitHub", [input.metadata.branch,input.metadata.repository])
+	  sugg := sprintf("Adhere to the company policy by establishing the correct minimum reviewers for %s Github repo", [input.metadata.repository])
+	  error := ""
 	}`,
 
 	3: `
 	package opsmx
-	import future.keywords.in
 
 	default allow = false
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-	request_components = [input.metadata.ssd_secret.github.url, "repos", input.metadata.owner, input.metadata.repository, "branches", input.metadata.branch, "protection"]
+	
+	request_components = [input.metadata.ssd_secret.github.url, "repos", input.metadata.github_org, input.metadata.github_repo,"branches",input.metadata.branch,"protection"]
 	request_url = concat("/",request_components)
-
+	
 	token = input.metadata.ssd_secret.github.token
-
+	
 	request = {
 		"method": "GET",
 		"url": request_url,
@@ -211,78 +154,66 @@ var scriptMap = map[int]string{
 			"Authorization": sprintf("Bearer %v", [token]),
 		},
 	}
-
+	
 	response = http.send(request)
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code = 404
-		response.body.message != "Branch not protected"
-		msg := sprintf("Repository, Branch or Branch Protection Policy not found while trying to fetch Repository Configuration for %s/%s.", [input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check if the repository and branch provided are correct and the access token has rights to read repository configuration. Also, verify if Branch Protection Policy is enabled."
-		error := sprintf("Repository, Branch or Branch Protection Policy not found while trying to fetch Repository Configuration for %s/%s.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "error"
+	raw_body = response.raw_body
+	parsed_body = json.unmarshal(raw_body)
+	obj := response.body
+	has_key(x, k) {
+	   dont_care(x[k])
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		codes = [401, 404, 500, 200, 301, 302]
-		not response.status_code in codes
-		msg := "Unable to fetch repository configuration."
-		error := sprintf("Error %v:%v receieved from Github upon trying to fetch Repository Configuration for repository %s/%s.", [response.status_code, response.body.message, input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
-		alertStatus := "error"
+	dont_care(_) = true
+	default branch_protection = false
+	branch_protection = has_key(obj, "required_pull_request_reviews")
+	allow {
+	  response.status_code = 200
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 401
-		msg := sprintf("Unauthorized to check repository configuration for repository %s/%s due to Bad Credentials.", [input.metadata.owner, input.metadata.repository])
-		error := sprintf("401 Unauthorized. Unauthorized to check repository configuration for repository %s/%s due to Bad Credentials.", [input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check the access token. It must have enough permissions to get repository configurations."
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code = 404
+	  msg := ""
+	  sugg := "Kindly provide the accurate repository name, organization, and branch details"
+	  error := sprintf("%v %v",[response.status_code,response.body.message])
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := sprintf("500 Internal Server Error. Received Error while checking repository configuration for repository %s/%s.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code = 403
+	  msg := ""
+	  sugg := sprintf("The repository %v is private,Make this repository public to enable this feature", [input.metadata.github_repo])
+	  error := sprintf("%v %v",[response.status_code,response.body.message])
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		policy_name in exception_list
-		response.body.message == "Branch not protected"
-		msg := sprintf("Branch %v of Github repository %v/%v is not protected.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Adhere to the company policy by enforcing Branch Protection Policies for %v/%v Github repository.",[input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "exception"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code = 401
+	  msg := ""
+	  sugg := "Please provide the Appropriate Git Token for the User"
+	  error := sprintf("%s %v", [parsed_body.message,response.status])
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": "active"}]{
-		not policy_name in exception_list
-		response.body.message == "Branch not protected"
-		msg := sprintf("Branch %v of Github repository %v/%v is not protected.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Adhere to the company policy by enforcing Branch Protection Policies for %v/%v Github repository.",[input.metadata.owner, input.metadata.repository])
-		error := ""
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code = 500
+	  msg := "Internal Server Error"
+	  sugg := ""
+	  error := "GitHub is not reachable"
+	}
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  branch_protection != true
+	  msg := sprintf("Github repo %v of branch %v is not protected", [input.metadata.github_repo, input.metadata.default_branch])
+	  sugg := sprintf("Adhere to the company policy by enforcing Code Owner Reviews for %s Github repo",[input.metadata.github_repo])
+	  error := ""
 	}`,
 
 	4: `
 	package opsmx
-	import future.keywords.in
 
 	default allow = false
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-	request_components = [input.metadata.ssd_secret.github.url, "repos", input.metadata.owner, input.metadata.repository, "branches", input.metadata.branch, "protection"]
+	
+	request_components = [input.metadata.ssd_secret.github.url, "repos", input.metadata.owner, input.metadata.repository,"branches",input.metadata.branch,"protection"]
 	request_url = concat("/", request_components)
-
+	
 	token = input.metadata.ssd_secret.github.token
-
+	
 	request = {
 		"method": "GET",
 		"url": request_url,
@@ -290,58 +221,40 @@ var scriptMap = map[int]string{
 			"Authorization": sprintf("Bearer %v", [token]),
 		},
 	}
-
+	
 	response = http.send(request)
-
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 404
-		error := sprintf("The branch protection policy for %s branch for Repository %s/%s not found while trying to fetch repository branch protection policy configuration.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check if the repository provided is correct and the branch protection policy is configured."
-		msg := ""
-		alertStatus := "error"
+	raw_body = response.raw_body
+	parsed_body = json.unmarshal(raw_body)
+	
+	allow {
+	  response.status_code = 200
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 401
-		error := sprintf("Unauthorized to check repository branch protection policy configuration for branch %s of repository %s/%s due to Bad Credentials.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		msg := ""
-		sugg := "Kindly check the access token. It must have enough permissions to get repository branch protection policy configurations."
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code = 404
+	  msg := ""
+	  sugg := "Kindly provide the accurate repository name, organization, and branch details. Also, check if branch protection policy is configured."
+	  error := sprintf("%v %v",[response.status_code,response.body.message])
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := sprintf("500 Internal Server Error. Received Error while checking repository branch configuration for %s/%s.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code = 401
+	  msg := ""
+	  sugg := "Please provide the Appropriate Git Token for the User"
+	  error := sprintf("%s %v", [parsed_body.message,response.status])
 	}
-
-	deny[{"alertMsg": msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		not response.status_code in [401, 404, 500, 200, 301, 302]
-		msg := ""
-		error := sprintf("Error %v:%v receieved from Github upon trying to fetch repository branch protection policy configuration for %v/%v.", [response.status_code, response.body.message, input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code = 500
+	  msg := "Internal Server Error"
+	  sugg := ""
+	  error := "GitHub is not reachable"
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		response.body.allow_deletions.enabled == true
-		policy_name in exception_list
-		msg := sprintf("Deletion of Branch is not restricted for Branch %v of Github Repository %v/%v.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Restrict Branch Deletion operations by enforcing required branch protection policies on branch %v of Github repository %v/%v.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "exception"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.body.allow_deletions.enabled == true
-		not policy_name in exception_list
-		msg := sprintf("Deletion of Branch is not restricted for Branch %v of Github Repository %v/%v.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Restrict Branch Deletion operations by enforcing required branch protection policies on branch %v of Github repository %v/%v.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "active"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.body.allow_deletions.enabled = true
+	  msg := sprintf("Github repo %v is having policy and branch cannot be deleted", [input.metadata.repository])
+	  sugg := sprintf("Disable branch deletion in %s Github repo to align with the company policy", [input.metadata.repository])
+	  error := ""
 	}`,
 
 	5: `
@@ -350,14 +263,7 @@ var scriptMap = map[int]string{
 
 	default allow = false
 
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-	request_components = [input.metadata.ssd_secret.github.url, "repos", input.metadata.owner, input.metadata.repository, "branches", input.metadata.branch, "protection", "required_signatures"]
+	request_components = [input.metadata.ssd_secret.github.url,"repos", input.metadata.owner, input.metadata.repository, "branches", input.metadata.branch, "protection", "required_signatures"]
 	request_url = concat("/",request_components)
 
 	token = input.metadata.ssd_secret.github.token
@@ -371,56 +277,41 @@ var scriptMap = map[int]string{
 
 	response = http.send(request)
 
-	deny[{"alertMsg": msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 401
-		error := sprintf("Unauthorized to check repository branch protection policy configuration for branch %s of repository %s/%s due to Bad Credentials.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		msg := ""
-		sugg := "Kindly check the access token. It must have enough permissions to get repository branch protection policy configurations."
-		alertStatus := "error"
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	response.status_code == 401
+	error := "Unauthorized to check repository branch configuration due to Bad Credentials."
+	msg := ""
+	sugg := "Kindly check the access token. It must have enough permissions to get repository branch configurations."
 	}
 
-	deny[{"alertMsg": msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 404
-		error := sprintf("The branch protection policy for %s branch for Repository %s/%s not found while trying to fetch repository branch protection policy configuration.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check if the repository provided is correct and the branch protection policy is configured."
-		msg := ""
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	response.status_code == 404
+	error := "The branch protection policy for mentioned branch for Repository not found while trying to fetch repository branch configuration."
+	sugg := "Kindly check if the repository and branch provided is correct and the access token has rights to read repository branch protection policy configuration. Also check if the branch protection policy is configured for this repository."
+	msg := ""
 	}
 
-	deny[{"alertMsg": msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := sprintf("500 Internal Server Error. Received Error while checking repository branch configuration for %s/%s.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	response.status_code == 500
+	msg := "Internal Server Error."
+	sugg := ""
+	error := "GitHub is not reachable."
 	}
 
-	deny[{"alertMsg": msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		not response.status_code in [401, 404, 500, 200, 301, 302]
-		msg := ""
-		error := sprintf("Error %v:%v receieved from Github upon trying to fetch repository branch protection policy configuration for %v/%v.", [response.status_code, response.body.message, input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
-		alertStatus := "error"
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	codes = [401, 404, 500, 200, 302]
+	not response.status_code in codes
+	msg := ""
+	error := sprintf("Error %v:%v receieved from Github upon trying to fetch repository branch configuration.", [response.status_code, response.body.message])
+	sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
 	}
 
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		response.status_code in [200, 302]
-		response.body.enabled != true
-		policy_name in exception_list
-		msg := sprintf("Branch %v of Github Repository %v/%v does not have signed commits mandatory.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		error := ""
-		sugg := sprintf("Adhere to the company policy by enforcing all commits to be signed for %v/%v Github repository.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "exception"
-	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code in [200, 302]
-		response.body.enabled != true
-		not policy_name in exception_list
-		msg := sprintf("Branch %v of Github Repository %v/%v does not have signed commits mandatory.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		error := ""
-		sugg := sprintf("Adhere to the company policy by enforcing all commits to be signed for %v/%v Github repository.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "active"
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	response.status_code in [200, 302]
+	response.body.enabled != true
+	msg := sprintf("Branch %v of Github Repository %v/%v does not have signed commits mandatory.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
+	error := ""
+	sugg := sprintf("Adhere to the company policy by enforcing all commits to be signed for %v/%v Github repo", [input.metadata.owner, input.metadata.repository])
 	}`,
 
 	6: `
@@ -429,14 +320,7 @@ var scriptMap = map[int]string{
 
 	default allow = false
 
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-	request_components = [input.metadata.ssd_secret.github.url, "orgs", input.metadata.owner]
+	request_components = [input.metadata.ssd_secret.github.url,"orgs", input.metadata.owner]
 	request_url = concat("/",request_components)
 
 	token = input.metadata.ssd_secret.github.token
@@ -450,60 +334,48 @@ var scriptMap = map[int]string{
 	}
 
 	response = http.send(request)
-
+	raw_body = response.raw_body
+	parsed_body = json.unmarshal(raw_body)
 	mfa_enabled = response.body.two_factor_requirement_enabled
 
-
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 401
-		error := "Unauthorized to check organisation configuration due to Bad Credentials."
-		msg := ""
-		sugg := "Kindly check the access token. It must have enough permissions to get organisation configurations."
-		alertStatus := "error"
+	allow {
+	response.status_code = 200
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 404
-		error := "Mentioned Organisation not found while trying to fetch organisation configuration. The repository does not belong to an organisation."
-		sugg := "Kindly check if the organisation provided is correct and the access token has rights to read organisation configuration. Also, verify if the repository belongs to an organisation. The two-factor authentication feature is not provided for individual repositories which are not owned by any oranisation."
-		msg := ""
-		alertStatus := "error"
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	response.status_code == 401
+	error := "Unauthorized to check organisation configuration due to Bad Credentials."
+	msg := ""
+	sugg := "Kindly check the access token. It must have enough permissions to get organisation configurations."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := sprintf("500 Internal Server Error. Received Error while checking organisation configuration for %s.", [input.metadata.owner])
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	response.status_code == 404
+	error := "Mentioned Organisation not found while trying to fetch org configuration. The repository does not belong to an organisation."
+	sugg := "Kindly check if the organisation provided is correct and the access token has rights to read organisation configuration.Also, verify if the repository belongs to an organisation."
+	msg := ""
 	}
 
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		codes = [401, 404, 500, 200, 302]
-		not response.status_code in codes
-		msg := ""
-		error := sprintf("Error %v:%v receieved from Github upon trying to fetch organisation configuration.", [response.status_code, response.body.message])
-		sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	response.status_code == 500
+	msg := "Internal Server Error."
+	sugg := ""
+	error := "GitHub is not reachable."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		mfa_enabled == null
-		policy_name in exception_list
-		msg := sprintf("Github Organisation %v doesnt have the mfa enabled.", [input.metadata.owner])
-		sugg := sprintf("Adhere to the company policy by enabling 2FA for %s organisation.",[input.metadata.owner])
-		error := ""
-		alertStatus := "exception"
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	codes = [401, 404, 500, 200, 302]
+	not response.status_code in codes
+	msg := ""
+	error := sprintf("Error %v:%v receieved from Github upon trying to fetch organisation configuration.", [response.status_code, response.body.message])
+	sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		mfa_enabled == null
-		not policy_name in exception_list
-		msg := sprintf("Github Organisation %v does not have the mfa enabled.", [input.metadata.owner])
-		sugg := sprintf("Adhere to the company policy by enabling 2FA for %s organisation.",[input.metadata.owner])
-		error := ""
-		alertStatus := "active"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	mfa_enabled == null
+	msg := sprintf("Github Organisation %v doesnt have the mfa enabled.", [input.metadata.owner])
+	sugg := sprintf("Adhere to the company policy by enabling 2FA for %s.",[input.metadata.owner])
+	error := ""
 	}`,
 
 	7: `
@@ -549,19 +421,12 @@ var scriptMap = map[int]string{
 	10: `
 	package opsmx
 	import future.keywords.in
-
+	
 	default allow = false
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
+	
 	request_components = [input.metadata.ssd_secret.github.url,"orgs", input.metadata.owner, "actions", "permissions", "workflow"]
 	request_url = concat("/",request_components)
-
+	
 	token = input.metadata.ssd_secret.github.token
 	request = {
 		"method": "GET",
@@ -570,76 +435,54 @@ var scriptMap = map[int]string{
 			"Authorization": sprintf("Bearer %v", [token]),
 		},
 	}
-
+	
 	response = http.send(request)
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 401
-		msg := sprintf("Unauthorized to check Organisation Workflow Permissions for organisation %s due to Bad Credentials.", [input.metadata.owner])
-		error := sprintf("401 Unauthorized. Unauthorized to check Workflow Permissions for organisation %s due to Bad Credentials.", [input.metadata.owner])
-		sugg := "Kindly check the access token. It must have enough permissions to get organisation workflow permissions."
-		alertStatus := "error"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  response.status_code == 401
+	  msg := "Unauthorized to check Organisation Workflow Permissions."
+	  error := "401 Unauthorized."
+	  sugg := "Kindly check the access token. It must have enough permissions to get organisation workflow permissions."
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 404
-		msg := "Mentioned Organisation not found while trying to fetch organisation workflow permissions."
-		sugg := "Kindly check if the organisation provided is correct."
-		error := "Organisation name is incorrect."
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 404
+	  msg := "Mentioned Organisation not found while trying to fetch organisation workflow permissions."
+	  sugg := "Kindly check if the organisation provided is correct."
+	  error := "Organisation name is incorrect."
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := sprintf("500 Internal Server Error. Received Error while checking organisation workflow configuration for %s.", [input.metadata.owner])
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 500
+	  msg := "Internal Server Error."
+	  sugg := ""
+	  error := "GitHub is not reachable."
 	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		codes = [401, 404, 500, 200, 302]
-		not response.status_code in codes
-		msg := "Unable to fetch organisation workflow permissions."
-		error := sprintf("Error %v:%v receieved from Github upon trying to fetch organisation workflow permissions.", [response.status_code, response.body.message])
-		sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
-		alertStatus := "error"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  codes = [401, 404, 500, 200, 302]
+	  not response.status_code in codes
+	  msg := "Unable to fetch organisation workflow permissions."
+	  error := sprintf("Error %v:%v receieved from Github upon trying to fetch organisation workflow permissions.", [response.status_code, response.body.message])
+	  sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
 	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		response.body.default_workflow_permissions != "read"
-		policy_name in exception_list
-		msg := sprintf("Default workflow permissions for Organisation %v is not set to read.", [input.metadata.owner])
-		sugg := sprintf("Adhere to the company policy by enforcing default_workflow_permissions of Organisation %s to read only.", [input.metadata.owner])
-		error := ""
-		alertStatus := "exception"
-	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.body.default_workflow_permissions != "read"
-		not policy_name in exception_list
-		msg := sprintf("Default workflow permissions for Organisation %v is not set to read.", [input.metadata.owner])
-		sugg := sprintf("Adhere to the company policy by enforcing default_workflow_permissions of Organisation %s to read only.", [input.metadata.owner])
-		error := ""
-		alertStatus := "active"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  response.body.default_workflow_permissions != "read"
+	  msg := sprintf("Default workflow permissions for Organisation %v is not set to read.", [input.metadata.owner])
+	  sugg := sprintf("Adhere to the company policy by enforcing default_workflow_permissions of Organisation %s to read only.", [input.metadata.owner])
+	  error := ""
 	}`,
 
 	11: `
 	package opsmx
 	import future.keywords.in
-
+	
 	default allow = false
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
+	
 	request_components = [input.metadata.ssd_secret.github.url,"repos", input.metadata.owner, input.metadata.repository, "actions", "permissions", "workflow"]
 	request_url = concat("/",request_components)
-
+	
 	token = input.metadata.ssd_secret.github.token
 	request = {
 		"method": "GET",
@@ -648,204 +491,1408 @@ var scriptMap = map[int]string{
 			"Authorization": sprintf("Bearer %v", [token]),
 		},
 	}
-
+	
 	response = http.send(request)
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 401
-		msg := sprintf("Unauthorized to check Repository Workflow Permissions for organisation %s/%s due to Bad Credentials.", [input.metadata.owner, input.metadata.repository])
-		error := sprintf("401 Unauthorized. Unauthorized to check Workflow Permissions for repository %s/%s due to Bad Credentials.", [input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check the access token. It must have enough permissions to get organisation workflow permissions."
-		alertStatus := "error"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  response.status_code == 401
+	  msg := "Unauthorized to check Repository Workflow Permissions."
+	  error := "401 Unauthorized."
+	  sugg := "Kindly check the access token. It must have enough permissions to get repository workflow permissions."
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 404
-		error := "Mentioned Repository or workflows not found while trying to fetch repository workflow permissions."
-		sugg := "Kindly check if the organisation provided is correct and the access token has rights to read organisation configuration. Also, verify if the repository belongs to an organisation. The two-factor authentication feature is not provided for individual repositories which are not owned by any oranisation."
-		msg := ""
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 404
+	  msg := "Mentioned Repository not found while trying to fetch repository workflow permissions."
+	  sugg := "Kindly check if the repository provided is correct."
+	  error := "Repository name is incorrect."
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := sprintf("500 Internal Server Error. Received Error while checking repository workflow configuration for %s/%s.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 500
+	  msg := "Internal Server Error."
+	  sugg := ""
+	  error := "GitHub is not reachable."
 	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		codes = [401, 404, 500, 200, 302]
-		not response.status_code in codes
-		msg := "Unable to fetch repository workflow permissions."
-		error := sprintf("Error %v:%v receieved from Github upon trying to fetch repository workflow permissions.", [response.status_code, response.body.message])
-		sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
-		alertStatus := "error"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  codes = [401, 404, 500, 200, 302]
+	  not response.status_code in codes
+	  msg := "Unable to fetch repository workflow permissions."
+	  error := sprintf("Error %v:%v receieved from Github upon trying to fetch repository workflow permissions.", [response.status_code, response.body.message])
+	  sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
 	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.body.default_workflow_permissions != "read"
-		not policy_name in exception_list
-		msg := sprintf("Default workflow permissions for Repository %v/%v is not set to read.", [input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Adhere to the company policy by enforcing default_workflow_permissions of Repository %v/%v to read only.", [input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "active"
-	}
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		response.body.default_workflow_permissions != "read"
-		policy_name in exception_list
-		msg := sprintf("Default workflow permissions for Repository %v/%v is not set to read.", [input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Adhere to the company policy by enforcing default_workflow_permissions of Repository %v/%v to read only.", [input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "exception"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  response.body.default_workflow_permissions != "read"
+	  msg := sprintf("Default workflow permissions for Repository %v/%v is not set to read.", [input.metadata.owner, input.metadata.repository])
+	  sugg := sprintf("Adhere to the company policy by enforcing default_workflow_permissions of Repository %v/%v to read only.", [input.metadata.owner, input.metadata.repository])
+	  error := ""
 	}`,
 
 	12: `
 	package opsmx
-	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
 		input.metadata.build_image_sha == "" 
 		msg = ""
 		sugg = "Ensure that build platform is integrated with SSD."
 		error = "Complete Build Artifact information could not be identified."
-		alertStatus := "error"
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
 		input.metadata.image_sha == ""
 		msg = ""
-		sugg = "Ensure that deployment platform is integrated with SSD using Admission Controller."
+		sugg = "Ensure that deployment platform is integrated with SSD usin Admission Controller."
 		error = "Artifact information could not be identified from Deployment Environment."
-		alertStatus := "error"
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
 		input.metadata.image_sha != input.metadata.build_image_sha
-		not policy_name in exception_list
+		
 		msg = sprintf("Non-identical by hash artifacts identified at Build stage and Deployment Environment.\nBuild Image: %v:%v \n Deployed Image: %v:%v", [input.metadata.build_image, input.metadata.build_image_tag, input.metadata.image, input.metadata.image_tag])
 		sugg = "Ensure that built image details & deployed Image details match. Check for possible misconfigurations."
 		error = ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		input.metadata.image_sha != input.metadata.build_image_sha
-		policy_name in exception_list
-		msg = sprintf("Non-identical by hash artifacts identified at Build stage and Deployment Environment.\nBuild Image: %v:%v \n Deployed Image: %v:%v", [input.metadata.build_image, input.metadata.build_image_tag, input.metadata.image, input.metadata.image_tag])
-		sugg = "Ensure that built image details & deployed Image details match. Check for possible misconfigurations."
-		error = ""
-		alertStatus := "exception"
 	}`,
 
 	13: `
 	package opsmx
 	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-	openssf_results_file = concat("_", [input.metadata.owner, input.metadata.repository, input.metadata.build_id])
-	openssf_results_file_complete = concat("", [openssf_results_file, "_scorecard.json"])
-
 	policy_name = input.conditions[0].condition_name 
 	check_orig = replace(replace(policy_name, "Open SSF ", ""), " Policy", "")
-
+		
 	check_name = replace(lower(check_orig), " ", "-")
 	threshold = to_number(input.conditions[0].condition_value)
-	request_url = concat("",[input.metadata.toolchain_addr, "api", "/v1", "/openssfScore?scoreCardName=", openssf_results_file_complete, "&", "checkName=", check_name, "&", "scanOperation=", "openssfScan"])
 
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_scorecard.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	request_url = concat("",[input.metadata.toolchain_addr, "api", "/v1", "/openssfScore?scoreCardName=", file_name, "&", "checkName=", check_name, "&", "scanOperation=", "openssfScan"])
 	request = {
 		"method": "GET",
 		"url": request_url,
 	}
-
+	
 	response = http.send(request)
-
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.body.code == 404
-		msg := ""
-		sugg := sprintf("Results for %v check could not be obtained. Suggests incompatibility between the check and repository. Kindly enable related features and integrations.", [policy_name])
-		error := sprintf("Error Received: %v.",[response.body.error])
-		alertStatus := "error"
+	
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.body.code == 404
+	  msg := ""
+	  sugg := sprintf("Results for %v check could not be obtained. Suggests incompatibility between the check and repository. Kindly enable related features and integrations.", [policy_name])
+	  error := sprintf("Error Received: %v.",[response.body.error])
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 500
-		msg := ""
-		sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
-		error := sprintf("Error Received: %v.",[response.body.error])
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 500
+	  msg := ""
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
+	  error := sprintf("Error Received: %v.",[response.body.error])
 	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		codes = [401, 404, 500, 200, 302]
-		not response.status_code in codes
-		msg := ""
-		error := sprintf("Error %v receieved: %v", [response.body.error])
-		sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
-		alertStatus := "error"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  codes = [401, 404, 500, 200, 302]
+	  not response.status_code in codes
+	  msg := ""
+	  error := sprintf("Error %v receieved: %v", [response.body.error])
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
 	}
-
+	
 	default in_range = false
-
+	
 	isNumberBetweenTwoNumbers(num, lower, upper) {
 		num >= lower
 		num <= upper
 	}
-
+	
 	in_range = isNumberBetweenTwoNumbers(response.body.score, 0, 10)
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  in_range == true
+	  response.body.score < threshold
+	
+	  documentation := response.body.documentationUrl 
+	  msg := sprintf("%v score for repo %v/%v is %v, which is less than 5 out 10.", [policy_name, input.metadata.owner, input.metadata.repository, response.body.score])
+	  sugg := sprintf("%v Check Documentation: %v", [input.metadata.suggestion, documentation])
+	  error := ""
+	}`,
 
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		in_range == true
-		response.body.score < threshold
-		not policy_name in exception_list
-		documentation := response.body.documentationUrl 
-		msg := sprintf("%v score for repo %v/%v is %v, which is less than 5 out 10.", [policy_name, input.metadata.owner, input.metadata.repository, response.body.score])
-		sugg := sprintf("%v Check Documentation: %v", [input.metadata.suggestion, documentation])
-		error := ""
-		alertStatus := "active"
+	14: `
+	package opsmx
+	import future.keywords.in
+
+	policy_name = input.conditions[0].condition_name 
+	check_orig = replace(replace(policy_name, "Open SSF ", ""), " Policy", "")
+		
+	check_name = replace(lower(check_orig), " ", "-")
+	threshold = to_number(input.conditions[0].condition_value)
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_scorecard.json"]) {
+		input.metadata.source_code_path == ""
 	}
 
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		in_range == true
-		response.body.score < threshold
-		policy_name in exception_list
-		documentation := response.body.documentationUrl 
-		msg := sprintf("%v score for repo %v/%v is %v, which is less than 5 out 10.", [policy_name, input.metadata.owner, input.metadata.repository, response.body.score])
-		sugg := sprintf("%v Check Documentation: %v", [input.metadata.suggestion, documentation])
-		error := ""
-		alertStatus := "exception"
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	request_url = concat("",[input.metadata.toolchain_addr, "api", "/v1", "/openssfScore?scoreCardName=", file_name, "&", "checkName=", check_name, "&", "scanOperation=", "openssfScan"])
+	request = {
+		"method": "GET",
+		"url": request_url,
+	}
+	
+	response = http.send(request)
+	
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.body.code == 404
+	  msg := ""
+	  sugg := sprintf("Results for %v check could not be obtained. Suggests incompatibility between the check and repository. Kindly enable related features and integrations.", [policy_name])
+	  error := sprintf("Error Received: %v.",[response.body.error])
+	}
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 500
+	  msg := ""
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
+	  error := sprintf("Error Received: %v.",[response.body.error])
+	}
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  codes = [401, 404, 500, 200, 302]
+	  not response.status_code in codes
+	  msg := ""
+	  error := sprintf("Error %v receieved: %v", [response.body.error])
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
+	}
+	
+	default in_range = false
+	
+	isNumberBetweenTwoNumbers(num, lower, upper) {
+		num >= lower
+		num <= upper
+	}
+	
+	in_range = isNumberBetweenTwoNumbers(response.body.score, 0, 10)
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  in_range == true
+	  response.body.score < threshold
+	
+	  documentation := response.body.documentationUrl 
+	  msg := sprintf("%v score for repo %v/%v is %v, which is less than 5 out 10.", [policy_name, input.metadata.owner, input.metadata.repository, response.body.score])
+	  sugg := sprintf("%v Check Documentation: %v", [input.metadata.suggestion, documentation])
+	  error := ""
+	}`,
+
+	15: `
+	package opsmx
+	import future.keywords.in
+
+	policy_name = input.conditions[0].condition_name 
+	check_orig = replace(replace(policy_name, "Open SSF ", ""), " Policy", "")
+		
+	check_name = replace(lower(check_orig), " ", "-")
+	threshold = to_number(input.conditions[0].condition_value)
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_scorecard.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	request_url = concat("",[input.metadata.toolchain_addr, "api", "/v1", "/openssfScore?scoreCardName=", file_name, "&", "checkName=", check_name, "&", "scanOperation=", "openssfScan"])
+	request = {
+		"method": "GET",
+		"url": request_url,
+	}
+	
+	response = http.send(request)
+	
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.body.code == 404
+	  msg := ""
+	  sugg := sprintf("Results for %v check could not be obtained. Suggests incompatibility between the check and repository. Kindly enable related features and integrations.", [policy_name])
+	  error := sprintf("Error Received: %v.",[response.body.error])
+	}
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 500
+	  msg := ""
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
+	  error := sprintf("Error Received: %v.",[response.body.error])
+	}
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  codes = [401, 404, 500, 200, 302]
+	  not response.status_code in codes
+	  msg := ""
+	  error := sprintf("Error %v receieved: %v", [response.body.error])
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
+	}
+	
+	default in_range = false
+	
+	isNumberBetweenTwoNumbers(num, lower, upper) {
+		num >= lower
+		num <= upper
+	}
+	
+	in_range = isNumberBetweenTwoNumbers(response.body.score, 0, 10)
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  in_range == true
+	  response.body.score < threshold
+	
+	  documentation := response.body.documentationUrl 
+	  msg := sprintf("%v score for repo %v/%v is %v, which is less than 5 out 10.", [policy_name, input.metadata.owner, input.metadata.repository, response.body.score])
+	  sugg := sprintf("%v Check Documentation: %v", [input.metadata.suggestion, documentation])
+	  error := ""
+	}`,
+
+	16: `
+	package opsmx
+	import future.keywords.in
+
+	policy_name = input.conditions[0].condition_name 
+	check_orig = replace(replace(policy_name, "Open SSF ", ""), " Policy", "")
+		
+	check_name = replace(lower(check_orig), " ", "-")
+	threshold = to_number(input.conditions[0].condition_value)
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_scorecard.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	request_url = concat("",[input.metadata.toolchain_addr, "api", "/v1", "/openssfScore?scoreCardName=", file_name, "&", "checkName=", check_name, "&", "scanOperation=", "openssfScan"])
+	request = {
+		"method": "GET",
+		"url": request_url,
+	}
+	
+	response = http.send(request)
+	
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.body.code == 404
+	  msg := ""
+	  sugg := sprintf("Results for %v check could not be obtained. Suggests incompatibility between the check and repository. Kindly enable related features and integrations.", [policy_name])
+	  error := sprintf("Error Received: %v.",[response.body.error])
+	}
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 500
+	  msg := ""
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
+	  error := sprintf("Error Received: %v.",[response.body.error])
+	}
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  codes = [401, 404, 500, 200, 302]
+	  not response.status_code in codes
+	  msg := ""
+	  error := sprintf("Error %v receieved: %v", [response.body.error])
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
+	}
+	
+	default in_range = false
+	
+	isNumberBetweenTwoNumbers(num, lower, upper) {
+		num >= lower
+		num <= upper
+	}
+	
+	in_range = isNumberBetweenTwoNumbers(response.body.score, 0, 10)
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  in_range == true
+	  response.body.score < threshold
+	
+	  documentation := response.body.documentationUrl 
+	  msg := sprintf("%v score for repo %v/%v is %v, which is less than 5 out 10.", [policy_name, input.metadata.owner, input.metadata.repository, response.body.score])
+	  sugg := sprintf("%v Check Documentation: %v", [input.metadata.suggestion, documentation])
+	  error := ""
+	}`,
+
+	17: `
+	package opsmx
+	import future.keywords.in
+
+	policy_name = input.conditions[0].condition_name 
+	check_orig = replace(replace(policy_name, "Open SSF ", ""), " Policy", "")
+		
+	check_name = replace(lower(check_orig), " ", "-")
+	threshold = to_number(input.conditions[0].condition_value)
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_scorecard.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	request_url = concat("",[input.metadata.toolchain_addr, "api", "/v1", "/openssfScore?scoreCardName=", file_name, "&", "checkName=", check_name, "&", "scanOperation=", "openssfScan"])
+	request = {
+		"method": "GET",
+		"url": request_url,
+	}
+	
+	response = http.send(request)
+	
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.body.code == 404
+	  msg := ""
+	  sugg := sprintf("Results for %v check could not be obtained. Suggests incompatibility between the check and repository. Kindly enable related features and integrations.", [policy_name])
+	  error := sprintf("Error Received: %v.",[response.body.error])
+	}
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 500
+	  msg := ""
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
+	  error := sprintf("Error Received: %v.",[response.body.error])
+	}
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  codes = [401, 404, 500, 200, 302]
+	  not response.status_code in codes
+	  msg := ""
+	  error := sprintf("Error %v receieved: %v", [response.body.error])
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
+	}
+	
+	default in_range = false
+	
+	isNumberBetweenTwoNumbers(num, lower, upper) {
+		num >= lower
+		num <= upper
+	}
+	
+	in_range = isNumberBetweenTwoNumbers(response.body.score, 0, 10)
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  in_range == true
+	  response.body.score < threshold
+	
+	  documentation := response.body.documentationUrl 
+	  msg := sprintf("%v score for repo %v/%v is %v, which is less than 5 out 10.", [policy_name, input.metadata.owner, input.metadata.repository, response.body.score])
+	  sugg := sprintf("%v Check Documentation: %v", [input.metadata.suggestion, documentation])
+	  error := ""
+	}`,
+
+	18: `
+	package opsmx
+	import future.keywords.in
+
+	policy_name = input.conditions[0].condition_name 
+	check_orig = replace(replace(policy_name, "Open SSF ", ""), " Policy", "")
+		
+	check_name = replace(lower(check_orig), " ", "-")
+	threshold = to_number(input.conditions[0].condition_value)
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_scorecard.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	request_url = concat("",[input.metadata.toolchain_addr, "api", "/v1", "/openssfScore?scoreCardName=", file_name, "&", "checkName=", check_name, "&", "scanOperation=", "openssfScan"])
+	request = {
+		"method": "GET",
+		"url": request_url,
+	}
+	
+	response = http.send(request)
+	
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.body.code == 404
+	  msg := ""
+	  sugg := sprintf("Results for %v check could not be obtained. Suggests incompatibility between the check and repository. Kindly enable related features and integrations.", [policy_name])
+	  error := sprintf("Error Received: %v.",[response.body.error])
+	}
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 500
+	  msg := ""
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
+	  error := sprintf("Error Received: %v.",[response.body.error])
+	}
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  codes = [401, 404, 500, 200, 302]
+	  not response.status_code in codes
+	  msg := ""
+	  error := sprintf("Error %v receieved: %v", [response.body.error])
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
+	}
+	
+	default in_range = false
+	
+	isNumberBetweenTwoNumbers(num, lower, upper) {
+		num >= lower
+		num <= upper
+	}
+	
+	in_range = isNumberBetweenTwoNumbers(response.body.score, 0, 10)
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  in_range == true
+	  response.body.score < threshold
+	
+	  documentation := response.body.documentationUrl 
+	  msg := sprintf("%v score for repo %v/%v is %v, which is less than 5 out 10.", [policy_name, input.metadata.owner, input.metadata.repository, response.body.score])
+	  sugg := sprintf("%v Check Documentation: %v", [input.metadata.suggestion, documentation])
+	  error := ""
+	}`,
+
+	19: `
+	package opsmx
+	import future.keywords.in
+
+	policy_name = input.conditions[0].condition_name 
+	check_orig = replace(replace(policy_name, "Open SSF ", ""), " Policy", "")
+		
+	check_name = replace(lower(check_orig), " ", "-")
+	threshold = to_number(input.conditions[0].condition_value)
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_scorecard.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	request_url = concat("",[input.metadata.toolchain_addr, "api", "/v1", "/openssfScore?scoreCardName=", file_name, "&", "checkName=", check_name, "&", "scanOperation=", "openssfScan"])
+	request = {
+		"method": "GET",
+		"url": request_url,
+	}
+	
+	response = http.send(request)
+	
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.body.code == 404
+	  msg := ""
+	  sugg := sprintf("Results for %v check could not be obtained. Suggests incompatibility between the check and repository. Kindly enable related features and integrations.", [policy_name])
+	  error := sprintf("Error Received: %v.",[response.body.error])
+	}
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 500
+	  msg := ""
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
+	  error := sprintf("Error Received: %v.",[response.body.error])
+	}
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  codes = [401, 404, 500, 200, 302]
+	  not response.status_code in codes
+	  msg := ""
+	  error := sprintf("Error %v receieved: %v", [response.body.error])
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
+	}
+	
+	default in_range = false
+	
+	isNumberBetweenTwoNumbers(num, lower, upper) {
+		num >= lower
+		num <= upper
+	}
+	
+	in_range = isNumberBetweenTwoNumbers(response.body.score, 0, 10)
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  in_range == true
+	  response.body.score < threshold
+	
+	  documentation := response.body.documentationUrl 
+	  msg := sprintf("%v score for repo %v/%v is %v, which is less than 5 out 10.", [policy_name, input.metadata.owner, input.metadata.repository, response.body.score])
+	  sugg := sprintf("%v Check Documentation: %v", [input.metadata.suggestion, documentation])
+	  error := ""
+	}`,
+
+	20: `
+	package opsmx
+	import future.keywords.in
+
+	policy_name = input.conditions[0].condition_name 
+	check_orig = replace(replace(policy_name, "Open SSF ", ""), " Policy", "")
+		
+	check_name = replace(lower(check_orig), " ", "-")
+	threshold = to_number(input.conditions[0].condition_value)
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_scorecard.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	request_url = concat("",[input.metadata.toolchain_addr, "api", "/v1", "/openssfScore?scoreCardName=", file_name, "&", "checkName=", check_name, "&", "scanOperation=", "openssfScan"])
+	request = {
+		"method": "GET",
+		"url": request_url,
+	}
+	
+	response = http.send(request)
+	
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.body.code == 404
+	  msg := ""
+	  sugg := sprintf("Results for %v check could not be obtained. Suggests incompatibility between the check and repository. Kindly enable related features and integrations.", [policy_name])
+	  error := sprintf("Error Received: %v.",[response.body.error])
+	}
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 500
+	  msg := ""
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
+	  error := sprintf("Error Received: %v.",[response.body.error])
+	}
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  codes = [401, 404, 500, 200, 302]
+	  not response.status_code in codes
+	  msg := ""
+	  error := sprintf("Error %v receieved: %v", [response.body.error])
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
+	}
+	
+	default in_range = false
+	
+	isNumberBetweenTwoNumbers(num, lower, upper) {
+		num >= lower
+		num <= upper
+	}
+	
+	in_range = isNumberBetweenTwoNumbers(response.body.score, 0, 10)
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  in_range == true
+	  response.body.score < threshold
+	
+	  documentation := response.body.documentationUrl 
+	  msg := sprintf("%v score for repo %v/%v is %v, which is less than 5 out 10.", [policy_name, input.metadata.owner, input.metadata.repository, response.body.score])
+	  sugg := sprintf("%v Check Documentation: %v", [input.metadata.suggestion, documentation])
+	  error := ""
+	}`,
+
+	21: `
+	package opsmx
+	import future.keywords.in
+
+	policy_name = input.conditions[0].condition_name 
+	check_orig = replace(replace(policy_name, "Open SSF ", ""), " Policy", "")
+		
+	check_name = replace(lower(check_orig), " ", "-")
+	threshold = to_number(input.conditions[0].condition_value)
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_scorecard.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	request_url = concat("",[input.metadata.toolchain_addr, "api", "/v1", "/openssfScore?scoreCardName=", file_name, "&", "checkName=", check_name, "&", "scanOperation=", "openssfScan"])
+	request = {
+		"method": "GET",
+		"url": request_url,
+	}
+	
+	response = http.send(request)
+	
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.body.code == 404
+	  msg := ""
+	  sugg := sprintf("Results for %v check could not be obtained. Suggests incompatibility between the check and repository. Kindly enable related features and integrations.", [policy_name])
+	  error := sprintf("Error Received: %v.",[response.body.error])
+	}
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 500
+	  msg := ""
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
+	  error := sprintf("Error Received: %v.",[response.body.error])
+	}
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  codes = [401, 404, 500, 200, 302]
+	  not response.status_code in codes
+	  msg := ""
+	  error := sprintf("Error %v receieved: %v", [response.body.error])
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
+	}
+	
+	default in_range = false
+	
+	isNumberBetweenTwoNumbers(num, lower, upper) {
+		num >= lower
+		num <= upper
+	}
+	
+	in_range = isNumberBetweenTwoNumbers(response.body.score, 0, 10)
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  in_range == true
+	  response.body.score < threshold
+	
+	  documentation := response.body.documentationUrl 
+	  msg := sprintf("%v score for repo %v/%v is %v, which is less than 5 out 10.", [policy_name, input.metadata.owner, input.metadata.repository, response.body.score])
+	  sugg := sprintf("%v Check Documentation: %v", [input.metadata.suggestion, documentation])
+	  error := ""
+	}`,
+
+	22: `
+	package opsmx
+	import future.keywords.in
+
+	policy_name = input.conditions[0].condition_name 
+	check_orig = replace(replace(policy_name, "Open SSF ", ""), " Policy", "")
+		
+	check_name = replace(lower(check_orig), " ", "-")
+	threshold = to_number(input.conditions[0].condition_value)
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_scorecard.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	request_url = concat("",[input.metadata.toolchain_addr, "api", "/v1", "/openssfScore?scoreCardName=", file_name, "&", "checkName=", check_name, "&", "scanOperation=", "openssfScan"])
+	request = {
+		"method": "GET",
+		"url": request_url,
+	}
+	
+	response = http.send(request)
+	
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.body.code == 404
+	  msg := ""
+	  sugg := sprintf("Results for %v check could not be obtained. Suggests incompatibility between the check and repository. Kindly enable related features and integrations.", [policy_name])
+	  error := sprintf("Error Received: %v.",[response.body.error])
+	}
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 500
+	  msg := ""
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
+	  error := sprintf("Error Received: %v.",[response.body.error])
+	}
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  codes = [401, 404, 500, 200, 302]
+	  not response.status_code in codes
+	  msg := ""
+	  error := sprintf("Error %v receieved: %v", [response.body.error])
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
+	}
+	
+	default in_range = false
+	
+	isNumberBetweenTwoNumbers(num, lower, upper) {
+		num >= lower
+		num <= upper
+	}
+	
+	in_range = isNumberBetweenTwoNumbers(response.body.score, 0, 10)
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  in_range == true
+	  response.body.score < threshold
+	
+	  documentation := response.body.documentationUrl 
+	  msg := sprintf("%v score for repo %v/%v is %v, which is less than 5 out 10.", [policy_name, input.metadata.owner, input.metadata.repository, response.body.score])
+	  sugg := sprintf("%v Check Documentation: %v", [input.metadata.suggestion, documentation])
+	  error := ""
+	}`,
+
+	23: `
+	package opsmx
+	import future.keywords.in
+
+	policy_name = input.conditions[0].condition_name 
+	check_orig = replace(replace(policy_name, "Open SSF ", ""), " Policy", "")
+		
+	check_name = replace(lower(check_orig), " ", "-")
+	threshold = to_number(input.conditions[0].condition_value)
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_scorecard.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	request_url = concat("",[input.metadata.toolchain_addr, "api", "/v1", "/openssfScore?scoreCardName=", file_name, "&", "checkName=", check_name, "&", "scanOperation=", "openssfScan"])
+	request = {
+		"method": "GET",
+		"url": request_url,
+	}
+	
+	response = http.send(request)
+	
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.body.code == 404
+	  msg := ""
+	  sugg := sprintf("Results for %v check could not be obtained. Suggests incompatibility between the check and repository. Kindly enable related features and integrations.", [policy_name])
+	  error := sprintf("Error Received: %v.",[response.body.error])
+	}
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 500
+	  msg := ""
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
+	  error := sprintf("Error Received: %v.",[response.body.error])
+	}
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  codes = [401, 404, 500, 200, 302]
+	  not response.status_code in codes
+	  msg := ""
+	  error := sprintf("Error %v receieved: %v", [response.body.error])
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
+	}
+	
+	default in_range = false
+	
+	isNumberBetweenTwoNumbers(num, lower, upper) {
+		num >= lower
+		num <= upper
+	}
+	
+	in_range = isNumberBetweenTwoNumbers(response.body.score, 0, 10)
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  in_range == true
+	  response.body.score < threshold
+	
+	  documentation := response.body.documentationUrl 
+	  msg := sprintf("%v score for repo %v/%v is %v, which is less than 5 out 10.", [policy_name, input.metadata.owner, input.metadata.repository, response.body.score])
+	  sugg := sprintf("%v Check Documentation: %v", [input.metadata.suggestion, documentation])
+	  error := ""
+	}`,
+
+	24: `
+	package opsmx
+	import future.keywords.in
+
+	policy_name = input.conditions[0].condition_name 
+	check_orig = replace(replace(policy_name, "Open SSF ", ""), " Policy", "")
+		
+	check_name = replace(lower(check_orig), " ", "-")
+	threshold = to_number(input.conditions[0].condition_value)
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_scorecard.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	request_url = concat("",[input.metadata.toolchain_addr, "api", "/v1", "/openssfScore?scoreCardName=", file_name, "&", "checkName=", check_name, "&", "scanOperation=", "openssfScan"])
+	request = {
+		"method": "GET",
+		"url": request_url,
+	}
+	
+	response = http.send(request)
+	
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.body.code == 404
+	  msg := ""
+	  sugg := sprintf("Results for %v check could not be obtained. Suggests incompatibility between the check and repository. Kindly enable related features and integrations.", [policy_name])
+	  error := sprintf("Error Received: %v.",[response.body.error])
+	}
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 500
+	  msg := ""
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
+	  error := sprintf("Error Received: %v.",[response.body.error])
+	}
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  codes = [401, 404, 500, 200, 302]
+	  not response.status_code in codes
+	  msg := ""
+	  error := sprintf("Error %v receieved: %v", [response.body.error])
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
+	}
+	
+	default in_range = false
+	
+	isNumberBetweenTwoNumbers(num, lower, upper) {
+		num >= lower
+		num <= upper
+	}
+	
+	in_range = isNumberBetweenTwoNumbers(response.body.score, 0, 10)
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  in_range == true
+	  response.body.score < threshold
+	
+	  documentation := response.body.documentationUrl 
+	  msg := sprintf("%v score for repo %v/%v is %v, which is less than 5 out 10.", [policy_name, input.metadata.owner, input.metadata.repository, response.body.score])
+	  sugg := sprintf("%v Check Documentation: %v", [input.metadata.suggestion, documentation])
+	  error := ""
+	}`,
+
+	25: `
+	package opsmx
+	import future.keywords.in
+
+	policy_name = input.conditions[0].condition_name 
+	check_orig = replace(replace(policy_name, "Open SSF ", ""), " Policy", "")
+		
+	check_name = replace(lower(check_orig), " ", "-")
+	threshold = to_number(input.conditions[0].condition_value)
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_scorecard.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	request_url = concat("",[input.metadata.toolchain_addr, "api", "/v1", "/openssfScore?scoreCardName=", file_name, "&", "checkName=", check_name, "&", "scanOperation=", "openssfScan"])
+	request = {
+		"method": "GET",
+		"url": request_url,
+	}
+	
+	response = http.send(request)
+	
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.body.code == 404
+	  msg := ""
+	  sugg := sprintf("Results for %v check could not be obtained. Suggests incompatibility between the check and repository. Kindly enable related features and integrations.", [policy_name])
+	  error := sprintf("Error Received: %v.",[response.body.error])
+	}
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 500
+	  msg := ""
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
+	  error := sprintf("Error Received: %v.",[response.body.error])
+	}
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  codes = [401, 404, 500, 200, 302]
+	  not response.status_code in codes
+	  msg := ""
+	  error := sprintf("Error %v receieved: %v", [response.body.error])
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
+	}
+	
+	default in_range = false
+	
+	isNumberBetweenTwoNumbers(num, lower, upper) {
+		num >= lower
+		num <= upper
+	}
+	
+	in_range = isNumberBetweenTwoNumbers(response.body.score, 0, 10)
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  in_range == true
+	  response.body.score < threshold
+	
+	  documentation := response.body.documentationUrl 
+	  msg := sprintf("%v score for repo %v/%v is %v, which is less than 5 out 10.", [policy_name, input.metadata.owner, input.metadata.repository, response.body.score])
+	  sugg := sprintf("%v Check Documentation: %v", [input.metadata.suggestion, documentation])
+	  error := ""
+	}`,
+
+	26: `
+	package opsmx
+	import future.keywords.in
+
+	policy_name = input.conditions[0].condition_name 
+	check_orig = replace(replace(policy_name, "Open SSF ", ""), " Policy", "")
+		
+	check_name = replace(lower(check_orig), " ", "-")
+	threshold = to_number(input.conditions[0].condition_value)
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_scorecard.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	request_url = concat("",[input.metadata.toolchain_addr, "api", "/v1", "/openssfScore?scoreCardName=", file_name, "&", "checkName=", check_name, "&", "scanOperation=", "openssfScan"])
+	request = {
+		"method": "GET",
+		"url": request_url,
+	}
+	
+	response = http.send(request)
+	
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.body.code == 404
+	  msg := ""
+	  sugg := sprintf("Results for %v check could not be obtained. Suggests incompatibility between the check and repository. Kindly enable related features and integrations.", [policy_name])
+	  error := sprintf("Error Received: %v.",[response.body.error])
+	}
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 500
+	  msg := ""
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
+	  error := sprintf("Error Received: %v.",[response.body.error])
+	}
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  codes = [401, 404, 500, 200, 302]
+	  not response.status_code in codes
+	  msg := ""
+	  error := sprintf("Error %v receieved: %v", [response.body.error])
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
+	}
+	
+	default in_range = false
+	
+	isNumberBetweenTwoNumbers(num, lower, upper) {
+		num >= lower
+		num <= upper
+	}
+	
+	in_range = isNumberBetweenTwoNumbers(response.body.score, 0, 10)
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  in_range == true
+	  response.body.score < threshold
+	
+	  documentation := response.body.documentationUrl 
+	  msg := sprintf("%v score for repo %v/%v is %v, which is less than 5 out 10.", [policy_name, input.metadata.owner, input.metadata.repository, response.body.score])
+	  sugg := sprintf("%v Check Documentation: %v", [input.metadata.suggestion, documentation])
+	  error := ""
+	}`,
+
+	27: `
+	package opsmx
+	import future.keywords.in
+
+	policy_name = input.conditions[0].condition_name 
+	check_orig = replace(replace(policy_name, "Open SSF ", ""), " Policy", "")
+		
+	check_name = replace(lower(check_orig), " ", "-")
+	threshold = to_number(input.conditions[0].condition_value)
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_scorecard.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	request_url = concat("",[input.metadata.toolchain_addr, "api", "/v1", "/openssfScore?scoreCardName=", file_name, "&", "checkName=", check_name, "&", "scanOperation=", "openssfScan"])
+	request = {
+		"method": "GET",
+		"url": request_url,
+	}
+	
+	response = http.send(request)
+	
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.body.code == 404
+	  msg := ""
+	  sugg := sprintf("Results for %v check could not be obtained. Suggests incompatibility between the check and repository. Kindly enable related features and integrations.", [policy_name])
+	  error := sprintf("Error Received: %v.",[response.body.error])
+	}
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 500
+	  msg := ""
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
+	  error := sprintf("Error Received: %v.",[response.body.error])
+	}
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  codes = [401, 404, 500, 200, 302]
+	  not response.status_code in codes
+	  msg := ""
+	  error := sprintf("Error %v receieved: %v", [response.body.error])
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
+	}
+	
+	default in_range = false
+	
+	isNumberBetweenTwoNumbers(num, lower, upper) {
+		num >= lower
+		num <= upper
+	}
+	
+	in_range = isNumberBetweenTwoNumbers(response.body.score, 0, 10)
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  in_range == true
+	  response.body.score < threshold
+	
+	  documentation := response.body.documentationUrl 
+	  msg := sprintf("%v score for repo %v/%v is %v, which is less than 5 out 10.", [policy_name, input.metadata.owner, input.metadata.repository, response.body.score])
+	  sugg := sprintf("%v Check Documentation: %v", [input.metadata.suggestion, documentation])
+	  error := ""
+	}`,
+
+	28: `
+	package opsmx
+	import future.keywords.in
+
+	policy_name = input.conditions[0].condition_name 
+	check_orig = replace(replace(policy_name, "Open SSF ", ""), " Policy", "")
+		
+	check_name = replace(lower(check_orig), " ", "-")
+	threshold = to_number(input.conditions[0].condition_value)
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_scorecard.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	request_url = concat("",[input.metadata.toolchain_addr, "api", "/v1", "/openssfScore?scoreCardName=", file_name, "&", "checkName=", check_name, "&", "scanOperation=", "openssfScan"])
+	request = {
+		"method": "GET",
+		"url": request_url,
+	}
+	
+	response = http.send(request)
+	
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.body.code == 404
+	  msg := ""
+	  sugg := sprintf("Results for %v check could not be obtained. Suggests incompatibility between the check and repository. Kindly enable related features and integrations.", [policy_name])
+	  error := sprintf("Error Received: %v.",[response.body.error])
+	}
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 500
+	  msg := ""
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
+	  error := sprintf("Error Received: %v.",[response.body.error])
+	}
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  codes = [401, 404, 500, 200, 302]
+	  not response.status_code in codes
+	  msg := ""
+	  error := sprintf("Error %v receieved: %v", [response.body.error])
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
+	}
+	
+	default in_range = false
+	
+	isNumberBetweenTwoNumbers(num, lower, upper) {
+		num >= lower
+		num <= upper
+	}
+	
+	in_range = isNumberBetweenTwoNumbers(response.body.score, 0, 10)
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  in_range == true
+	  response.body.score < threshold
+	
+	  documentation := response.body.documentationUrl 
+	  msg := sprintf("%v score for repo %v/%v is %v, which is less than 5 out 10.", [policy_name, input.metadata.owner, input.metadata.repository, response.body.score])
+	  sugg := sprintf("%v Check Documentation: %v", [input.metadata.suggestion, documentation])
+	  error := ""
+	}`,
+
+	29: `
+	package opsmx
+	import future.keywords.in
+
+	policy_name = input.conditions[0].condition_name 
+	check_orig = replace(replace(policy_name, "Open SSF ", ""), " Policy", "")
+		
+	check_name = replace(lower(check_orig), " ", "-")
+	threshold = to_number(input.conditions[0].condition_value)
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_scorecard.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	request_url = concat("",[input.metadata.toolchain_addr, "api", "/v1", "/openssfScore?scoreCardName=", file_name, "&", "checkName=", check_name, "&", "scanOperation=", "openssfScan"])
+	request = {
+		"method": "GET",
+		"url": request_url,
+	}
+	
+	response = http.send(request)
+	
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.body.code == 404
+	  msg := ""
+	  sugg := sprintf("Results for %v check could not be obtained. Suggests incompatibility between the check and repository. Kindly enable related features and integrations.", [policy_name])
+	  error := sprintf("Error Received: %v.",[response.body.error])
+	}
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 500
+	  msg := ""
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
+	  error := sprintf("Error Received: %v.",[response.body.error])
+	}
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  codes = [401, 404, 500, 200, 302]
+	  not response.status_code in codes
+	  msg := ""
+	  error := sprintf("Error %v receieved: %v", [response.body.error])
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
+	}
+	
+	default in_range = false
+	
+	isNumberBetweenTwoNumbers(num, lower, upper) {
+		num >= lower
+		num <= upper
+	}
+	
+	in_range = isNumberBetweenTwoNumbers(response.body.score, 0, 10)
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  in_range == true
+	  response.body.score < threshold
+	
+	  documentation := response.body.documentationUrl 
+	  msg := sprintf("%v score for repo %v/%v is %v, which is less than 5 out 10.", [policy_name, input.metadata.owner, input.metadata.repository, response.body.score])
+	  sugg := sprintf("%v Check Documentation: %v", [input.metadata.suggestion, documentation])
+	  error := ""
+	}`,
+
+	30: `
+	package opsmx
+	import future.keywords.in
+
+	policy_name = input.conditions[0].condition_name 
+	check_orig = replace(replace(policy_name, "Open SSF ", ""), " Policy", "")
+		
+	check_name = replace(lower(check_orig), " ", "-")
+	threshold = to_number(input.conditions[0].condition_value)
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_scorecard.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	request_url = concat("",[input.metadata.toolchain_addr, "api", "/v1", "/openssfScore?scoreCardName=", file_name, "&", "checkName=", check_name, "&", "scanOperation=", "openssfScan"])
+	request = {
+		"method": "GET",
+		"url": request_url,
+	}
+	
+	response = http.send(request)
+	
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.body.code == 404
+	  msg := ""
+	  sugg := sprintf("Results for %v check could not be obtained. Suggests incompatibility between the check and repository. Kindly enable related features and integrations.", [policy_name])
+	  error := sprintf("Error Received: %v.",[response.body.error])
+	}
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 500
+	  msg := ""
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
+	  error := sprintf("Error Received: %v.",[response.body.error])
+	}
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  codes = [401, 404, 500, 200, 302]
+	  not response.status_code in codes
+	  msg := ""
+	  error := sprintf("Error %v receieved: %v", [response.body.error])
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
+	}
+	
+	default in_range = false
+	
+	isNumberBetweenTwoNumbers(num, lower, upper) {
+		num >= lower
+		num <= upper
+	}
+	
+	in_range = isNumberBetweenTwoNumbers(response.body.score, 0, 10)
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  in_range == true
+	  response.body.score < threshold
+	
+	  documentation := response.body.documentationUrl 
+	  msg := sprintf("%v score for repo %v/%v is %v, which is less than 5 out 10.", [policy_name, input.metadata.owner, input.metadata.repository, response.body.score])
+	  sugg := sprintf("%v Check Documentation: %v", [input.metadata.suggestion, documentation])
+	  error := ""
+	}`,
+
+	31: `
+	package opsmx
+	import future.keywords.in
+
+	policy_name = input.conditions[0].condition_name 
+	check_orig = replace(replace(policy_name, "Open SSF ", ""), " Policy", "")
+		
+	check_name = replace(lower(check_orig), " ", "-")
+	threshold = to_number(input.conditions[0].condition_value)
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_scorecard.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	request_url = concat("",[input.metadata.toolchain_addr, "api", "/v1", "/openssfScore?scoreCardName=", file_name, "&", "checkName=", check_name, "&", "scanOperation=", "openssfScan"])
+	request = {
+		"method": "GET",
+		"url": request_url,
+	}
+	
+	response = http.send(request)
+	
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.body.code == 404
+	  msg := ""
+	  sugg := sprintf("Results for %v check could not be obtained. Suggests incompatibility between the check and repository. Kindly enable related features and integrations.", [policy_name])
+	  error := sprintf("Error Received: %v.",[response.body.error])
+	}
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 500
+	  msg := ""
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
+	  error := sprintf("Error Received: %v.",[response.body.error])
+	}
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  codes = [401, 404, 500, 200, 302]
+	  not response.status_code in codes
+	  msg := ""
+	  error := sprintf("Error %v receieved: %v", [response.body.error])
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
+	}
+	
+	default in_range = false
+	
+	isNumberBetweenTwoNumbers(num, lower, upper) {
+		num >= lower
+		num <= upper
+	}
+	
+	in_range = isNumberBetweenTwoNumbers(response.body.score, 0, 10)
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  in_range == true
+	  response.body.score < threshold
+	
+	  documentation := response.body.documentationUrl 
+	  msg := sprintf("%v score for repo %v/%v is %v, which is less than 5 out 10.", [policy_name, input.metadata.owner, input.metadata.repository, response.body.score])
+	  sugg := sprintf("%v Check Documentation: %v", [input.metadata.suggestion, documentation])
+	  error := ""
 	}`,
 
 	32: `
 	package opsmx
 	import future.keywords.in
-
+	
 	default allow = false
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
+	
 	outside_collaborators_url = concat("/", [input.metadata.ssd_secret.github.url, "repos", input.metadata.owner, input.metadata.repository, "collaborators?affiliation=outside&per_page=100"])
-
+	
 	request = {
 		"method": "GET",
 		"url": outside_collaborators_url,
@@ -853,80 +1900,57 @@ var scriptMap = map[int]string{
 			"Authorization": sprintf("Bearer %v", [input.metadata.ssd_secret.github.token]),
 		},
 	}
-
+	
 	default response = ""
 	response = http.send(request)
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 401
-		error := sprintf("Unauthorized to check repository collaborators for repository %s/%s due to Bad Credentials.", [input.metadata.owner, input.metadata.repository])
-		msg := ""
-		sugg := "Kindly check the access token. It must have enough permissions to get repository branch protection policy configurations."
-		alertStatus := "error"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  response.status_code == 401
+	  msg := ""
+	  error := "401 Unauthorized: Unauthorized to check repository collaborators."
+	  sugg := "Kindly check the access token. It must have enough permissions to get repository collaborators."
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 404
-		msg := ""
-		sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository collaborators."
-		error := "Mentioned branch for Repository not found while trying to fetch repository collaborators. Repo name or Organisation is incorrect."
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 404
+	  msg := ""
+	  sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository collaborators."
+	  error := "Mentioned branch for Repository not found while trying to fetch repository collaborators. Repo name or Organisation is incorrect."
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := sprintf("500 Internal Server Error. Received Error while checking repository collaborators for %s/%s.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 500
+	  msg := "Internal Server Error."
+	  sugg := ""
+	  error := "GitHub is not reachable."
 	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		codes = [401, 404, 500, 200, 301, 302]
-		not response.status_code in codes
-		msg := ""
-		error := sprintf("Unable to fetch repository collaborators. Error %v:%v receieved from Github.", [response.status_code, response.body.message])
-		sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
-		alertStatus := "error"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  codes = [401, 404, 500, 200, 301, 302]
+	  not response.status_code in codes
+	  msg := ""
+	  error := sprintf("Unable to fetch repository collaborators. Error %v:%v receieved from Github.", [response.status_code, response.body.message])
+	  sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code in [200, 301, 302]
-		count(response.body) > 0
-		not policy_name in exception_list
-		collaborators_list = concat(",\n", [response.body[i].login | response.body[i].type == "User"]) 
-		msg := sprintf("%v outside collaborators have access to repository. \n The list of outside collaborators is: %v.", [count(response.body), collaborators_list])
-		sugg := "Adhere to the company policy by revoking the access of non-organization members for Github repo."
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		response.status_code in [200, 301, 302]
-		count(response.body) > 0
-		policy_name in exception_list
-		collaborators_list = concat(",\n", [response.body[i].login | response.body[i].type == "User"]) 
-		msg := sprintf("%v outside collaborators have access to repository. \n The list of outside collaborators is: %v.", [count(response.body), collaborators_list])
-		sugg := "Adhere to the company policy by revoking the access of non-organization members for Github repo."
-		error := ""
-		alertStatus := "exception"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code in [200, 301, 302]
+	  count(response.body) > 0
+	
+	  collaborators_list = concat(",\n", [response.body[i].login | response.body[i].type == "User"]) 
+	  msg := sprintf("%v outside collaborators have access to repository. \n The list of outside collaborators is: %v.", [count(response.body), collaborators_list])
+	  sugg := "Adhere to the company policy by revoking the access of non-organization members for Github repo."
+	  error := ""
 	}`,
 
 	33: `
 	package opsmx
 	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
+	
 	request_url = concat("/", [input.metadata.ssd_secret.github.url,"repos", input.metadata.owner, input.metadata.repository, "collaborators?affiliation=admin"])
-
+	
 	token = input.metadata.ssd_secret.github.token
-
+	
 	request = {
 		"method": "GET",
 		"url": request_url,
@@ -934,47 +1958,43 @@ var scriptMap = map[int]string{
 			"Authorization": sprintf("Bearer %v", [token]),
 		},
 	}
-
-
+	
+	
 	response = http.send(request)
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 401
-		error := sprintf("Unauthorized to check repository collaborators for repository %s/%s due to Bad Credentials.", [input.metadata.owner, input.metadata.repository])
-		msg := ""
-		sugg := "Kindly check the access token. It must have enough permissions to get repository collaborators."
-		alertStatus := "error"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  response.status_code == 401
+	  msg := ""
+	  error := "401 Unauthorized: Unauthorized to check repository collaborators."
+	  sugg := "Kindly check the access token. It must have enough permissions to get repository collaborators."
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 404
-		msg := ""
-		sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository collaborators."
-		error := "Mentioned branch for Repository not found while trying to fetch repository collaborators. Repo name or Organisation is incorrect."
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 404
+	  msg := ""
+	  sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository collaborators."
+	  error := "Mentioned branch for Repository not found while trying to fetch repository collaborators. Repo name or Organisation is incorrect."
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := sprintf("500 Internal Server Error. Received Error while checking repository collaborators for %s/%s.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 500
+	  msg := "Internal Server Error."
+	  sugg := ""
+	  error := "GitHub is not reachable."
 	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		codes = [401, 404, 500, 200, 301, 302]
-		not response.status_code in codes
-		msg := ""
-		error := sprintf("Unable to fetch repository collaborators. Error %v:%v receieved from Github.", [response.status_code, response.body.message])
-		sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
-		alertStatus := "error"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  codes = [401, 404, 500, 200, 301, 302]
+	  not response.status_code in codes
+	  msg := ""
+	  error := sprintf("Unable to fetch repository collaborators. Error %v:%v receieved from Github.", [response.status_code, response.body.message])
+	  sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
 	}
-
+	
 	default denial_list = false
-
+	
 	denial_list = matched_users
-
+	
 	matched_users[user] {
 		users := [response.body[i].login | response.body[i].type == "User"]
 		user := users[_]
@@ -982,44 +2002,24 @@ var scriptMap = map[int]string{
 		some pattern in patterns
 			regex.match(pattern, user)
 	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}] {
-		counter := count(denial_list)
-		counter > 0
-		policy_name in exception_list
-		denial_list_str := concat(", ", denial_list)
-		msg := sprintf("Owner access of Github Repository is granted to bot users. Number of bot users having owner access: %v. Name of bots having owner access: %v", [counter, denial_list_str])
-		sugg := sprintf("Adhere to the company policy and revoke access of bot user for %v/%v Repository.", [input.metadata.repository,input.metadata.owner])
-		error := ""
-		alertStatus := "exception"
-	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}] {
-		counter := count(denial_list)
-		counter > 0
-		policy_name in exception_list
-		denial_list_str := concat(", ", denial_list)
-		msg := sprintf("Owner access of Github Repository is granted to bot users. Number of bot users having owner access: %v. Name of bots having owner access: %v", [counter, denial_list_str])
-		sugg := sprintf("Adhere to the company policy and revoke access of bot user for %v/%v Repository.", [input.metadata.repository,input.metadata.owner])
-		error := ""
-		alertStatus := "active"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}] {
+	  counter := count(denial_list)
+	  counter > 0
+	  denial_list_str := concat(", ", denial_list)
+	  msg := sprintf("Owner access of Github Repository is granted to bot users. Number of bot users having owner access: %v. Name of bots having owner access: %v", [counter, denial_list_str])
+	  sugg := sprintf("Adhere to the company policy and revoke access of bot user for %v/%v Repository.", [input.metadata.repository,input.metadata.owner])
+	  error := ""
 	}`,
 
 	34: `
 	package opsmx
 	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
+	
 	request_url = concat("/", [input.metadata.ssd_secret.github.url, "orgs", input.metadata.owner, "members?role=admin"])
-
+	
 	token = input.metadata.ssd_secret.github.token
-
+	
 	request = {
 		"method": "GET",
 		"url": request_url,
@@ -1027,94 +2027,70 @@ var scriptMap = map[int]string{
 			"Authorization": sprintf("Bearer %v", [token]),
 		},
 	}
-
-
+	
+	
 	response = http.send(request)
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 401
-		msg := ""
-		error := "401 Unauthorized: Unauthorized to check organisation members."
-		sugg := "Kindly check the access token. It must have enough permissions to get organisation members."
-		alertStatus := "error"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  response.status_code == 401
+	  msg := ""
+	  error := "401 Unauthorized: Unauthorized to check organisation members."
+	  sugg := "Kindly check the access token. It must have enough permissions to get organisation members."
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 404
-		msg := ""
-		sugg := "Kindly check if the repository provided is correct and the access token has rights to read organisation members. Also check if the repository belongs to an organization."
-		error := "Mentioned branch for Repository not found while trying to fetch organisation members. Either Organisation/Repository name is incorrect or the repository does not belong to an organization."
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 404
+	  msg := ""
+	  sugg := "Kindly check if the repository provided is correct and the access token has rights to read organisation members. Also check if the repository belongs to an organization."
+	  error := "Mentioned branch for Repository not found while trying to fetch organisation members. Either Organisation/Repository name is incorrect or the repository does not belong to an organization."
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := sprintf("500 Internal Server Error. Received Error while checking organisation members for %s.", [input.metadata.owner])
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 500
+	  msg := "Internal Server Error."
+	  sugg := ""
+	  error := "GitHub is not reachable."
 	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		codes = [401, 404, 500, 200, 301, 302]
-		not response.status_code in codes
-		msg := ""
-		error := sprintf("Unable to fetch organisation members. Error %v:%v receieved from Github.", [response.status_code, response.body.message])
-		sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
-		alertStatus := "error"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  codes = [401, 404, 500, 200, 301, 302]
+	  not response.status_code in codes
+	  msg := ""
+	  error := sprintf("Unable to fetch organisation members. Error %v:%v receieved from Github.", [response.status_code, response.body.message])
+	  sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
 	}
-
+	
 	default denial_list = false
-
+	
 	denial_list = matched_users
-
+	
 	matched_users[user] {
 		users := [response.body[i].login | response.body[i].type == "User"]
 		user := users[_]
-		patterns := ["r", "bot", "auto", "test", "jenkins", "drone", "github", "gitlab", "aws", "azure"]
+		patterns := ["bot", "auto", "test", "jenkins", "drone", "github", "gitlab", "aws", "azure"]
 		some pattern in patterns
 			regex.match(pattern, user)
 	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}] {
-		counter := count(denial_list)
-		counter > 0
-		not policy_name in exception_list
-		denial_list_str := concat(", ", denial_list)
-		msg := sprintf("Owner access of Github Organization is granted to bot users. Number of bot users having owner access: %v. Name of bots having owner access: %v", [counter, denial_list_str])
-		sugg := sprintf("Adhere to the company policy and revoke access of bot user for %v Organization.", [input.metadata.owner])
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}] {
-		counter := count(denial_list)
-		counter > 0
-		policy_name in exception_list
-		denial_list_str := concat(", ", denial_list)
-		msg := sprintf("Owner access of Github Organization is granted to bot users. Number of bot users having owner access: %v. Name of bots having owner access: %v", [counter, denial_list_str])
-		sugg := sprintf("Adhere to the company policy and revoke access of bot user for %v Organization.", [input.metadata.owner])
-		error := ""
-		alertStatus := "exception"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}] {
+	  counter := count(denial_list)
+	  counter > 0
+	  denial_list_str := concat(", ", denial_list)
+	  msg := sprintf("Owner access of Github Organization is granted to bot users. Number of bot users having owner access: %v. Name of bots having owner access: %v", [counter, denial_list_str])
+	  sugg := sprintf("Adhere to the company policy and revoke access of bot user for %v Organization.", [input.metadata.owner])
+	  error := ""
 	}`,
 
 	35: `
 	package opsmx
 	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
+	
 	default allow = false
 	default active_hooks = []
 	default active_hooks_count = 0
 	default hooks_with_secret = []
 	default hooks_with_secret_count = 0
-
+	
 	request_url = concat("/",[input.metadata.ssd_secret.github.url,"repos", input.metadata.owner, input.metadata.repository, "hooks"])
 	token = input.metadata.ssd_secret.github.token
 	request = {
@@ -1124,94 +2100,67 @@ var scriptMap = map[int]string{
 			"Authorization": sprintf("Bearer %v", [token]),
 		},
 	}
-
+	
 	response = http.send(request)
-
+	
 	active_hooks = [response.body[i].config | response.body[i].active == true]
 	hooks_with_secret = [response.body[i].config.secret | response.body[i].active == true]
-
+	
 	allow {
-		response.status_code = 200
+	  response.status_code = 200
 	}
-
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 401
-		msg := sprintf("Unauthorized to check repository webhook configuration for %s:%s due to Bad Credentials.", [input.metadata.owner, input.metadata.repository])
-		error := sprintf("401 Unauthorized. Unauthorized to check repository webhook configuration for %s:%s due to Bad Credentials.", [input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check the access token. It must have enough permissions to get repository webhook configurations."
-		alertStatus := "error"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  response.status_code == 401
+	  msg := ""
+	  error := "401 Unauthorized: Unauthorized to check repository webhook configuration due to Bad Credentials."
+	  sugg := "Kindly check the access token. It must have enough permissions to get repository webhook configurations."
 	}
-
-	deny[{"alertMsg": msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 404
-		error := sprintf("The webhook configuration for Repository %s/%s not found.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository webhook configuration."
-		msg := ""
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 404
+	  msg := ""
+	  sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository webhook configuration."
+	  error := "Mentioned branch for Repository not found while trying to fetch repository webhook configuration. Repo name or Organisation is incorrect."
 	}
-
-
-	deny[{"alertMsg": msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := sprintf("500 Internal Server Error. Received Error while checking repository webhook configuration for %s/%s.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 500
+	  msg := "Internal Server Error."
+	  sugg := ""
+	  error := "GitHub is not reachable."
 	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		codes = [401, 404, 500, 200, 301, 302]
-		not response.status_code in codes
-		msg := ""
-		error := sprintf("Unable to fetch repository webhook configuration. Error %v:%v receieved from Github upon trying to fetch repository webhook configuration.", [response.status_code, response.body.message])
-		sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
-		alertStatus := "error"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  codes = [401, 404, 500, 200, 301, 302]
+	  not response.status_code in codes
+	  msg := ""
+	  error := sprintf("Unable to fetch repository webhook configuration. Error %v:%v receieved from Github upon trying to fetch repository webhook configuration.", [response.status_code, response.body.message])
+	  sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
 	}
-
+	
 	active_hooks_count = count(active_hooks)
 	hooks_with_secret_count = count(hooks_with_secret)
-	test = active_hooks_count > hooks_with_secret_count
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		active_hooks_count != 0
-
-		active_hooks_count > hooks_with_secret_count
-		policy_name in exception_list
-		msg := sprintf("Webhook authentication failed: Secret not set for %v/%v repository.", [input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Adhere to the company policy by configuring the webhook secret for %v/%v repository.", [input.metadata.owner, input.metadata.repository])
-		error := ""  
-		alertStatus := "exception"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		active_hooks_count != 0
-
-		active_hooks_count > hooks_with_secret_count
-		not policy_name in exception_list
-		msg := sprintf("Webhook authentication failed: Secret not set for webhooks in %v/%v repository.", [input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Adhere to the company policy by configuring the webhook secret for %v/%v repository.", [input.metadata.owner, input.metadata.repository])
-		error := ""  
-		alertStatus := "active"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  active_hooks_count != 0
+	
+	  active_hooks_count > hooks_with_secret_count
+	  msg := sprintf("Webhook authentication failed: Secret not set for %v/%v repository.", [input.metadata.owner, input.metadata.repository])
+	  sugg := sprintf("Adhere to the company policy by configuring the webhook secret for %v/%v repository.", [input.metadata.owner, input.metadata.repository])
+	  error := ""  
 	}`,
 
 	36: `
 	package opsmx
 	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
+	
 	default allow = false
 	default active_hooks = []
 	default active_hooks_count = 0
 	default insecure_active_hooks = []
 	default insecure_active_hooks_count = 0
-
+	
 	request_url = concat("/",[input.metadata.ssd_secret.github.url,"repos", input.metadata.owner, input.metadata.repository, "hooks"])
 	token = input.metadata.ssd_secret.github.token
 	request = {
@@ -1221,225 +2170,143 @@ var scriptMap = map[int]string{
 			"Authorization": sprintf("Bearer %v", [token]),
 		},
 	}
-
+	
 	response = http.send(request)
-
+	
 	active_hooks = [response.body[i].config | response.body[i].active == true]
 	insecure_active_hooks = [active_hooks[j].url | active_hooks[j].insecure_ssl == "1"]
-
+	
 	allow {
-		response.status_code = 200
+	  response.status_code = 200
 	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 401
-		msg := sprintf("Unauthorized to check repository webhook configuration for %s:%s due to Bad Credentials.", [input.metadata.owner, input.metadata.repository])
-		error := sprintf("401 Unauthorized. Unauthorized to check repository webhook configuration for %s:%s due to Bad Credentials.", [input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check the access token. It must have enough permissions to get repository webhook configurations."
-		alertStatus := "error"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  response.status_code == 401
+	  msg := ""
+	  error := "401 Unauthorized: Unauthorized to check repository webhook configuration due to Bad Credentials."
+	  sugg := "Kindly check the access token. It must have enough permissions to get repository webhook configurations."
 	}
-
-	deny[{"alertMsg": msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 404
-		error := sprintf("The webhook configuration for Repository %s/%s not found.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository webhook configuration."
-		msg := ""
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 404
+	  msg := ""
+	  sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository webhook configuration."
+	  error := "Mentioned branch for Repository not found while trying to fetch repository webhook configuration. Repo name or Organisation is incorrect."
 	}
-
-
-	deny[{"alertMsg": msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := sprintf("500 Internal Server Error. Received Error while checking repository webhook configuration for %s/%s.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 500
+	  msg := "Internal Server Error."
+	  sugg := ""
+	  error := "GitHub is not reachable."
 	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		codes = [401, 404, 500, 200, 301, 302]
-		not response.status_code in codes
-		msg := ""
-		error := sprintf("Unable to fetch repository webhook configuration. Error %v:%v receieved from Github upon trying to fetch repository webhook configuration.", [response.status_code, response.body.message])
-		sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
-		alertStatus := "error"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  codes = [401, 404, 500, 200, 301, 302]
+	  not response.status_code in codes
+	  msg := ""
+	  error := sprintf("Unable to fetch repository webhook configuration. Error %v:%v receieved from Github upon trying to fetch repository webhook configuration.", [response.status_code, response.body.message])
+	  sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
 	}
-
+	
 	active_hooks_count = count(active_hooks)
 	insecure_active_hooks_count = count(insecure_active_hooks)
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		active_hooks_count > 0
-		insecure_active_hooks_count > 0
-		policy_name in exception_list
-		msg := sprintf("Webhook SSL Check failed: SSL/TLS not enabled for %v/%v repository.", [input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Adhere to the company policy by enabling the webhook ssl/tls for %v/%v repository.", [input.metadata.owner, input.metadata.repository])
-		error := ""  
-		alertStatus := "exception"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		active_hooks_count > 0
-		insecure_active_hooks_count > 0
-		not policy_name in exception_list
-		msg := sprintf("Webhook SSL Check failed: SSL/TLS not enabled for %v/%v repository.", [input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Adhere to the company policy by enabling the webhook ssl/tls for %v/%v repository.", [input.metadata.owner, input.metadata.repository])
-		error := ""  
-		alertStatus := "active"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  active_hooks_count > 0
+	  insecure_active_hooks_count > 0
+	
+	  msg := sprintf("Webhook SSL Check failed: SSL/TLS not enabled for %v/%v repository.", [input.metadata.owner, input.metadata.repository])
+	  sugg := sprintf("Adhere to the company policy by enabling the webhook ssl/tls for %v/%v repository.", [input.metadata.owner, input.metadata.repository])
+	  error := ""  
 	}`,
 
 	37: `
 	package opsmx
 	import future.keywords.in
+	default approved_servers_count = 0
+	approved_servers_count = count(input.metadata.ssd_secret.build_access_config.credentials)
 
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-	approved_server = split(input.metadata.ssd_secret.build_access_config.url, "/")[2]
-	build_url = split(input.metadata.build_url, "/")[2]
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}] {
-		approved_server == ""
-		msg:=""
-		sugg:="Set the BuildAccessConfig.Credentials parameter with trusted build server URLs to strengthen artifact validation during the deployment process."
-		error:="The essential list of approved build URLs remains unspecified"
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error }] {
+	  approved_servers_count == 0
+	  msg:=""
+	  sugg:="Set the BuildAccessConfig.Credentials parameter with trusted build server URLs to strengthen artifact validation during the deployment process."
+	  error:="The essential list of approved build URLs remains unspecified"
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		approved_server != ""
-		build_url != approved_server
-		not policy_name in exception_list
-
-		msg:=sprintf("The artifact has not been sourced from an approved build server.\nPlease verify the artifacts origin against the following approved build URLs: %v", [approved_server])
-		sugg:="Ensure the artifact is sourced from an approved build server."
-		error:=""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		approved_server != ""
-		build_url != approved_server
-		policy_name in exception_list
-		
-		msg:=sprintf("The artifact has not been sourced from an approved build server.\nPlease verify the artifacts origin against the following approved build URLs: %v", [approved_server])
-		sugg:="Ensure the artifact is sourced from an approved build server."
-		error:=""
-		alertStatus := "exception"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error }]{
+	  count(input.metadata.ssd_secret.build_access_config.credentials) > 0
+	  build_url = split(input.metadata.build_url, "/")[2]
+	  list_of_approved_servers = [split(input.metadata.ssd_secret.build_access_config.credentials[i].url, "/")[2] |input.metadata.ssd_secret.build_access_config.credentials[i].url != ""]
+	
+	  not build_url in list_of_approved_servers
+	  msg:=sprintf("The artifact has not been sourced from an approved build server.\nPlease verify the artifacts origin against the following approved build URLs: %v", [concat(",", list_of_approved_servers)])
+	  sugg:="Ensure the artifact is sourced from an approved build server."
+	  error:=""
 	}`,
 
 	38: `
 	package opsmx
-	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
 
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
 		input.metadata.build_image_sha == "" 
 		msg = ""
 		sugg = "Ensure that build platform is integrated with SSD."
 		error = "Complete Build Artifact information could not be identified."
-		alertStatus := "error"
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
 		input.metadata.image_sha == ""
 		msg = ""
-		sugg = "Ensure that deployment platform is integrated with SSD using Admission Controller."
+		sugg = "Ensure that deployment platform is integrated with SSD usin Admission Controller."
 		error = "Artifact information could not be identified from Deployment Environment."
-		alertStatus := "error"
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
 		input.metadata.image_sha != input.metadata.build_image_sha
-		not policy_name in exception_list
+		
 		msg = sprintf("Non-identical by hash artifacts identified at Build stage and Deployment Environment.\nBuild Image: %v:%v \n Deployed Image: %v:%v", [input.metadata.build_image, input.metadata.build_image_tag, input.metadata.image, input.metadata.image_tag])
 		sugg = "Ensure that built image details & deployed Image details match. Check for possible misconfigurations."
 		error = ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		input.metadata.image_sha != input.metadata.build_image_sha
-		policy_name in exception_list
-		msg = sprintf("Non-identical by hash artifacts identified at Build stage and Deployment Environment.\nBuild Image: %v:%v \n Deployed Image: %v:%v", [input.metadata.build_image, input.metadata.build_image_tag, input.metadata.image, input.metadata.image_tag])
-		sugg = "Ensure that built image details & deployed Image details match. Check for possible misconfigurations."
-		error = ""
-		alertStatus := "exception"
 	}`,
-
 	39: `
 	package opsmx
-	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
 
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
 		input.metadata.build_image_sha == "" 
 		msg = ""
 		sugg = "Ensure that build platform is integrated with SSD."
 		error = "Complete Build Artifact information could not be identified."
-		alertStatus := "error"
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
 		input.metadata.image_sha == ""
 		msg = ""
-		sugg = "Ensure that deployment platform is integrated with SSD using Admission Controller."
+		sugg = "Ensure that deployment platform is integrated with SSD usin Admission Controller."
 		error = "Artifact information could not be identified from Deployment Environment."
-		alertStatus := "error"
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
 		input.metadata.image_sha != input.metadata.build_image_sha
-		not policy_name in exception_list
+		
 		msg = sprintf("Non-identical by hash artifacts identified at Build stage and Deployment Environment.\nBuild Image: %v:%v \n Deployed Image: %v:%v", [input.metadata.build_image, input.metadata.build_image_tag, input.metadata.image, input.metadata.image_tag])
 		sugg = "Ensure that built image details & deployed Image details match. Check for possible misconfigurations."
 		error = ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		input.metadata.image_sha != input.metadata.build_image_sha
-		policy_name in exception_list
-		msg = sprintf("Non-identical by hash artifacts identified at Build stage and Deployment Environment.\nBuild Image: %v:%v \n Deployed Image: %v:%v", [input.metadata.build_image, input.metadata.build_image_tag, input.metadata.image, input.metadata.image_tag])
-		sugg = "Ensure that built image details & deployed Image details match. Check for possible misconfigurations."
-		error = ""
-		alertStatus := "exception"
 	}`,
 
 	40: `
 	package opsmx
 	import future.keywords.in
-
+	
 	default allow = false
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
+	
 	request_components = [input.metadata.ssd_secret.github.url,"repos", input.metadata.owner, input.metadata.repository]
 	request_url = concat("/",request_components)
-
+	
 	token = input.metadata.ssd_secret.github.token
-
+	
 	request = {
 		"method": "GET",
 		"url": request_url,
@@ -1447,75 +2314,53 @@ var scriptMap = map[int]string{
 			"Authorization": sprintf("Bearer %v", [token]),
 		},
 	}
-
+	
 	response = http.send(request)
 	license_url = response.body.license.url
-
+	
 	allow {
-		response.status_code = 200
+	  response.status_code = 200
 	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 401
-		error := sprintf("Unauthorized to check repository configurations for repository %s/%s due to Bad Credentials.", [input.metadata.owner, input.metadata.repository])
-		msg := ""
-		sugg := "Kindly check the access token. It must have enough permissions to get repository configurations."
-		alertStatus := "error"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  response.status_code == 401
+	  msg := "Unauthorized to check repository configuration due to Bad Credentials."
+	  error := "401 Unauthorized."
+	  sugg := "Kindly check the access token. It must have enough permissions to get repository configurations."
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 404
-		msg := ""
-		sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository configurations."
-		error := "Mentioned branch for Repository not found while trying to fetch repository configurations. Repo name or Organisation is incorrect."
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 404
+	  msg := "Repository not found while trying to fetch Repository Configuration."
+	  sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository configuration."
+	  error := "Repo name or Organisation is incorrect."
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := sprintf("500 Internal Server Error. Received Error while checking repository configurations for %s/%s.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 500
+	  msg := "Internal Server Error."
+	  sugg := ""
+	  error := "GitHub is not reachable."
 	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		codes = [401, 404, 500, 200, 301, 302]
-		not response.status_code in codes
-		msg := "Unable to fetch repository configuration."
-		error := sprintf("Error %v:%v receieved from Github upon trying to fetch Repository Configuration.", [response.status_code, response.body.message])
-		sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
-		alertStatus := "error"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  codes = [401, 404, 500, 200, 301, 302]
+	  not response.status_code in codes
+	  msg := "Unable to fetch repository configuration."
+	  error := sprintf("Error %v:%v receieved from Github upon trying to fetch Repository Configuration.", [response.status_code, response.body.message])
+	  sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		license_url == null
-		not policy_name in exception_list
-		msg := sprintf("GitHub License not found for the %v/%v repository.", [input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Adhere to the company policy by adding a License file for %v/%v repository.", [input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		license_url == null
-		policy_name in exception_list
-		msg := sprintf("GitHub License not found for the %v/%v repository.", [input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Adhere to the company policy by adding a License file for %v/%v repository.", [input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "exception"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  license_url == null
+	  msg := sprintf("GitHub License not found for the %v/%v repository.", [input.metadata.owner, input.metadata.repository])
+	  sugg := sprintf("Adhere to the company policy by adding a License file for %v/%v repository.", [input.metadata.owner, input.metadata.repository])
+	  error := ""
 	}`,
 
 	41: `
 	package opsmx
 	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	default approved_artifact_repos = []
 	default image_source = ""
@@ -1523,157 +2368,135 @@ var scriptMap = map[int]string{
 	image_details = split(input.metadata.image,"/")
 
 	image_source = concat("/",["docker.io", image_details[0]]) {
-		count(image_details) <= 2
-		not contains(image_details[0], ".")
+	count(image_details) <= 2
+	not contains(image_details[0], ".")
 	}
 
 	image_source = concat("/",[image_details[0], image_details[1]]) {
-		count(image_details) == 2
-		contains(image_details[0], ".")
+	count(image_details) == 2
+	contains(image_details[0], ".")
 	}
 
 	image_source = concat("/",[image_details[0], image_details[1]]) {
-		count(image_details) == 3
+	count(image_details) == 3
 	}
 
-	approved_artifact_repos = split(input.metadata.ssd_secret.imageCreds.repo, ",")
-	decision:= image_source in approved_artifact_repos
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		count(approved_artifact_repos) == 0
-		error := "The essential list of Authorized Artifact Repositories remains unspecified."
-		sugg := "Set the AuthorizedArtifactRepos parameter with trusted Artifact Repo to strengthen artifact validation during the deployment process."
-		msg := ""
-		alertStatus := "error"
+	approved_artifact_repos = split(input.metadata.ssd_secret.docker_registry.authorized_artifact_repo, ",")
+
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	count(approved_artifact_repos) == 0
+	error := "The essential list of Authorized Artifact Repositories remains unspecified."
+	sugg := "Set the AuthorizedArtifactRepos parameter with trusted Artifact Repo to strengthen artifact validation during the deployment process."
+	msg := ""
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		not image_source in approved_artifact_repos
-		not policy_name in exception_list
-		msg := sprintf("The artifact %v:%v has not been sourced from an authorized artifact repo.\nPlease verify the artifacts origin against the following Authorized Artifact Repositories: %v", [input.metadata.image, input.metadata.image_tag, input.metadata.ssd_secret.imageCreds.repo])
-		sugg := "Ensure the artifact is sourced from an authorized artifact repo."
-		error := ""
-		alertStatus := "active"
-	}
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	not image_source in approved_artifact_repos
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		not image_source in approved_artifact_repos
-		policy_name in exception_list
-		msg := sprintf("The artifact %v:%v has not been sourced from an authorized artifact repo.\nPlease verify the artifacts origin against the following Authorized Artifact Repositories: %v", [input.metadata.image, input.metadata.image_tag, input.metadata.ssd_secret.imageCreds.repo])
-		sugg := "Ensure the artifact is sourced from an authorized artifact repo."
-		error := ""
-		alertStatus := "exception"
+	msg := sprintf("The artifact %v:%v has not been sourced from an authorized artifact repo.\nPlease verify the artifacts origin against the following Authorized Artifact Repositories: %v", [input.metadata.image, input.metadata.image_tag, input.metadata.ssd_secret.docker_registry.authorized_artifact_repo])
+	sugg := "Ensure the artifact is sourced from an authorized artifact repo."
+	error := ""
 	}`,
 
 	42: `
 	package opsmx
 	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-	openssf_results_file = concat("_", [input.metadata.owner, input.metadata.repository, input.metadata.build_id])
-	openssf_results_file_complete = concat("", [openssf_results_file, "_scorecard.json"])
-
 	policy_name = input.conditions[0].condition_name 
 	check_orig = replace(replace(policy_name, "Open SSF ", ""), " Policy", "")
-
+		
 	check_name = replace(lower(check_orig), " ", "-")
 	threshold = to_number(input.conditions[0].condition_value)
-	request_url = concat("",[input.metadata.toolchain_addr, "api", "/v1", "/openssfScore?scoreCardName=", openssf_results_file_complete, "&", "checkName=", check_name, "&", "scanOperation=", "openssfScan"])
 
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_scorecard.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	request_url = concat("",[input.metadata.toolchain_addr, "api", "/v1", "/openssfScore?scoreCardName=", file_name, "&", "checkName=", check_name, "&", "scanOperation=", "openssfScan"])
 	request = {
 		"method": "GET",
 		"url": request_url,
 	}
-
+	
 	response = http.send(request)
-
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.body.code == 404
-		msg := ""
-		sugg := sprintf("Results for %v check could not be obtained. Suggests incompatibility between the check and repository. Kindly enable related features and integrations.", [policy_name])
-		error := sprintf("Error Received: %v.",[response.body.error])
-		alertStatus := "error"
+	
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.body.code == 404
+	  msg := ""
+	  sugg := sprintf("Results for %v check could not be obtained. Suggests incompatibility between the check and repository. Kindly enable related features and integrations.", [policy_name])
+	  error := sprintf("Error Received: %v.",[response.body.error])
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 500
-		msg := ""
-		sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
-		error := sprintf("Error Received: %v.",[response.body.error])
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 500
+	  msg := ""
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
+	  error := sprintf("Error Received: %v.",[response.body.error])
 	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		codes = [401, 404, 500, 200, 302]
-		not response.status_code in codes
-		msg := ""
-		error := sprintf("Error %v receieved: %v", [response.body.error])
-		sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
-		alertStatus := "error"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  codes = [401, 404, 500, 200, 302]
+	  not response.status_code in codes
+	  msg := ""
+	  error := sprintf("Error %v receieved: %v", [response.body.error])
+	  sugg := "Kindly check if toolchain service is available in SSD environment and OpenSSF integration Policies are enabled."
 	}
-
+	
 	default in_range = false
-
+	
 	isNumberBetweenTwoNumbers(num, lower, upper) {
 		num >= lower
 		num <= upper
 	}
-
+	
 	in_range = isNumberBetweenTwoNumbers(response.body.score, 0, 10)
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		in_range == true
-		response.body.score < threshold
-		not policy_name in exception_list
-		msg := sprintf("%v score for repo %v/%v is %v, which is less than 5 out 10.", [policy_name, input.metadata.owner, input.metadata.repository, response.body.score])
-		sugg := "Refer to detailed OpenSSF ScoreCard report and implement required practices to obtain better OpenSSF Score."
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		in_range == true
-		response.body.score < threshold
-		policy_name in exception_list
-		msg := sprintf("%v score for repo %v/%v is %v, which is less than 5 out 10.", [policy_name, input.metadata.owner, input.metadata.repository, response.body.score])
-		sugg := "Refer to detailed OpenSSF ScoreCard report and implement required practices to obtain better OpenSSF Score."
-		error := ""
-		alertStatus := "exception"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  in_range == true
+	  response.body.score < threshold
+	
+	  documentation := response.body.documentation 
+	  msg := sprintf("%v score for repo %v/%v is %v, which is less than 5 out 10.", [policy_name, input.metadata.owner, input.metadata.repository, response.body.score])
+	  sugg := sprintf("%v Check Documentation: %v", [input.metadata.suggestion, documentation])
+	  error := ""
 	}`,
 
 	43: `
 	package opsmx
 	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
 	default score = ""
 
 	rating_map := {
-		"A": "1.0",
-		"B": "2.0",
-		"C": "3.0",
-		"D": "4.0",
-		"E": "5.0"
+	"A": "1.0",
+	"B": "2.0",
+	"C": "3.0",
+	"D": "4.0",
+	"E": "5.0"
 	}
 
 	required_rating_name := concat("", ["new_", lower(split(input.conditions[0].condition_name, " ")[1]), "_rating"])
 	required_rating_score := rating_map[split(input.conditions[0].condition_name, " ")[3]]
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_sonarqube.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_", image_sha, "_sonarqube.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name, "&scanOperation=sonarqubescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name ,"&scanOperation=sonarqubescan"] )
 	request = {
 			"method": "GET",
 			"url": complete_url
@@ -1682,58 +2505,49 @@ var scriptMap = map[int]string{
 	response = http.send(request)
 	score = [response.body.measures[i].period.value | response.body.measures[i].metric == "new_reliability_rating"][0]
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		score == ""
-		msg := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
-		sugg := "Kindly verify if the token provided has permissions to read the quality metrics. Also, verify if the required quality metrics are available for the project."
-		error := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	score == ""
+	msg := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
+	sugg := "Kindly verify if the token provided has permissions to read the quality metrics. Also, verify if the required quality metrics are available for the project."
+	error := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
-		score == required_rating_score
-		not policy_name in exception_list
-		msg := sprintf("The SonarQube metric %s stands at %s for project %s, falling short of the expected value.", [required_rating_name, score, input.metadata.sonarqube_projectKey])
-		sugg := sprintf("Adhere to code security standards to improve score for project %s.", [input.metadata.sonarqube_projectKey])
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": policy_name, "alertStatus": alertStatus}]{
-		score == required_rating_score
-		policy_name in exception_list
-		msg := sprintf("The SonarQube metric %s stands at %s for project %s, falling short of the expected value.", [required_rating_name, score, input.metadata.sonarqube_projectKey])
-		sugg := sprintf("Adhere to code security standards to improve score for project %s.", [input.metadata.sonarqube_projectKey])
-		error := ""
-		alertStatus := "exception"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
+	score == required_rating_score
+	msg := sprintf("The SonarQube metric %s stands at %s for project %s, falling short of the expected value.", [required_rating_name, score, input.metadata.sonarqube_projectKey])
+	sugg := sprintf("Adhere to code security standards to improve score for project %s.", [input.metadata.sonarqube_projectKey])
+	error := ""
 	}`,
 
 	44: `
 	package opsmx
 	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
 	default score = ""
 
 	rating_map := {
-		"A": "1.0",
-		"B": "2.0",
-		"C": "3.0",
-		"D": "4.0",
-		"E": "5.0"
+	"A": "1.0",
+	"B": "2.0",
+	"C": "3.0",
+	"D": "4.0",
+	"E": "5.0"
 	}
 
 	required_rating_name := concat("", ["new_", lower(split(input.conditions[0].condition_name, " ")[1]), "_rating"])
 	required_rating_score := rating_map[split(input.conditions[0].condition_name, " ")[3]]
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_sonarqube.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_", image_sha, "_sonarqube.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name, "&scanOperation=sonarqubescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name ,"&scanOperation=sonarqubescan"] )
 
 	request = {
 			"method": "GET",
@@ -1743,59 +2557,50 @@ var scriptMap = map[int]string{
 	response = http.send(request)
 	score = [response.body.measures[i].period.value | response.body.measures[i].metric == "new_reliability_rating"][0]
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		score == ""
-		msg := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
-		sugg := "Kindly verify if the token provided has permissions to read the quality metrics. Also, verify if the required quality metrics are available for the project."
-		error := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	score == ""
+	msg := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
+	sugg := "Kindly verify if the token provided has permissions to read the quality metrics. Also, verify if the required quality metrics are available for the project."
+	error := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
-		score == required_rating_score
-		not policy_name in exception_list
-		msg := sprintf("The SonarQube metric %s stands at %s for project %s, falling short of the expected value.", [required_rating_name, score, input.metadata.sonarqube_projectKey])
-		sugg := sprintf("Adhere to code security standards to improve score for project %s.", [input.metadata.sonarqube_projectKey])
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": policy_name, "alertStatus": alertStatus}]{
-		score == required_rating_score
-		policy_name in exception_list
-		msg := sprintf("The SonarQube metric %s stands at %s for project %s, falling short of the expected value.", [required_rating_name, score, input.metadata.sonarqube_projectKey])
-		sugg := sprintf("Adhere to code security standards to improve score for project %s.", [input.metadata.sonarqube_projectKey])
-		error := ""
-		alertStatus := "exception"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
+	score == required_rating_score
+	msg := sprintf("The SonarQube metric %s stands at %s for project %s, falling short of the expected value.", [required_rating_name, score, input.metadata.sonarqube_projectKey])
+	sugg := sprintf("Adhere to code security standards to improve score for project %s.", [input.metadata.sonarqube_projectKey])
+	error := ""
 	}`,
 
 	45: `
 	package opsmx
 	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
 	default score = ""
 
 	rating_map := {
-		"A": "1.0",
-		"B": "2.0",
-		"C": "3.0",
-		"D": "4.0",
-		"E": "5.0"
+	"A": "1.0",
+	"B": "2.0",
+	"C": "3.0",
+	"D": "4.0",
+	"E": "5.0"
 	}
 
 	required_rating_name := concat("", ["new_", lower(split(input.conditions[0].condition_name, " ")[1]), "_rating"])
 	required_rating_score := rating_map[split(input.conditions[0].condition_name, " ")[3]]
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_sonarqube.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_", image_sha, "_sonarqube.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name, "&scanOperation=sonarqubescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name ,"&scanOperation=sonarqubescan"] )
+	
 	request = {
 			"method": "GET",
 			"url": complete_url
@@ -1804,133 +2609,113 @@ var scriptMap = map[int]string{
 	response = http.send(request)
 	score = [response.body.measures[i].period.value | response.body.measures[i].metric == "new_reliability_rating"][0]
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		score == ""
-		msg := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
-		sugg := "Kindly verify if the token provided has permissions to read the quality metrics. Also, verify if the required quality metrics are available for the project."
-		error := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	score == ""
+	msg := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
+	sugg := "Kindly verify if the token provided has permissions to read the quality metrics. Also, verify if the required quality metrics are available for the project."
+	error := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
-		score == required_rating_score
-		not policy_name in exception_list
-		msg := sprintf("The SonarQube metric %s stands at %s for project %s, falling short of the expected value.", [required_rating_name, score, input.metadata.sonarqube_projectKey])
-		sugg := sprintf("Adhere to code security standards to improve score for project %s.", [input.metadata.sonarqube_projectKey])
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": policy_name, "alertStatus": alertStatus}]{
-		score == required_rating_score
-		policy_name in exception_list
-		msg := sprintf("The SonarQube metric %s stands at %s for project %s, falling short of the expected value.", [required_rating_name, score, input.metadata.sonarqube_projectKey])
-		sugg := sprintf("Adhere to code security standards to improve score for project %s.", [input.metadata.sonarqube_projectKey])
-		error := ""
-		alertStatus := "exception"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
+	score == required_rating_score
+	msg := sprintf("The SonarQube metric %s stands at %s for project %s, falling short of the expected value.", [required_rating_name, score, input.metadata.sonarqube_projectKey])
+	sugg := sprintf("Adhere to code security standards to improve score for project %s.", [input.metadata.sonarqube_projectKey])
+	error := ""
 	}`,
 
 	46: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	missing(obj, field) {
 		not obj[field]
 	}
-
+	
 	missing(obj, field) {
 		obj[field] == ""
 	}
-
+	
 	canonify_cpu(orig) = new {
 		is_number(orig)
 		new := orig * 1000
 	}
-
+	
 	canonify_cpu(orig) = new {
 		not is_number(orig)
 		endswith(orig, "m")
 		new := to_number(replace(orig, "m", ""))
 	}
-
+	
 	canonify_cpu(orig) = new {
 		not is_number(orig)
 		not endswith(orig, "m")
 		regex.find_n("^[0-9]+(\\.[0-9]+)?$", orig,-1)
 		new := to_number(orig) * 1000
 	}
-
+	
 	# 10 ** 21
 	mem_multiple("E") = 1000000000000000000000
-
+	
 	# 10 ** 18
 	mem_multiple("P") = 1000000000000000000
-
+	
 	# 10 ** 15
 	mem_multiple("T") = 1000000000000000
-
+	
 	# 10 ** 12
 	mem_multiple("G") = 1000000000000
-
+	
 	# 10 ** 9
 	mem_multiple("M") = 1000000000
-
+	
 	# 10 ** 6
 	mem_multiple("k") = 1000000
-
+	
 	# 10 ** 3
 	mem_multiple("") = 1000
-
+	
 	# Kubernetes accepts millibyte precision when it probably shouldnt.
 	# https://github.com/kubernetes/kubernetes/issues/28741
-
+	
 	# 10 ** 0
 	mem_multiple("m") = 1
-
+	
 	# 1000 * 2 ** 10
 	mem_multiple("Ki") = 1024000
-
+	
 	# 1000 * 2 ** 20
 	mem_multiple("Mi") = 1048576000
-
+	
 	# 1000 * 2 ** 30
 	mem_multiple("Gi") = 1073741824000
-
+	
 	# 1000 * 2 ** 40
 	mem_multiple("Ti") = 1099511627776000
-
+	
 	# 1000 * 2 ** 50
 	mem_multiple("Pi") = 1125899906842624000
-
+	
 	# 1000 * 2 ** 60
 	mem_multiple("Ei") = 1152921504606846976000
-
+	
 	get_suffix(mem) = suffix {
 		not is_string(mem)
 		suffix := ""
 	}
-
+	
 	get_suffix(mem) = suffix {
 		is_string(mem)
 		count(mem) > 0
 		suffix := substring(mem, count(mem) - 1, -1)
 		mem_multiple(suffix)
 	}
-
+	
 	get_suffix(mem) = suffix {
 		is_string(mem)
 		count(mem) > 1
 		suffix := substring(mem, count(mem) - 2, -1)
 		mem_multiple(suffix)
 	}
-
+	
 	get_suffix(mem) = suffix {
 		is_string(mem)
 		count(mem) > 1
@@ -1938,25 +2723,25 @@ var scriptMap = map[int]string{
 		not mem_multiple(substring(mem, count(mem) - 2, -1))
 		suffix := ""
 	}
-
+	
 	get_suffix(mem) = suffix {
 		is_string(mem)
 		count(mem) == 1
 		not mem_multiple(substring(mem, count(mem) - 1, -1))
 		suffix := ""
 	}
-
+	
 	get_suffix(mem) = suffix {
 		is_string(mem)
 		count(mem) == 0
 		suffix := ""
 	}
-
+	
 	canonify_mem(orig) = new {
 		is_number(orig)
 		new := orig * 1000
 	}
-
+	
 	canonify_mem(orig) = new {
 		not is_number(orig)
 		suffix := get_suffix(orig)
@@ -1964,71 +2749,55 @@ var scriptMap = map[int]string{
 		regex.find_n("^[0-9]+(\\.[0-9]+)?$", raw, -1)
 		new := to_number(raw) * mem_multiple(suffix)
 	}
-
+	
 	# Ephemeral containers not checked as it is not possible to set field.
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to check the resource limits set and optimize them.", "error": "", "exception": "", "alertStatus": alertStatus}] {
-		general_violation[{"msg": msg, "field": "containers"}]
-		not policy_name in exception_list
-		alertStatus := "active"
+	
+	deny[{"alertMsg": msg, "suggestion": "Suggest to check the resource limits set and optimize them.", "error": ""}] {
+	  general_violation[{"msg": msg, "field": "containers"}]
 	}
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to check the resource limits set and optimize them.", "error": "", "exception": policy_name, "alertStatus": alertStatus}] {
-		general_violation[{"msg": msg, "field": "containers"}]
-		policy_name in exception_list
-		alertStatus := "exception"
+	
+	deny[{"alertMsg": msg, "suggestion": "Suggest to check the resource limits set and optimize them.", "error": ""}] {
+	  general_violation[{"msg": msg, "field": "initContainers"}]
 	}
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to check the resource limits set and optimize them.", "error": "", "exception": "", "alertStatus": alertStatus}] {
-		general_violation[{"msg": msg, "field": "initContainers"}]
-		not policy_name in exception_list
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to check the resource limits set and optimize them.", "error": "", "exception": policy_name, "alertStatus": alertStatus}] {
-		general_violation[{"msg": msg, "field": "initContainers"}]
-		not policy_name in exception_list
-		alertStatus := "exception"
-	}
-
+	
 	general_violation[{"msg": msg, "field": field}] {
 		container := input.request.object.spec[field][_]
 		cpu_orig := container.resources.limits.cpu
 		not canonify_cpu(cpu_orig)
 		msg := sprintf("container <%v> cpu limit <%v> could not be parsed", [container.name, cpu_orig])
 	}
-
+	
 	general_violation[{"msg": msg, "field": field}] {
 		container := input.request.object.spec[field][_]
 		mem_orig := container.resources.limits.memory
 		not canonify_mem(mem_orig)
 		msg := sprintf("container <%v> memory limit <%v> could not be parsed", [container.name, mem_orig])
 	}
-
+	
 	general_violation[{"msg": msg, "field": field}] {
 		container := input.request.object.spec[field][_]
 		not container.resources
 		msg := sprintf("container <%v> has no resource limits", [container.name])
 	}
-
+	
 	general_violation[{"msg": msg, "field": field}] {
 		container := input.request.object.spec[field][_]
 		not container.resources.limits
 		msg := sprintf("container <%v> has no resource limits", [container.name])
 	}
-
+	
 	general_violation[{"msg": msg, "field": field}] {
 		container := input.request.object.spec[field][_]
 		missing(container.resources.limits, "cpu")
 		msg := sprintf("container <%v> has no cpu limit", [container.name])
 	}
-
+	
 	general_violation[{"msg": msg, "field": field}] {
 		container := input.request.object.spec[field][_]
 		missing(container.resources.limits, "memory")
 		msg := sprintf("container <%v> has no memory limit", [container.name])
 	}
-
+	
 	general_violation[{"msg": msg, "field": field}] {
 		container := input.request.object.spec[field][_]
 		cpu_orig := container.resources.limits.cpu
@@ -2038,7 +2807,7 @@ var scriptMap = map[int]string{
 		cpu > max_cpu
 		msg := sprintf("container <%v> cpu limit <%v> is higher than the maximum allowed of <%v>", [container.name, cpu_orig, max_cpu_orig])
 	}
-
+	
 	general_violation[{"msg": msg, "field": field}] {
 		container := input.request.object.spec[field][_]
 		mem_orig := container.resources.limits.memory
@@ -2051,39 +2820,31 @@ var scriptMap = map[int]string{
 
 	47: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	missing(obj, field) = true {
-		not obj[field]
+	not obj[field]
 	}
 
 	missing(obj, field) = true {
-		obj[field] == ""
+	obj[field] == ""
 	}
 
 	canonify_cpu(orig) = new {
-		is_number(orig)
-		new := orig * 1000
+	is_number(orig)
+	new := orig * 1000
 	}
 
 	canonify_cpu(orig) = new {
-		not is_number(orig)
-		endswith(orig, "m")
-		new := to_number(replace(orig, "m", ""))
+	not is_number(orig)
+	endswith(orig, "m")
+	new := to_number(replace(orig, "m", ""))
 	}
 
 	canonify_cpu(orig) = new {
-		not is_number(orig)
-		not endswith(orig, "m")
-		regex.find_n("^[0-9]+(\\.[0-9]+)?$", orig, -1)
-		new := to_number(orig) * 1000
+	not is_number(orig)
+	not endswith(orig, "m")
+	regex.find_n("^[0-9]+(\\.[0-9]+)?$", orig, -1)
+	new := to_number(orig) * 1000
 	}
 
 	# 10 ** 21
@@ -2131,204 +2892,178 @@ var scriptMap = map[int]string{
 	mem_multiple("Ei") = 1152921504606846976000 { true }
 
 	get_suffix(mem) = suffix {
-		not is_string(mem)
-		suffix := ""
+	not is_string(mem)
+	suffix := ""
 	}
 
 	get_suffix(mem) = suffix {
-		is_string(mem)
-		count(mem) > 0
-		suffix := substring(mem, count(mem) - 1, -1)
-		mem_multiple(suffix)
+	is_string(mem)
+	count(mem) > 0
+	suffix := substring(mem, count(mem) - 1, -1)
+	mem_multiple(suffix)
 	}
 
 	get_suffix(mem) = suffix {
-		is_string(mem)
-		count(mem) > 1
-		suffix := substring(mem, count(mem) - 2, -1)
-		mem_multiple(suffix)
+	is_string(mem)
+	count(mem) > 1
+	suffix := substring(mem, count(mem) - 2, -1)
+	mem_multiple(suffix)
 	}
 
 	get_suffix(mem) = suffix {
-		is_string(mem)
-		count(mem) > 1
-		not mem_multiple(substring(mem, count(mem) - 1, -1))
-		not mem_multiple(substring(mem, count(mem) - 2, -1))
-		suffix := ""
+	is_string(mem)
+	count(mem) > 1
+	not mem_multiple(substring(mem, count(mem) - 1, -1))
+	not mem_multiple(substring(mem, count(mem) - 2, -1))
+	suffix := ""
 	}
 
 	get_suffix(mem) = suffix {
-		is_string(mem)
-		count(mem) == 1
-		not mem_multiple(substring(mem, count(mem) - 1, -1))
-		suffix := ""
+	is_string(mem)
+	count(mem) == 1
+	not mem_multiple(substring(mem, count(mem) - 1, -1))
+	suffix := ""
 	}
 
 	get_suffix(mem) = suffix {
-		is_string(mem)
-		count(mem) == 0
-		suffix := ""
+	is_string(mem)
+	count(mem) == 0
+	suffix := ""
 	}
 
 	canonify_mem(orig) = new {
-		is_number(orig)
-		new := orig * 1000
+	is_number(orig)
+	new := orig * 1000
 	}
 
 	canonify_mem(orig) = new {
-		not is_number(orig)
-		suffix := get_suffix(orig)
-		raw := replace(orig, suffix, "")
-		regex.find_n("^[0-9]+(\\.[0-9]+)?$", raw, -1)
-		new := to_number(raw) * mem_multiple(suffix)
+	not is_number(orig)
+	suffix := get_suffix(orig)
+	raw := replace(orig, suffix, "")
+	regex.find_n("^[0-9]+(\\.[0-9]+)?$", raw, -1)
+	new := to_number(raw) * mem_multiple(suffix)
 	}
 
-	deny[{"alertMsg": msg, "suggestion": "Suggest to set the resource request limits and optimize them.", "error": "", "exception": "", "alertStatus": alertStatus}] {
-		general_violation[{"msg": msg, "field": "containers"}]
-		not policy_name in exception_list
-		alertStatus := "active"
+	deny[{"alertMsg": msg, "suggestion": "Suggest to set the resource request limits and optimize them.", "error": ""}] {
+	general_violation[{"msg": msg, "field": "containers"}]
 	}
 
-	deny[{"alertMsg": msg, "suggestion": "Suggest to set the resource request limits and optimize them.", "error": "", "exception": policy_name, "alertStatus": alertStatus}] {
-		general_violation[{"msg": msg, "field": "containers"}]
-		policy_name in exception_list
-		alertStatus := "exception"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to check the resource request limits and optimize them.", "error": "", "exception": "", "alertStatus": alertStatus}] {
-		general_violation[{"msg": msg, "field": "initContainers"}]
-		not policy_name in exception_list
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to check the resource request limits and optimize them.", "error": "", "exception": policy_name, "alertStatus": alertStatus}] {
-		general_violation[{"msg": msg, "field": "initContainers"}]
-		policy_name in exception_list
-		alertStatus := "exception"
+	deny[{"alertMsg": msg, "suggestion": "Suggest to check the resource request limits and optimize them.", "error": ""}] {
+	general_violation[{"msg": msg, "field": "initContainers"}]
 	}
 
 	general_violation[{"msg": msg, "field": field}] {
-		container := input.request.object.spec[field][_]
-		cpu_orig := container.resources.requests.cpu
-		not canonify_cpu(cpu_orig)
-		msg := sprintf("container <%v> cpu request <%v> could not be parsed", [container.name, cpu_orig])
+	container := input.request.object.spec[field][_]
+	cpu_orig := container.resources.requests.cpu
+	not canonify_cpu(cpu_orig)
+	msg := sprintf("container <%v> cpu request <%v> could not be parsed", [container.name, cpu_orig])
 	}
 
 	general_violation[{"msg": msg, "field": field}] {
-		container := input.request.object.spec[field][_]
-		mem_orig := container.resources.requests.memory
-		not canonify_mem(mem_orig)
-		msg := sprintf("container <%v> memory request <%v> could not be parsed", [container.name, mem_orig])
+	container := input.request.object.spec[field][_]
+	mem_orig := container.resources.requests.memory
+	not canonify_mem(mem_orig)
+	msg := sprintf("container <%v> memory request <%v> could not be parsed", [container.name, mem_orig])
 	}
 
 	general_violation[{"msg": msg, "field": field}] {
-		container := input.request.object.spec[field][_]
-		not container.resources
-		msg := sprintf("container <%v> has no resource requests", [container.name])
+	container := input.request.object.spec[field][_]
+	not container.resources
+	msg := sprintf("container <%v> has no resource requests", [container.name])
 	}
 
 	general_violation[{"msg": msg, "field": field}] {
-		container := input.request.object.spec[field][_]
-		not container.resources.requests
-		msg := sprintf("container <%v> has no resource requests", [container.name])
+	container := input.request.object.spec[field][_]
+	not container.resources.requests
+	msg := sprintf("container <%v> has no resource requests", [container.name])
 	}
 
 	general_violation[{"msg": msg, "field": field}] {
-		container := input.request.object.spec[field][_]
-		missing(container.resources.requests, "cpu")
-		msg := sprintf("container <%v> has no cpu request", [container.name])
+	container := input.request.object.spec[field][_]
+	missing(container.resources.requests, "cpu")
+	msg := sprintf("container <%v> has no cpu request", [container.name])
 	}
 
 	general_violation[{"msg": msg, "field": field}] {
-		container := input.request.object.spec[field][_]
-		missing(container.resources.requests, "memory")
-		msg := sprintf("container <%v> has no memory request", [container.name])
+	container := input.request.object.spec[field][_]
+	missing(container.resources.requests, "memory")
+	msg := sprintf("container <%v> has no memory request", [container.name])
 	}
 
 	general_violation[{"msg": msg, "field": field}] {
-		container := input.request.object.spec[field][_]
-		cpu_orig := container.resources.requests.cpu
-		cpu := canonify_cpu(cpu_orig)
-		max_cpu_orig := input.parameters.cpu
-		max_cpu := canonify_cpu(max_cpu_orig)
-		cpu > max_cpu
-		msg := sprintf("container <%v> cpu request <%v> is higher than the maximum allowed of <%v>", [container.name, cpu_orig, max_cpu_orig])
+	container := input.request.object.spec[field][_]
+	cpu_orig := container.resources.requests.cpu
+	cpu := canonify_cpu(cpu_orig)
+	max_cpu_orig := input.parameters.cpu
+	max_cpu := canonify_cpu(max_cpu_orig)
+	cpu > max_cpu
+	msg := sprintf("container <%v> cpu request <%v> is higher than the maximum allowed of <%v>", [container.name, cpu_orig, max_cpu_orig])
 	}
 
 	general_violation[{"msg": msg, "field": field}] {
-		container := input.request.object.spec[field][_]
-		mem_orig := container.resources.requests.memory
-		mem := canonify_mem(mem_orig)
-		max_mem_orig := input.parameters.memory
-		max_mem := canonify_mem(max_mem_orig)
-		mem > max_mem
-		msg := sprintf("container <%v> memory request <%v> is higher than the maximum allowed of <%v>", [container.name, mem_orig, max_mem_orig])
+	container := input.request.object.spec[field][_]
+	mem_orig := container.resources.requests.memory
+	mem := canonify_mem(mem_orig)
+	max_mem_orig := input.parameters.memory
+	max_mem := canonify_mem(max_mem_orig)
+	mem > max_mem
+	msg := sprintf("container <%v> memory request <%v> is higher than the maximum allowed of <%v>", [container.name, mem_orig, max_mem_orig])
 	}`,
 
 	48: `
 	package opsmx
-	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
+    severity = "high"
+    default findings_count = 0
 
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
+    image_sha = replace(input.metadata.image_sha, ":", "-")
 
-	severity = "high"
-	default findings_count = 0
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", severity, "_", input.metadata.build_id, "_semgrep.json"]) {
+		input.metadata.source_code_path == ""
+	}
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=findings_", input.metadata.owner, "_", input.metadata.repository, "_", severity, "_", input.metadata.build_id, "_semgrep.json&scanOperation=semgrepScan"]	)
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=findings_", input.metadata.owner, "_", input.metadata.repository, "_", severity, "_", input.metadata.build_id, "_semgrep.json&scanOperation=semgrepScan"]	)
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", severity, "_", input.metadata.build_id, "_", image_sha, "_semgrep.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=semgrepScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=semgrepScan"])
+
 	request = {	
-			"method": "GET",
-			"url": complete_url
-	}
+            "method": "GET",
+            "url": complete_url
+    }
 
-	response = http.send(request)
-	findings_count = response.body.totalFindings
-	findings = response.body.findings
-
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
-		findings_count > 0
+    response = http.send(request)
+    findings_count = response.body.totalFindings
+    findings = response.body.findings
+    deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
+        findings_count > 0
 		some i
 		title := sprintf("Semgrep Scan: %v ",[findings[i].rule_name])
-		not findings[i].rule_name in exception_list
-		msg := sprintf("%v: %v", [findings[i].rule_name, findings[i].rule_message])
-		sugg := "Please examine the high-severity findings in the SEMGREP analysis data, available through the View Findings button and proactively review your code for common issues and apply best coding practices during development to prevent such alerts from arising."
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
-		findings_count > 0
-		some i
-		title := sprintf("Semgrep Scan: %v ",[findings[i].rule_name])
-		findings[i].rule_name in exception_list
-		msg := sprintf("%v: %v", [findings[i].rule_name, findings[i].rule_message])
-		sugg := "Please examine the high-severity findings in the SEMGREP analysis data, available through the View Findings button and proactively review your code for common issues and apply best coding practices during development to prevent such alerts from arising."
-		error := ""
-		exception_cause := findings[i].rule_name
-		alertStatus := "exception"
-	}`,
+        msg := sprintf("%v: %v", [findings[i].rule_name, findings[i].rule_message])
+        sugg := "Please examine the medium-severity findings in the SEMGREP analysis data, available through the View Findings button and proactively review your code for common issues and apply best coding practices during development to prevent such alerts from arising."
+        error := ""
+    }`,
 
 	49: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	severity = "medium"
 	default findings_count = 0
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=findings_", input.metadata.owner, "_", input.metadata.repository, "_", severity, "_", input.metadata.build_id, "_semgrep.json&scanOperation=semgrepScan"]	)
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=findings_", input.metadata.owner, "_", input.metadata.repository, "_", severity, "_", input.metadata.build_id, "_semgrep.json&scanOperation=semgrepScan"]	)
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", severity, "_", input.metadata.build_id, "_semgrep.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", severity, "_", input.metadata.build_id, "_", image_sha, "_semgrep.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=semgrepScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=semgrepScan"])
 
 	request = {	
 			"method": "GET",
@@ -2339,418 +3074,331 @@ var scriptMap = map[int]string{
 	findings_count = response.body.totalFindings
 	findings = response.body.findings
 
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
 		findings_count > 0
 		some i
-		not findings[i].rule_name in exception_list
 		title := sprintf("Semgrep Scan: %v ",[findings[i].rule_name])
 		msg := sprintf("%v: %v", [findings[i].rule_name, findings[i].rule_message])
 		sugg := "Please examine the medium-severity findings in the SEMGREP analysis data, available through the View Findings button and proactively review your code for common issues and apply best coding practices during development to prevent such alerts from arising."
 		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
-		findings_count > 0
-		some i
-		findings[i].rule_name in exception_list
-		title := sprintf("Semgrep Scan: %v ",[findings[i].rule_name])
-		msg := sprintf("%v: %v", [findings[i].rule_name, findings[i].rule_message])
-		sugg := "Please examine the medium-severity findings in the SEMGREP analysis data, available through the View Findings button and proactively review your code for common issues and apply best coding practices during development to prevent such alerts from arising."
-		error := ""
-		exception_cause := findings[i].rule_name
-		alertStatus := "exception"
-	}`,
+    }`,
 
 	50: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	missing(obj, field) = true {
-		not obj[field]
+	  not obj[field]
 	}
-
+	
 	missing(obj, field) = true {
-		obj[field] == ""
+	  obj[field] == ""
 	}
-
+	
 	canonify_cpu(orig) = new {
-		is_number(orig)
-		new := orig * 1000
+	  is_number(orig)
+	  new := orig * 1000
 	}
-
+	
 	canonify_cpu(orig) = new {
-		not is_number(orig)
-		endswith(orig, "m")
-		new := to_number(replace(orig, "m", ""))
+	  not is_number(orig)
+	  endswith(orig, "m")
+	  new := to_number(replace(orig, "m", ""))
 	}
-
+	
 	canonify_cpu(orig) = new {
-		not is_number(orig)
-		not endswith(orig, "m")
-		regex.find_n("^[0-9]+$", orig, -1)
-		new := to_number(orig) * 1000
+	  not is_number(orig)
+	  not endswith(orig, "m")
+	  regex.find_n("^[0-9]+$", orig, -1)
+	  new := to_number(orig) * 1000
 	}
-
+	
 	canonify_cpu(orig) = new {
-		not is_number(orig)
-		not endswith(orig, "m")
-		regex.find_n("^[0-9]+[.][0-9]+$", orig, -1)
-		new := to_number(orig) * 1000
+	  not is_number(orig)
+	  not endswith(orig, "m")
+	  regex.find_n("^[0-9]+[.][0-9]+$", orig, -1)
+	  new := to_number(orig) * 1000
 	}
-
+	
 	# 10 ** 21
 	mem_multiple("E") = 1000000000000000000000 { true }
-
+	
 	# 10 ** 18
 	mem_multiple("P") = 1000000000000000000 { true }
-
+	
 	# 10 ** 15
 	mem_multiple("T") = 1000000000000000 { true }
-
+	
 	# 10 ** 12
 	mem_multiple("G") = 1000000000000 { true }
-
+	
 	# 10 ** 9
 	mem_multiple("M") = 1000000000 { true }
-
+	
 	# 10 ** 6
 	mem_multiple("k") = 1000000 { true }
-
+	
 	# 10 ** 3
 	mem_multiple("") = 1000 { true }
-
+	
 	# Kubernetes accepts millibyte precision when it probably shouldnt.
 	# https://github.com/kubernetes/kubernetes/issues/28741
 	# 10 ** 0
 	mem_multiple("m") = 1 { true }
-
+	
 	# 1000 * 2 ** 10
 	mem_multiple("Ki") = 1024000 { true }
-
+	
 	# 1000 * 2 ** 20
 	mem_multiple("Mi") = 1048576000 { true }
-
+	
 	# 1000 * 2 ** 30
 	mem_multiple("Gi") = 1073741824000 { true }
-
+	
 	# 1000 * 2 ** 40
 	mem_multiple("Ti") = 1099511627776000 { true }
-
+	
 	# 1000 * 2 ** 50
 	mem_multiple("Pi") = 1125899906842624000 { true }
-
+	
 	# 1000 * 2 ** 60
 	mem_multiple("Ei") = 1152921504606846976000 { true }
-
+	
 	get_suffix(mem) = suffix {
-		not is_string(mem)
-		suffix := ""
+	  not is_string(mem)
+	  suffix := ""
 	}
-
+	
 	get_suffix(mem) = suffix {
-		is_string(mem)
-		count(mem) > 0
-		suffix := substring(mem, count(mem) - 1, -1)
-		mem_multiple(suffix)
+	  is_string(mem)
+	  count(mem) > 0
+	  suffix := substring(mem, count(mem) - 1, -1)
+	  mem_multiple(suffix)
 	}
-
+	
 	get_suffix(mem) = suffix {
-		is_string(mem)
-		count(mem) > 1
-		suffix := substring(mem, count(mem) - 2, -1)
-		mem_multiple(suffix)
+	  is_string(mem)
+	  count(mem) > 1
+	  suffix := substring(mem, count(mem) - 2, -1)
+	  mem_multiple(suffix)
 	}
-
+	
 	get_suffix(mem) = suffix {
-		is_string(mem)
-		count(mem) > 1
-		not mem_multiple(substring(mem, count(mem) - 1, -1))
-		not mem_multiple(substring(mem, count(mem) - 2, -1))
-		suffix := ""
+	  is_string(mem)
+	  count(mem) > 1
+	  not mem_multiple(substring(mem, count(mem) - 1, -1))
+	  not mem_multiple(substring(mem, count(mem) - 2, -1))
+	  suffix := ""
 	}
-
+	
 	get_suffix(mem) = suffix {
-		is_string(mem)
-		count(mem) == 1
-		not mem_multiple(substring(mem, count(mem) - 1, -1))
-		suffix := ""
+	  is_string(mem)
+	  count(mem) == 1
+	  not mem_multiple(substring(mem, count(mem) - 1, -1))
+	  suffix := ""
 	}
-
+	
 	get_suffix(mem) = suffix {
-		is_string(mem)
-		count(mem) == 0
-		suffix := ""
+	  is_string(mem)
+	  count(mem) == 0
+	  suffix := ""
 	}
-
+	
 	canonify_mem(orig) = new {
-		is_number(orig)
-		new := orig * 1000
+	  is_number(orig)
+	  new := orig * 1000
 	}
-
+	
 	canonify_mem(orig) = new {
-		not is_number(orig)
-		suffix := get_suffix(orig)
-		raw := replace(orig, suffix, "")
-		regex.find_n("^[0-9]+(\\.[0-9]+)?$", raw, -1)
-		new := to_number(raw) * mem_multiple(suffix)
+	  not is_number(orig)
+	  suffix := get_suffix(orig)
+	  raw := replace(orig, suffix, "")
+	  regex.find_n("^[0-9]+(\\.[0-9]+)?$", raw, -1)
+	  new := to_number(raw) * mem_multiple(suffix)
 	}
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to set the resource limits and optimize them.", "error": "", "exception": "", "alertStatus": alertStatus}] {
-		general_violation[{"msg": msg, "field": "containers"}]
-		not policy_name in exception_list
-		alertStatus := "active"
+	
+	deny[{"alertMsg": msg, "suggestion": "Suggest to set the resource limits and optimize them.", "error": ""}] {
+	  general_violation[{"msg": msg, "field": "containers"}]
 	}
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to set the resource limits and optimize them.", "error": "", "exception": policy_name, "alertStatus": alertStatus}] {
-		general_violation[{"msg": msg, "field": "containers"}]
-		policy_name in exception_list
-		alertStatus := "exception"
+	
+	deny[{"alertMsg": msg, "suggestion": "Suggest to set the resource limits and optimize them.", "error": ""}] {
+	  general_violation[{"msg": msg, "field": "initContainers"}]
 	}
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to set the resource limits and optimize them.", "error": "", "exception": "", "alertStatus": alertStatus}] {
-		general_violation[{"msg": msg, "field": "initContainers"}]
-		not policy_name in exception_list
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to set the resource limits and optimize them.", "error": "", "exception": policy_name, "alertStatus": alertStatus}] {
-		general_violation[{"msg": msg, "field": "initContainers"}]
-		policy_name in exception_list
-		alertStatus := "exception"
-	}
-
+	
 	general_violation[{"msg": msg, "field": field}] {
-		container := input.request.object.spec[field][_]
-		cpu_orig := container.resources.limits.cpu
-		not canonify_cpu(cpu_orig)
-		msg := sprintf("container <%v> cpu limit <%v> could not be parsed", [container.name, cpu_orig])
+	  container := input.request.object.spec[field][_]
+	  cpu_orig := container.resources.limits.cpu
+	  not canonify_cpu(cpu_orig)
+	  msg := sprintf("container <%v> cpu limit <%v> could not be parsed", [container.name, cpu_orig])
 	}
-
+	
 	general_violation[{"msg": msg, "field": field}] {
-		container := input.request.object.spec[field][_]
-		mem_orig := container.resources.limits.memory
-		not canonify_mem(mem_orig)
-		msg := sprintf("container <%v> memory limit <%v> could not be parsed", [container.name, mem_orig])
+	  container := input.request.object.spec[field][_]
+	  mem_orig := container.resources.limits.memory
+	  not canonify_mem(mem_orig)
+	  msg := sprintf("container <%v> memory limit <%v> could not be parsed", [container.name, mem_orig])
 	}
-
+	
 	general_violation[{"msg": msg, "field": field}] {
-		container := input.request.object.spec[field][_]
-		cpu_orig := container.resources.requests.cpu
-		not canonify_cpu(cpu_orig)
-		msg := sprintf("container <%v> cpu request <%v> could not be parsed", [container.name, cpu_orig])
+	  container := input.request.object.spec[field][_]
+	  cpu_orig := container.resources.requests.cpu
+	  not canonify_cpu(cpu_orig)
+	  msg := sprintf("container <%v> cpu request <%v> could not be parsed", [container.name, cpu_orig])
 	}
-
+	
 	general_violation[{"msg": msg, "field": field}] {
-		container := input.request.object.spec[field][_]
-		mem_orig := container.resources.requests.memory
-		not canonify_mem(mem_orig)
-		msg := sprintf("container <%v> memory request <%v> could not be parsed", [container.name, mem_orig])
+	  container := input.request.object.spec[field][_]
+	  mem_orig := container.resources.requests.memory
+	  not canonify_mem(mem_orig)
+	  msg := sprintf("container <%v> memory request <%v> could not be parsed", [container.name, mem_orig])
 	}
-
+	
 	general_violation[{"msg": msg, "field": field}] {
-		container := input.request.object.spec[field][_]
-		not container.resources
-		msg := sprintf("container <%v> has no resource limits", [container.name])
+	  container := input.request.object.spec[field][_]
+	  not container.resources
+	  msg := sprintf("container <%v> has no resource limits", [container.name])
 	}
-
+	
 	general_violation[{"msg": msg, "field": field}] {
-		container := input.request.object.spec[field][_]
-		not container.resources.limits
-		msg := sprintf("container <%v> has no resource limits", [container.name])
+	  container := input.request.object.spec[field][_]
+	  not container.resources.limits
+	  msg := sprintf("container <%v> has no resource limits", [container.name])
 	}
-
+	
 	general_violation[{"msg": msg, "field": field}] {
-		container := input.request.object.spec[field][_]
-		missing(container.resources.limits, "cpu")
-		msg := sprintf("container <%v> has no cpu limit", [container.name])
+	  container := input.request.object.spec[field][_]
+	  missing(container.resources.limits, "cpu")
+	  msg := sprintf("container <%v> has no cpu limit", [container.name])
 	}
-
+	
 	general_violation[{"msg": msg, "field": field}] {
-		container := input.request.object.spec[field][_]
-		missing(container.resources.limits, "memory")
-		msg := sprintf("container <%v> has no memory limit", [container.name])
+	  container := input.request.object.spec[field][_]
+	  missing(container.resources.limits, "memory")
+	  msg := sprintf("container <%v> has no memory limit", [container.name])
 	}
-
+	
 	general_violation[{"msg": msg, "field": field}] {
-		container := input.request.object.spec[field][_]
-		not container.resources.requests
-		msg := sprintf("container <%v> has no resource requests", [container.name])
+	  container := input.request.object.spec[field][_]
+	  not container.resources.requests
+	  msg := sprintf("container <%v> has no resource requests", [container.name])
 	}
-
+	
 	general_violation[{"msg": msg, "field": field}] {
-		container := input.request.object.spec[field][_]
-		missing(container.resources.requests, "cpu")
-		msg := sprintf("container <%v> has no cpu request", [container.name])
+	  container := input.request.object.spec[field][_]
+	  missing(container.resources.requests, "cpu")
+	  msg := sprintf("container <%v> has no cpu request", [container.name])
 	}
-
+	
 	general_violation[{"msg": msg, "field": field}] {
-		container := input.request.object.spec[field][_]
-		missing(container.resources.requests, "memory")
-		msg := sprintf("container <%v> has no memory request", [container.name])
+	  container := input.request.object.spec[field][_]
+	  missing(container.resources.requests, "memory")
+	  msg := sprintf("container <%v> has no memory request", [container.name])
 	}
-
+	
 	general_violation[{"msg": msg, "field": field}] {
-		container := input.request.object.spec[field][_]
-		cpu_limits_orig := container.resources.limits.cpu
-		cpu_limits := canonify_cpu(cpu_limits_orig)
-		cpu_requests_orig := container.resources.requests.cpu
-		cpu_requests := canonify_cpu(cpu_requests_orig)
-		cpu_ratio := object.get(input.parameters, "cpuRatio", input.parameters.ratio)
-		to_number(cpu_limits) > to_number(cpu_ratio) * to_number(cpu_requests)
-		msg := sprintf("container <%v> cpu limit <%v> is higher than the maximum allowed ratio of <%v>", [container.name, cpu_limits_orig, cpu_ratio])
+	  container := input.request.object.spec[field][_]
+	  cpu_limits_orig := container.resources.limits.cpu
+	  cpu_limits := canonify_cpu(cpu_limits_orig)
+	  cpu_requests_orig := container.resources.requests.cpu
+	  cpu_requests := canonify_cpu(cpu_requests_orig)
+	  cpu_ratio := object.get(input.parameters, "cpuRatio", input.parameters.ratio)
+	  to_number(cpu_limits) > to_number(cpu_ratio) * to_number(cpu_requests)
+	  msg := sprintf("container <%v> cpu limit <%v> is higher than the maximum allowed ratio of <%v>", [container.name, cpu_limits_orig, cpu_ratio])
 	}
-
+	
 	general_violation[{"msg": msg, "field": field}] {
-		container := input.request.object.spec[field][_]
-		mem_limits_orig := container.resources.limits.memory
-		mem_requests_orig := container.resources.requests.memory
-		mem_limits := canonify_mem(mem_limits_orig)
-		mem_requests := canonify_mem(mem_requests_orig)
-		mem_ratio := input.parameters.ratio
-		to_number(mem_limits) > to_number(mem_ratio) * to_number(mem_requests)
-		msg := sprintf("container <%v> memory limit <%v> is higher than the maximum allowed ratio of <%v>", [container.name, mem_limits_orig, mem_ratio])
+	  container := input.request.object.spec[field][_]
+	  mem_limits_orig := container.resources.limits.memory
+	  mem_requests_orig := container.resources.requests.memory
+	  mem_limits := canonify_mem(mem_limits_orig)
+	  mem_requests := canonify_mem(mem_requests_orig)
+	  mem_ratio := input.parameters.ratio
+	  to_number(mem_limits) > to_number(mem_ratio) * to_number(mem_requests)
+	  msg := sprintf("container <%v> memory limit <%v> is higher than the maximum allowed ratio of <%v>", [container.name, mem_limits_orig, mem_ratio])
 	}`,
 
 	51: ``,
 
 	52: `
 	package opsmx
-	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
+    severity = "low"
+    default findings_count = 0
 
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
+    image_sha = replace(input.metadata.image_sha, ":", "-")
 
-	severity = "low"
-	default findings_count = 0
-
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=findings_", input.metadata.owner, "_", input.metadata.repository, "_", severity, "_", input.metadata.build_id, "_semgrep.json&scanOperation=semgrepScan"]	)
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=findings_", input.metadata.owner, "_", input.metadata.repository, "_", severity, "_", input.metadata.build_id, "_semgrep.json&scanOperation=semgrepScan"]	)
-
-	request = {	
-			"method": "GET",
-			"url": complete_url
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", severity, "_", input.metadata.build_id, "_semgrep.json"]) {
+		input.metadata.source_code_path == ""
 	}
 
-	response = http.send(request)
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", severity, "_", input.metadata.build_id, "_", image_sha, "_semgrep.json"]) {
+		input.metadata.source_code_path != ""
+	}
 
-	findings_count = response.body.totalFindings
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=semgrepScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=semgrepScan"])
+
+    request = {	
+            "method": "GET",
+            "url": complete_url
+    }
+
+    response = http.send(request)
+
+    findings_count = response.body.totalFindings
 	findings = response.body.findings
 
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
-		findings_count > 0
-		some i
-		not findings[i].rule_name in exception_list
+    deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
+        findings_count > 0
+	    some i
 		title := sprintf("Semgrep Scan: %v ",[findings[i].rule_name])
-		msg := sprintf("%v: %v", [findings[i].rule_name, findings[i].rule_message])
-		sugg := "Please examine the low-severity findings in the SEMGREP analysis data, available through the View Findings button and proactively review your code for common issues and apply best coding practices during development to prevent such alerts from arising."
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
-		findings_count > 0
-		some i
-		findings[i].rule_name in exception_list
-		title := sprintf("Semgrep Scan: %v ",[findings[i].rule_name])
-		msg := sprintf("%v: %v", [findings[i].rule_name, findings[i].rule_message])
-		sugg := "Please examine the low-severity findings in the SEMGREP analysis data, available through the View Findings button and proactively review your code for common issues and apply best coding practices during development to prevent such alerts from arising."
-		error := ""
-		exception_cause := findings[i].rule_name
-		alertStatus := "exception"
-	}`,
+        msg := sprintf("%v: %v", [findings[i].rule_name, findings[i].rule_message])
+        sugg := "Please examine the medium-severity findings in the SEMGREP analysis data, available through the View Findings button and proactively review your code for common issues and apply best coding practices during development to prevent such alerts from arising."
+        error := ""
+    }`,
 
 	53: `
 	package opsmx
-	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the usage of privilege escalation containers.", "error": "", "exception": "", "alertStatus": alertStatus}] {
-		not is_update(input.request)
-		not policy_name in exception_list
-		c := input_containers[_]
-		input_allow_privilege_escalation(c)
-		msg := sprintf("Privilege escalation container is not allowed: %v", [c.name])
-		alertStatus := "active"
+	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the usage of privilege escalation containers.", "error": ""}] {
+	  not is_update(input.request)
+	
+	  c := input_containers[_]
+	  input_allow_privilege_escalation(c)
+	  msg := sprintf("Privilege escalation container is not allowed: %v", [c.name])
 	}
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the usage of privilege escalation containers.", "error": "", "exception": policy_name, "alertStatus": alertStatus}] {
-		not is_update(input.request)
-		policy_name in exception_list
-		c := input_containers[_]
-		input_allow_privilege_escalation(c)
-		msg := sprintf("Privilege escalation container is not allowed: %v", [c.name])
-		alertStatus := "exception"
-	}
-
+	
 	input_allow_privilege_escalation(c) {
-		not has_field(c, "securityContext")
+	  not has_field(c, "securityContext")
 	}
 	input_allow_privilege_escalation(c) {
-		not c.securityContext.allowPrivilegeEscalation == false
+	  not c.securityContext.allowPrivilegeEscalation == false
 	}
 	input_containers[c] {
-		c := input.request.object.spec.containers[_]
+	  c := input.request.object.spec.containers[_]
 	}
 	input_containers[c] {
-		c := input.request.object.spec.initContainers[_]
+	  c := input.request.object.spec.initContainers[_]
 	}
 	input_containers[c] {
-		c := input.request.object.spec.ephemeralContainers[_]
+	  c := input.request.object.spec.ephemeralContainers[_]
 	}
-
+	
 	has_field(object, field) = true {
-		object[field]
+	  object[field]
 	}
-
+	
 	is_update(review) {
-		review.operation == "UPDATE"
+	  review.operation == "UPDATE"
 	}`,
 
 	54: `
 	package opsmx
-	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the usage of AppArmor Profiles..", "error": "", "exception": "", "alertStatus": alertStatus}] {
+	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the usage of AppArmor Profiles..", "error": ""}] {
 		metadata := input.request.object.metadata
 		container := input_containers[_]
 		not input_apparmor_allowed(container, metadata)
-		not policy_name in exception_list
 		msg := sprintf("AppArmor profile is not allowed, pod: %v, container: %v. Allowed profiles: %v", [input.request.object.metadata.name, container.name, input.parameters.allowedProfiles])
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the usage of AppArmor Profiles..", "error": "", "exception": policy_name, "alertStatus": alertStatus}] {
-		metadata := input.request.object.metadata
-		container := input_containers[_]
-		not input_apparmor_allowed(container, metadata)
-		policy_name in exception_list
-		msg := sprintf("AppArmor profile is not allowed, pod: %v, container: %v. Allowed profiles: %v", [input.request.object.metadata.name, container.name, input.parameters.allowedProfiles])
-		alertStatus := "exception"
 	}
 
 	input_apparmor_allowed(container, metadata) {
@@ -2777,325 +3425,178 @@ var scriptMap = map[int]string{
 
 	55: `
 	package opsmx
-	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
+	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the disallowed capabilities of containers.", "error": ""}] {
+	# spec.containers.securityContext.capabilities field is immutable.
+	not is_update(input.request)
 
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the disallowed capabilities of containers.", "error": "", "exception": "", "alertStatus": alertStatus}] {
-		# spec.containers.securityContext.capabilities field is immutable.
-		not is_update(input.request)
-		container := input.request.object.spec.containers[_]
-		has_disallowed_capabilities(container)
-		not policy_name in exception_list
-		msg := sprintf("container <%v> has a disallowed capability. Allowed capabilities are %v", [container.name, get_default(input.parameters, "allowedCapabilities", "NONE")])
-		alertStatus := "active"
+	container := input.request.object.spec.containers[_]
+	has_disallowed_capabilities(container)
+	msg := sprintf("container <%v> has a disallowed capability. Allowed capabilities are %v", [container.name, get_default(input.parameters, "allowedCapabilities", "NONE")])
 	}
 
-	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the disallowed capabilities of containers.", "error": "", "exception": policy_name, "alertStatus": alertStatus}] {
-		# spec.containers.securityContext.capabilities field is immutable.
-		not is_update(input.request)
-		container := input.request.object.spec.containers[_]
-		has_disallowed_capabilities(container)
-		policy_name in exception_list
-		msg := sprintf("container <%v> has a disallowed capability. Allowed capabilities are %v", [container.name, get_default(input.parameters, "allowedCapabilities", "NONE")])
-		alertStatus := "exception"
+	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the disallowed capabilities of containers.", "error": ""}] {
+	not is_update(input.request)
+	container := input.request.object.spec.containers[_]
+	missing_drop_capabilities(container)
+	msg := sprintf("container <%v> is not dropping all required capabilities. Container must drop all of %v or \"ALL\"", [container.name, input.parameters.requiredDropCapabilities])
 	}
 
-	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the disallowed capabilities of containers.", "error": "", "exception": "", "alertStatus": alertStatus}] {
-		not is_update(input.request)
-		container := input.request.object.spec.containers[_]
-		missing_drop_capabilities(container)
-		not policy_name in exception_list
-		msg := sprintf("container <%v> is not dropping all required capabilities. Container must drop all of %v or \"ALL\"", [container.name, input.parameters.requiredDropCapabilities])
-		alertStatus := "active"
+	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the disallowed capabilities of containers.", "error": ""}] {
+	not is_update(input.request)
+	container := input.request.object.spec.initContainers[_]
+	has_disallowed_capabilities(container)
+	msg := sprintf("init container <%v> has a disallowed capability. Allowed capabilities are %v", [container.name, get_default(input.parameters, "allowedCapabilities", "NONE")])
 	}
 
-	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the disallowed capabilities of containers.", "error": "", "exception": policy_name, "alertStatus": alertStatus}] {
-		not is_update(input.request)
-		container := input.request.object.spec.containers[_]
-		missing_drop_capabilities(container)
-		policy_name in exception_list
-		msg := sprintf("container <%v> is not dropping all required capabilities. Container must drop all of %v or \"ALL\"", [container.name, input.parameters.requiredDropCapabilities])
-		alertStatus := "exception"
+	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the disallowed capabilities of containers.", "error": ""}] {
+	not is_update(input.request)
+	container := input.request.object.spec.initContainers[_]
+	missing_drop_capabilities(container)
+	msg := sprintf("init container <%v> is not dropping all required capabilities. Container must drop all of %v or \"ALL\"", [container.name, input.parameters.requiredDropCapabilities])
 	}
 
-	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the disallowed capabilities of containers.", "error": "", "exception": "", "alertStatus": alertStatus}] {
-		not is_update(input.request)
-		container := input.request.object.spec.initContainers[_]
-		has_disallowed_capabilities(container)
-		not policy_name in exception_list
-		msg := sprintf("init container <%v> has a disallowed capability. Allowed capabilities are %v", [container.name, get_default(input.parameters, "allowedCapabilities", "NONE")])
-		alertStatus := "active"
+	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the disallowed capabilities of containers.", "error": ""}] {
+	not is_update(input.request)
+	container := input.request.object.spec.ephemeralContainers[_]
+	has_disallowed_capabilities(container)
+	msg := sprintf("ephemeral container <%v> has a disallowed capability. Allowed capabilities are %v", [container.name, get_default(input.parameters, "allowedCapabilities", "NONE")])
 	}
 
-	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the disallowed capabilities of containers.", "error": "", "exception": policy_name, "alertStatus": alertStatus}] {
-		not is_update(input.request)
-		container := input.request.object.spec.initContainers[_]
-		has_disallowed_capabilities(container)
-		policy_name in exception_list
-		msg := sprintf("init container <%v> has a disallowed capability. Allowed capabilities are %v", [container.name, get_default(input.parameters, "allowedCapabilities", "NONE")])
-		alertStatus := "exception"
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the disallowed capabilities of containers.", "error": "", "exception": "", "alertStatus": alertStatus}] {
-		not is_update(input.request)
-		container := input.request.object.spec.initContainers[_]
-		missing_drop_capabilities(container)
-		not policy_name in exception_list
-		msg := sprintf("init container <%v> is not dropping all required capabilities. Container must drop all of %v or \"ALL\"", [container.name, input.parameters.requiredDropCapabilities])
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the disallowed capabilities of containers.", "error": "", "exception": policy_name, "alertStatus": alertStatus}] {
-		not is_update(input.request)
-		container := input.request.object.spec.initContainers[_]
-		missing_drop_capabilities(container)
-		policy_name in exception_list
-		msg := sprintf("init container <%v> is not dropping all required capabilities. Container must drop all of %v or \"ALL\"", [container.name, input.parameters.requiredDropCapabilities])
-		alertStatus := "exception"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the disallowed capabilities of containers.", "error": "", "exception": "", "alertStatus": alertStatus}] {
-		not is_update(input.request)
-		container := input.request.object.spec.ephemeralContainers[_]
-		has_disallowed_capabilities(container)
-		not policy_name in exception_list
-		msg := sprintf("ephemeral container <%v> has a disallowed capability. Allowed capabilities are %v", [container.name, get_default(input.parameters, "allowedCapabilities", "NONE")])
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the disallowed capabilities of containers.", "error": "", "exception": policy_name, "alertStatus": alertStatus}] {
-		not is_update(input.request)
-		container := input.request.object.spec.ephemeralContainers[_]
-		has_disallowed_capabilities(container)
-		policy_name in exception_list
-		msg := sprintf("ephemeral container <%v> has a disallowed capability. Allowed capabilities are %v", [container.name, get_default(input.parameters, "allowedCapabilities", "NONE")])
-		alertStatus := "exception"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the disallowed capabilities of containers.", "error": "", "exception": "", "alertStatus": alertStatus}] {
-		not is_update(input.request)
-		container := input.request.object.spec.ephemeralContainers[_]
-		missing_drop_capabilities(container)
-		not policy_name in exception_list
-		msg := sprintf("ephemeral container <%v> is not dropping all required capabilities. Container must drop all of %v or \"ALL\"", [container.name, input.parameters.requiredDropCapabilities])
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the disallowed capabilities of containers.", "error": "", "exception": policy_name, "alertStatus": alertStatus}] {
-		not is_update(input.request)
-		container := input.request.object.spec.ephemeralContainers[_]
-		missing_drop_capabilities(container)
-		policy_name in exception_list
-		msg := sprintf("ephemeral container <%v> is not dropping all required capabilities. Container must drop all of %v or \"ALL\"", [container.name, input.parameters.requiredDropCapabilities])
-		alertStatus := "exception"
+	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the disallowed capabilities of containers.", "error": ""}] {
+	not is_update(input.request)
+	container := input.request.object.spec.ephemeralContainers[_]
+	missing_drop_capabilities(container)
+	msg := sprintf("ephemeral container <%v> is not dropping all required capabilities. Container must drop all of %v or \"ALL\"", [container.name, input.parameters.requiredDropCapabilities])
 	}
 
 
 	has_disallowed_capabilities(container) {
-		allowed := {c | c := lower(input.parameters.allowedCapabilities[_])}
-		not allowed["*"]
-		capabilities := {c | c := lower(container.securityContext.capabilities.add[_])}
+	allowed := {c | c := lower(input.parameters.allowedCapabilities[_])}
+	not allowed["*"]
+	capabilities := {c | c := lower(container.securityContext.capabilities.add[_])}
 
-		count(capabilities - allowed) > 0
+	count(capabilities - allowed) > 0
 	}
 
 	missing_drop_capabilities(container) {
-		must_drop := {c | c := lower(input.parameters.requiredDropCapabilities[_])}
-		all := {"all"}
-		dropped := {c | c := lower(container.securityContext.capabilities.drop[_])}
+	must_drop := {c | c := lower(input.parameters.requiredDropCapabilities[_])}
+	all := {"all"}
+	dropped := {c | c := lower(container.securityContext.capabilities.drop[_])}
 
-		count(must_drop - dropped) > 0
-		count(all - dropped) > 0
+	count(must_drop - dropped) > 0
+	count(all - dropped) > 0
 	}
 
 	get_default(obj, param, _) = out {
-		out = obj[param]
+	out = obj[param]
 	}
 
 	get_default(obj, param, _default) = out {
-		not obj[param]
-		not obj[param] == false
-		out = _default
-	}
-
-	is_update(review) {
-			review.operation == "UPDATE"
-	}`,
-
-	56: `
-	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the usage of Flex Volumes.", "error": "", "exception": "", "alertStatus": alertStatus}] {
-		# spec.volumes field is immutable.
-		not is_update(input.request)
-
-		volume := input_flexvolumes[_]
-		not input_flexvolumes_allowed(volume)
-		not policy_name in exception_list
-		msg := sprintf("FlexVolume %v is not allowed, pod: %v. Allowed drivers: %v", [volume, input.request.object.metadata.name, input.parameters.allowedFlexVolumes])
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the usage of Flex Volumes.", "error": "", "exception": policy_name, "alertStatus": alertStatus}] {
-		# spec.volumes field is immutable.
-		not is_update(input.request)
-
-		volume := input_flexvolumes[_]
-		not input_flexvolumes_allowed(volume)
-		policy_name in exception_list
-		msg := sprintf("FlexVolume %v is not allowed, pod: %v. Allowed drivers: %v", [volume, input.request.object.metadata.name, input.parameters.allowedFlexVolumes])
-		alertStatus := "exception"
-	}
-
-	input_flexvolumes_allowed(volume) {
-		input.parameters.allowedFlexVolumes[_].driver == volume.flexVolume.driver
-	}
-
-	input_flexvolumes[v] {
-		v := input.request.object.spec.volumes[_]
-		has_field(v, "flexVolume")
-	}
-
-	# has_field returns whether an object has a field
-	has_field(object, field) = true {
-		object[field]
+	not obj[param]
+	not obj[param] == false
+	out = _default
 	}
 
 	is_update(review) {
 		review.operation == "UPDATE"
 	}`,
 
+	56: `
+	package opsmx
+
+	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the usage of Flex Volumes.", "error": ""}] {
+	  # spec.volumes field is immutable.
+	  not is_update(input.request)
+	
+	  volume := input_flexvolumes[_]
+	  not input_flexvolumes_allowed(volume)
+	  msg := sprintf("FlexVolume %v is not allowed, pod: %v. Allowed drivers: %v", [volume, input.request.object.metadata.name, input.parameters.allowedFlexVolumes])
+	}
+	
+	input_flexvolumes_allowed(volume) {
+	  input.parameters.allowedFlexVolumes[_].driver == volume.flexVolume.driver
+	}
+	
+	input_flexvolumes[v] {
+	  v := input.request.object.spec.volumes[_]
+	  has_field(v, "flexVolume")
+	}
+	
+	# has_field returns whether an object has a field
+	has_field(object, field) = true {
+	  object[field]
+	}
+	
+	is_update(review) {
+		review.operation == "UPDATE"
+	}`,
+
 	57: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	# Block if forbidden
-	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the usage of restricted sysctls in security context.", "error": "", "exception": "", "alertStatus": alertStatus}] {
-		# spec.securityContext.sysctls field is immutable.
-		not is_update(input.request)
+	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the usage of restricted sysctls in security context.", "error": ""}] {
+	# spec.securityContext.sysctls field is immutable.
+	not is_update(input.request)
 
-		sysctl := input.request.object.spec.securityContext.sysctls[_].name
-		forbidden_sysctl(sysctl)
-		not policy_name in exception_list
-		msg := sprintf("The sysctl %v is not allowed, pod: %v. Forbidden sysctls: %v", [sysctl, input.request.object.metadata.name, input.parameters.forbiddenSysctls])
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the usage of restricted sysctls in security context.", "error": "", "exception": policy_name, "alertStatus": alertStatus}] {
-		# spec.securityContext.sysctls field is immutable.
-		not is_update(input.request)
-
-		sysctl := input.request.object.spec.securityContext.sysctls[_].name
-		forbidden_sysctl(sysctl)
-		policy_name in exception_list
-		msg := sprintf("The sysctl %v is not allowed, pod: %v. Forbidden sysctls: %v", [sysctl, input.request.object.metadata.name, input.parameters.forbiddenSysctls])
-		alertStatus := "exception"
+	sysctl := input.request.object.spec.securityContext.sysctls[_].name
+	forbidden_sysctl(sysctl)
+	msg := sprintf("The sysctl %v is not allowed, pod: %v. Forbidden sysctls: %v", [sysctl, input.request.object.metadata.name, input.parameters.forbiddenSysctls])
 	}
 
 	# Block if not explicitly allowed
-	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the usage of restricted sysctls in security context.", "error": "", "exception": "", "alertStatus": alertStatus}] {
-		not is_update(input.request)
-		sysctl := input.request.object.spec.securityContext.sysctls[_].name
-		not allowed_sysctl(sysctl)
-		not policy_name in exception_list
-		msg := sprintf("The sysctl %v is not explicitly allowed, pod: %v. Allowed sysctls: %v", [sysctl, input.request.object.metadata.name, input.parameters.allowedSysctls])
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the usage of restricted sysctls in security context.", "error": "", "exception": policy_name, "alertStatus": alertStatus}] {
-		not is_update(input.request)
-		sysctl := input.request.object.spec.securityContext.sysctls[_].name
-		not allowed_sysctl(sysctl)
-		policy_name in exception_list
-		msg := sprintf("The sysctl %v is not explicitly allowed, pod: %v. Allowed sysctls: %v", [sysctl, input.request.object.metadata.name, input.parameters.allowedSysctls])
-		alertStatus := "exception"
+	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the usage of restricted sysctls in security context.", "error": ""}] {
+	not is_update(input.request)
+	sysctl := input.request.object.spec.securityContext.sysctls[_].name
+	not allowed_sysctl(sysctl)
+	msg := sprintf("The sysctl %v is not explicitly allowed, pod: %v. Allowed sysctls: %v", [sysctl, input.request.object.metadata.name, input.parameters.allowedSysctls])
 	}
 
 	# * may be used to forbid all sysctls
 	forbidden_sysctl(sysctl) {
-		input.parameters.forbiddenSysctls[_] == "*"
+	input.parameters.forbiddenSysctls[_] == "*"
 	}
 
 	forbidden_sysctl(sysctl) {
-		input.parameters.forbiddenSysctls[_] == sysctl
+	input.parameters.forbiddenSysctls[_] == sysctl
 	}
 
 	forbidden_sysctl(sysctl) {
-		forbidden := input.parameters.forbiddenSysctls[_]
-		endswith(forbidden, "*")
-		startswith(sysctl, trim_suffix(forbidden, "*"))
+	forbidden := input.parameters.forbiddenSysctls[_]
+	endswith(forbidden, "*")
+	startswith(sysctl, trim_suffix(forbidden, "*"))
 	}
 
 	# * may be used to allow all sysctls
 	allowed_sysctl(sysctl) {
-		input.parameters.allowedSysctls[_] == "*"
+	input.parameters.allowedSysctls[_] == "*"
 	}
 
 	allowed_sysctl(sysctl) {
-		input.parameters.allowedSysctls[_] == sysctl
+	input.parameters.allowedSysctls[_] == sysctl
 	}
 
 	allowed_sysctl(sysctl) {
-		allowed := input.parameters.allowedSysctls[_]
-		endswith(allowed, "*")
-		startswith(sysctl, trim_suffix(allowed, "*"))
+	allowed := input.parameters.allowedSysctls[_]
+	endswith(allowed, "*")
+	startswith(sysctl, trim_suffix(allowed, "*"))
 	}
 
 	is_update(request) {
-			request.operation == "UPDATE"
+		request.operation == "UPDATE"
 	}`,
 
 	58: `
 	package opsmx
-	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the usage of fsGroup in security context.", "error": "", "exception": "", "alertStatus": alertStatus}] {
+	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the usage of fsGroup in security context.", "error": ""}] {
 		# spec.securityContext.fsGroup field is immutable.
 		not is_update(input.request)
 
 		spec := input.request.object.spec
 		not input_fsGroup_allowed(spec)
-		not policy_name in exception_list
 		msg := sprintf("The provided pod spec fsGroup is not allowed, pod: %v. Allowed fsGroup: %v", [input.request.object.metadata.name, input.parameters])
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the usage of fsGroup in security context.", "error": "", "exception": policy_name, "alertStatus": alertStatus}] {
-		# spec.securityContext.fsGroup field is immutable.
-		not is_update(input.request)
-
-		spec := input.request.object.spec
-		not input_fsGroup_allowed(spec)
-		policy_name in exception_list
-		msg := sprintf("The provided pod spec fsGroup is not allowed, pod: %v. Allowed fsGroup: %v", [input.request.object.metadata.name, input.parameters])
-		alertStatus := "exception"
 	}
 
 	input_fsGroup_allowed(_) {
@@ -3138,38 +3639,18 @@ var scriptMap = map[int]string{
 	}
 
 	is_update(request) {
-		request.operation == "UPDATE"
+	    request.operation == "UPDATE"
 	}`,
 
 	59: `
 	package opsmx
-	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the usage of HostPath volumes.", "error": "", "exception": "", "alertStatus": alertStatus}] {
+	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the usage of HostPath volumes.", "error": ""}] {
 		not is_update(input.request)
 		volume := input_hostpath_volumes[_]
 		allowedPaths := get_allowed_paths(input)
 		input_hostpath_violation(allowedPaths, volume)
-		not policy_name in exception_list
 		msg := sprintf("HostPath volume %v is not allowed, pod: %v. Allowed path: %v", [volume, input.request.object.metadata.name, allowedPaths])
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the usage of HostPath volumes.", "error": "", "exception": policy_name, "alertStatus": alertStatus}] {
-		not is_update(input.request)
-		volume := input_hostpath_volumes[_]
-		allowedPaths := get_allowed_paths(input)
-		input_hostpath_violation(allowedPaths, volume)
-		policy_name in exception_list
-		msg := sprintf("HostPath volume %v is not allowed, pod: %v. Allowed path: %v", [volume, input.request.object.metadata.name, allowedPaths])
-		alertStatus := "exception"
 	}
 
 	input_hostpath_violation(allowedPaths, _) {
@@ -3263,71 +3744,33 @@ var scriptMap = map[int]string{
 
 	60: `
 	package opsmx
-	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
+	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the sharing of host namespaces.", "error": ""}] {
+	not is_update(input.review)
 
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the sharing of host namespaces.", "error": "", "exception": "", "alertStatus": alertStatus}] {
-		not is_update(input.review)
-
-		input_share_hostnamespace(input.request.object)
-		not policy_name in exception_list
-		msg := sprintf("Sharing the host namespace is not allowed: %v", [input.request.object.metadata.name])
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the sharing of host namespaces.", "error": "", "exception": policy_name, "alertStatus": alertStatus}] {
-		not is_update(input.review)
-
-		input_share_hostnamespace(input.request.object)
-		policy_name in exception_list
-		msg := sprintf("Sharing the host namespace is not allowed: %v", [input.request.object.metadata.name])
-		alertStatus := "exception"
+	input_share_hostnamespace(input.request.object)
+	msg := sprintf("Sharing the host namespace is not allowed: %v", [input.request.object.metadata.name])
 	}
 
 	input_share_hostnamespace(o) {
-		o.spec.hostPID
+	o.spec.hostPID
 	}
 	input_share_hostnamespace(o) {
-		o.spec.hostIPC
+	o.spec.hostIPC
 	}
 
 	is_update(review) {
-		review.operation == "UPDATE"
+	review.operation == "UPDATE"
 	}`,
 
 	61: `
 	package opsmx
-	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the usage of hostNetwork and hostPort.", "error": "", "exception": "", "alertStatus": alertStatus}] {
+	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the usage of hostNetwork and hostPort.", "error": ""}] {
 		not is_update(input.request)
 
 		input_share_hostnetwork(input.request.object)
-		not policy_name in exception_list
 		msg := sprintf("The specified hostNetwork and hostPort are not allowed, pod: %v. Allowed values: %v", [input.request.object.metadata.name, input.parameters])
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the usage of hostNetwork and hostPort.", "error": "", "exception": policy_name, "alertStatus": alertStatus}] {
-		not is_update(input.request)
-
-		input_share_hostnetwork(input.request.object)
-		policy_name in exception_list
-		msg := sprintf("The specified hostNetwork and hostPort are not allowed, pod: %v. Allowed values: %v", [input.request.object.metadata.name, input.parameters])
-		alertStatus := "exception"
 	}
 
 	input_share_hostnetwork(o) {
@@ -3363,33 +3806,13 @@ var scriptMap = map[int]string{
 
 	62: `
 	package opsmx
-	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the usage of privileged containers in security context.", "error": "", "exception": "", "alertStatus": alertStatus}] {
+	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the usage of privileged containers in security context.", "error": ""}] {
 		not is_update(input.request)
 
 		c := input_containers[_]
 		c.securityContext.privileged
-		not policy_name in exception_list
 		msg := sprintf("Privileged container is not allowed: %v, securityContext: %v", [c.name, c.securityContext])
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the usage of privileged containers in security context.", "error": "", "exception": policy_name, "alertStatus": alertStatus}] {
-		not is_update(input.request)
-
-		c := input_containers[_]
-		c.securityContext.privileged
-		policy_name in exception_list
-		msg := sprintf("Privileged container is not allowed: %v, securityContext: %v", [c.name, c.securityContext])
-		alertStatus := "exception"
 	}
 
 	input_containers[c] {
@@ -3410,35 +3833,14 @@ var scriptMap = map[int]string{
 
 	63: `
 	package opsmx
-	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the usage of restricted ProcMount types.", "error": "", "exception": "", "alertStatus": alertStatus}] {
+	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the usage of restricted ProcMount types.", "error": ""}] {
 		not is_update(input.request)
 
 		c := input_containers[_]
 		allowedProcMount := get_allowed_proc_mount(input)
 		not input_proc_mount_type_allowed(allowedProcMount, c)
-		not policy_name in exception_list
 		msg := sprintf("ProcMount type is not allowed, container: %v. Allowed procMount types: %v", [c.name, allowedProcMount])
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the usage of restricted ProcMount types.", "error": "", "exception": policy_name, "alertStatus": alertStatus}] {
-		not is_update(input.request)
-
-		c := input_containers[_]
-		allowedProcMount := get_allowed_proc_mount(input)
-		not input_proc_mount_type_allowed(allowedProcMount, c)
-		policy_name in exception_list
-		msg := sprintf("ProcMount type is not allowed, container: %v. Allowed procMount types: %v", [c.name, allowedProcMount])
-		alertStatus := "exception"
 	}
 
 	input_proc_mount_type_allowed(allowedProcMount, c) {
@@ -3493,33 +3895,13 @@ var scriptMap = map[int]string{
 
 	64: `
 	package opsmx
-	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to use only read-only root filesystem container.", "error": "", "exception": "", "alertStatus": alertStatus}] {
+	deny[{"alertMsg": msg, "suggestion": "Suggest to use only read-only root filesystem container.", "error": ""}] {
 		not is_update(input.request)
 
 		c := input_containers[_]
 		input_read_only_root_fs(c)
-		not policy_name in exception_list
 		msg := sprintf("only read-only root filesystem container is allowed: %v", [c.name])
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to use only read-only root filesystem container.", "error": "", "exception": policy_name, "alertStatus": alertStatus}] {
-		not is_update(input.request)
-
-		c := input_containers[_]
-		input_read_only_root_fs(c)
-		policy_name in exception_list
-		msg := sprintf("only read-only root filesystem container is allowed: %v", [c.name])
-		alertStatus := "exception"
 	}
 
 	input_read_only_root_fs(c) {
@@ -3549,66 +3931,46 @@ var scriptMap = map[int]string{
 
 	65: `
 	package opsmx
-	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
+	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the usage of disallowed volume types.", "error": ""}] {
+	not is_update(input.request)
 
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the usage of disallowed volume types.", "error": "", "exception": "", "alertStatus": alertStatus}] {
-		not is_update(input.request)
-
-		volume_fields := {x | input.request.object.spec.volumes[_][x]; x != "name"}
-		field := volume_fields[_]
-		not input_volume_type_allowed(field)
-		not policy_name in exception_list
-		msg := sprintf("The volume type %v is not allowed, pod: %v. Allowed volume types: %v", [field, input.request.object.metadata.name, input.parameters.volumes])
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the usage of disallowed volume types.", "error": "", "exception": policy_name, "alertStatus": alertStatus}] {
-		not is_update(input.request)
-
-		volume_fields := {x | input.request.object.spec.volumes[_][x]; x != "name"}
-		field := volume_fields[_]
-		not input_volume_type_allowed(field)
-		policy_name in exception_list
-		msg := sprintf("The volume type %v is not allowed, pod: %v. Allowed volume types: %v", [field, input.request.object.metadata.name, input.parameters.volumes])
-		alertStatus := "exception"
+	volume_fields := {x | input.request.object.spec.volumes[_][x]; x != "name"}
+	field := volume_fields[_]
+	not input_volume_type_allowed(field)
+	msg := sprintf("The volume type %v is not allowed, pod: %v. Allowed volume types: %v", [field, input.request.object.metadata.name, input.parameters.volumes])
 	}
 
 	# * may be used to allow all volume types
 	input_volume_type_allowed(_) {
-		input.parameters.volumes[_] == "*"
+	input.parameters.volumes[_] == "*"
 	}
 
 	input_volume_type_allowed(field) {
-		field == input.parameters.volumes[_]
+	field == input.parameters.volumes[_]
 	}
 
 	is_update(request) {
-		request.operation == "UPDATE"
+	request.operation == "UPDATE"
 	}`,
 
 	66: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	default quality_gate_status = ""
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_sonarqube.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_", image_sha, "_sonarqube.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name, "&scanOperation=sonarqubescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name ,"&scanOperation=sonarqubescan"] )
 
 	request = {
 			"method": "GET",
@@ -3619,60 +3981,50 @@ var scriptMap = map[int]string{
 
 	quality_gate_status := response.body.quality.projectStatus.status
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		quality_gate_status == ""
-		msg = "Quality Gate Status for Sonarqube Project could not be accessed."
-		sugg = "Kindly check if the Sonarqube token is configured and has permissions to read issues of the project. Also, verify if the quality gates for project are correctly configured."
-		error = "Failed while fetching quality gate status from Sonarqube."
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	quality_gate_status == ""
+	msg = "Quality Gate Status for Sonarqube Project could not be accessed."
+	sugg = "Kindly check if the Sonarqube token is configured and has permissions to read issues of the project. Also, verify if the quality gates for project are correctly configured."
+	error = "Failed while fetching quality gate status from Sonarqube."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
-		quality_gate_status != ""
-		quality_gate_status != "OK"
-		not policy_name in exception_list
-		msg = sprintf("Quality Gate Status for Sonarqube Project is %v.", [quality_gate_status])
-		sugg = "Kindly refer to the list of issues reported in SAST scan and their resolutions."
-		error = ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": policy_name, "alertStatus": alertStatus}]{
-		quality_gate_status != ""
-		quality_gate_status != "OK"
-		policy_name in exception_list
-		msg = sprintf("Quality Gate Status for Sonarqube Project is %v.", [quality_gate_status])
-		sugg = "Kindly refer to the list of issues reported in SAST scan and their resolutions."
-		error = ""
-		alertStatus := "exception"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
+	quality_gate_status != ""
+	quality_gate_status != "OK"
+	msg = sprintf("Quality Gate Status for Sonarqube Project is %v.", [quality_gate_status])
+	sugg = "Kindly refer to the list of issues reported in SAST scan and their resolutions."
+	error = ""
 	}`,
 
 	67: `
 	package opsmx
 	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
 	default score = ""
 
 	rating_map := {
-		"A": "1.0",
-		"B": "2.0",
-		"C": "3.0",
-		"D": "4.0",
-		"E": "5.0"
+	"A": "1.0",
+	"B": "2.0",
+	"C": "3.0",
+	"D": "4.0",
+	"E": "5.0"
 	}
 
 	required_rating_name := concat("", ["new_", lower(split(input.conditions[0].condition_name, " ")[1]), "_rating"])
 	required_rating_score := rating_map[split(input.conditions[0].condition_name, " ")[3]]
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_sonarqube.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_", image_sha, "_sonarqube.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name, "&scanOperation=sonarqubescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name ,"&scanOperation=sonarqubescan"] )
 
 	request = {
 			"method": "GET",
@@ -3682,58 +4034,49 @@ var scriptMap = map[int]string{
 	response = http.send(request)
 	score = [response.body.measures[i].period.value | response.body.measures[i].metric == "new_maintainability_rating"][0]
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		score == ""
-		msg := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
-		sugg := "Kindly verify if the token provided has permissions to read the quality metrics. Also, verify if the required quality metrics are available for the project."
-		error := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	score == ""
+	msg := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
+	sugg := "Kindly verify if the token provided has permissions to read the quality metrics. Also, verify if the required quality metrics are available for the project."
+	error := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
-		score == required_rating_score
-		not policy_name in exception_list
-		msg := sprintf("The SonarQube metric %s stands at %s for project %s, falling short of the expected value.", [required_rating_name, score, input.metadata.sonarqube_projectKey])
-		sugg := sprintf("Adhere to code security standards to improve score for project %s.", [input.metadata.sonarqube_projectKey])
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": policy_name, "alertStatus": alertStatus}]{
-		score == required_rating_score
-		policy_name in exception_list
-		msg := sprintf("The SonarQube metric %s stands at %s for project %s, falling short of the expected value.", [required_rating_name, score, input.metadata.sonarqube_projectKey])
-		sugg := sprintf("Adhere to code security standards to improve score for project %s.", [input.metadata.sonarqube_projectKey])
-		error := ""
-		alertStatus := "exception"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
+	score == required_rating_score
+	msg := sprintf("The SonarQube metric %s stands at %s for project %s, falling short of the expected value.", [required_rating_name, score, input.metadata.sonarqube_projectKey])
+	sugg := sprintf("Adhere to code security standards to improve score for project %s.", [input.metadata.sonarqube_projectKey])
+	error := ""
 	}`,
 
 	68: `
 	package opsmx
 	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
 	default score = ""
 
 	rating_map := {
-		"A": "1.0",
-		"B": "2.0",
-		"C": "3.0",
-		"D": "4.0",
-		"E": "5.0"
+	"A": "1.0",
+	"B": "2.0",
+	"C": "3.0",
+	"D": "4.0",
+	"E": "5.0"
 	}
 
 	required_rating_name := concat("", ["new_", lower(split(input.conditions[0].condition_name, " ")[1]), "_rating"])
 	required_rating_score := rating_map[split(input.conditions[0].condition_name, " ")[3]]
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_sonarqube.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_", image_sha, "_sonarqube.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name, "&scanOperation=sonarqubescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name ,"&scanOperation=sonarqubescan"] )
 
 	request = {
 			"method": "GET",
@@ -3743,58 +4086,49 @@ var scriptMap = map[int]string{
 	response = http.send(request)
 	score = [response.body.measures[i].period.value | response.body.measures[i].metric == "new_maintainability_rating"][0]
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		score == ""
-		msg := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
-		sugg := "Kindly verify if the token provided has permissions to read the quality metrics. Also, verify if the required quality metrics are available for the project."
-		error := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	score == ""
+	msg := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
+	sugg := "Kindly verify if the token provided has permissions to read the quality metrics. Also, verify if the required quality metrics are available for the project."
+	error := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
-		score == required_rating_score
-		not policy_name in exception_list
-		msg := sprintf("The SonarQube metric %s stands at %s for project %s, falling short of the expected value.", [required_rating_name, score, input.metadata.sonarqube_projectKey])
-		sugg := sprintf("Adhere to code security standards to improve score for project %s.", [input.metadata.sonarqube_projectKey])
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": policy_name, "alertStatus": alertStatus}]{
-		score == required_rating_score
-		policy_name in exception_list
-		msg := sprintf("The SonarQube metric %s stands at %s for project %s, falling short of the expected value.", [required_rating_name, score, input.metadata.sonarqube_projectKey])
-		sugg := sprintf("Adhere to code security standards to improve score for project %s.", [input.metadata.sonarqube_projectKey])
-		error := ""
-		alertStatus := "exception"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
+	score == required_rating_score
+	msg := sprintf("The SonarQube metric %s stands at %s for project %s, falling short of the expected value.", [required_rating_name, score, input.metadata.sonarqube_projectKey])
+	sugg := sprintf("Adhere to code security standards to improve score for project %s.", [input.metadata.sonarqube_projectKey])
+	error := ""
 	}`,
 
 	69: `
 	package opsmx
 	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
 	default score = ""
 
 	rating_map := {
-		"A": "1.0",
-		"B": "2.0",
-		"C": "3.0",
-		"D": "4.0",
-		"E": "5.0"
+	"A": "1.0",
+	"B": "2.0",
+	"C": "3.0",
+	"D": "4.0",
+	"E": "5.0"
 	}
 
 	required_rating_name := concat("", ["new_", lower(split(input.conditions[0].condition_name, " ")[1]), "_rating"])
 	required_rating_score := rating_map[split(input.conditions[0].condition_name, " ")[3]]
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_sonarqube.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_", image_sha, "_sonarqube.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name, "&scanOperation=sonarqubescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name ,"&scanOperation=sonarqubescan"] )
 
 	request = {
 			"method": "GET",
@@ -3804,58 +4138,49 @@ var scriptMap = map[int]string{
 	response = http.send(request)
 	score = [response.body.measures[i].period.value | response.body.measures[i].metric == "new_maintainability_rating"][0]
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		score == ""
-		msg := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
-		sugg := "Kindly verify if the token provided has permissions to read the quality metrics. Also, verify if the required quality metrics are available for the project."
-		error := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	score == ""
+	msg := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
+	sugg := "Kindly verify if the token provided has permissions to read the quality metrics. Also, verify if the required quality metrics are available for the project."
+	error := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
-		score == required_rating_score
-		not policy_name in exception_list
-		msg := sprintf("The SonarQube metric %s stands at %s for project %s, falling short of the expected value.", [required_rating_name, score, input.metadata.sonarqube_projectKey])
-		sugg := sprintf("Adhere to code security standards to improve score for project %s.", [input.metadata.sonarqube_projectKey])
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": policy_name, "alertStatus": alertStatus}]{
-		score == required_rating_score
-		policy_name in exception_list
-		msg := sprintf("The SonarQube metric %s stands at %s for project %s, falling short of the expected value.", [required_rating_name, score, input.metadata.sonarqube_projectKey])
-		sugg := sprintf("Adhere to code security standards to improve score for project %s.", [input.metadata.sonarqube_projectKey])
-		error := ""
-		alertStatus := "exception"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
+	score == required_rating_score
+	msg := sprintf("The SonarQube metric %s stands at %s for project %s, falling short of the expected value.", [required_rating_name, score, input.metadata.sonarqube_projectKey])
+	sugg := sprintf("Adhere to code security standards to improve score for project %s.", [input.metadata.sonarqube_projectKey])
+	error := ""
 	}`,
 
 	70: `
 	package opsmx
 	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
 	default score = ""
 
 	rating_map := {
-		"A": "1.0",
-		"B": "2.0",
-		"C": "3.0",
-		"D": "4.0",
-		"E": "5.0"
+	"A": "1.0",
+	"B": "2.0",
+	"C": "3.0",
+	"D": "4.0",
+	"E": "5.0"
 	}
 
 	required_rating_name := concat("", ["new_", lower(split(input.conditions[0].condition_name, " ")[1]), "_rating"])
 	required_rating_score := rating_map[split(input.conditions[0].condition_name, " ")[3]]
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_sonarqube.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_", image_sha, "_sonarqube.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name, "&scanOperation=sonarqubescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name ,"&scanOperation=sonarqubescan"] )
 
 	request = {
 			"method": "GET",
@@ -3865,58 +4190,49 @@ var scriptMap = map[int]string{
 	response = http.send(request)
 	score = [response.body.measures[i].period.value | response.body.measures[i].metric == "new_maintainability_rating"][0]
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		score == ""
-		msg := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
-		sugg := "Kindly verify if the token provided has permissions to read the quality metrics. Also, verify if the required quality metrics are available for the project."
-		error := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	score == ""
+	msg := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
+	sugg := "Kindly verify if the token provided has permissions to read the quality metrics. Also, verify if the required quality metrics are available for the project."
+	error := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
-		score == required_rating_score
-		not policy_name in exception_list
-		msg := sprintf("The SonarQube metric %s stands at %s for project %s, falling short of the expected value.", [required_rating_name, score, input.metadata.sonarqube_projectKey])
-		sugg := sprintf("Adhere to code security standards to improve score for project %s.", [input.metadata.sonarqube_projectKey])
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": policy_name, "alertStatus": alertStatus}]{
-		score == required_rating_score
-		policy_name in exception_list
-		msg := sprintf("The SonarQube metric %s stands at %s for project %s, falling short of the expected value.", [required_rating_name, score, input.metadata.sonarqube_projectKey])
-		sugg := sprintf("Adhere to code security standards to improve score for project %s.", [input.metadata.sonarqube_projectKey])
-		error := ""
-		alertStatus := "exception"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
+	score == required_rating_score
+	msg := sprintf("The SonarQube metric %s stands at %s for project %s, falling short of the expected value.", [required_rating_name, score, input.metadata.sonarqube_projectKey])
+	sugg := sprintf("Adhere to code security standards to improve score for project %s.", [input.metadata.sonarqube_projectKey])
+	error := ""
 	}`,
 
 	71: `
 	package opsmx
 	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
 	default score = ""
 
 	rating_map := {
-		"A": "1.0",
-		"B": "2.0",
-		"C": "3.0",
-		"D": "4.0",
-		"E": "5.0"
+	"A": "1.0",
+	"B": "2.0",
+	"C": "3.0",
+	"D": "4.0",
+	"E": "5.0"
 	}
 
 	required_rating_name := concat("", ["new_", lower(split(input.conditions[0].condition_name, " ")[1]), "_rating"])
 	required_rating_score := rating_map[split(input.conditions[0].condition_name, " ")[3]]
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_sonarqube.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_", image_sha, "_sonarqube.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name, "&scanOperation=sonarqubescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name ,"&scanOperation=sonarqubescan"] )
 
 	request = {
 			"method": "GET",
@@ -3926,58 +4242,49 @@ var scriptMap = map[int]string{
 	response = http.send(request)
 	score = [response.body.measures[i].period.value | response.body.measures[i].metric == "new_security_rating"][0]
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		score == ""
-		msg := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
-		sugg := "Kindly verify if the token provided has permissions to read the quality metrics. Also, verify if the required quality metrics are available for the project."
-		error := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	score == ""
+	msg := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
+	sugg := "Kindly verify if the token provided has permissions to read the quality metrics. Also, verify if the required quality metrics are available for the project."
+	error := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
-		score == required_rating_score
-		not policy_name in exception_list
-		msg := sprintf("The SonarQube metric %s stands at %s for project %s, falling short of the expected value.", [required_rating_name, score, input.metadata.sonarqube_projectKey])
-		sugg := sprintf("Adhere to code security standards to improve score for project %s.", [input.metadata.sonarqube_projectKey])
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": policy_name, "alertStatus": alertStatus}]{
-		score == required_rating_score
-		policy_name in exception_list
-		msg := sprintf("The SonarQube metric %s stands at %s for project %s, falling short of the expected value.", [required_rating_name, score, input.metadata.sonarqube_projectKey])
-		sugg := sprintf("Adhere to code security standards to improve score for project %s.", [input.metadata.sonarqube_projectKey])
-		error := ""
-		alertStatus := "exception"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
+	score == required_rating_score
+	msg := sprintf("The SonarQube metric %s stands at %s for project %s, falling short of the expected value.", [required_rating_name, score, input.metadata.sonarqube_projectKey])
+	sugg := sprintf("Adhere to code security standards to improve score for project %s.", [input.metadata.sonarqube_projectKey])
+	error := ""
 	}`,
 
 	72: `
 	package opsmx
 	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
 	default score = ""
 
 	rating_map := {
-		"A": "1.0",
-		"B": "2.0",
-		"C": "3.0",
-		"D": "4.0",
-		"E": "5.0"
+	"A": "1.0",
+	"B": "2.0",
+	"C": "3.0",
+	"D": "4.0",
+	"E": "5.0"
 	}
 
 	required_rating_name := concat("", ["new_", lower(split(input.conditions[0].condition_name, " ")[1]), "_rating"])
 	required_rating_score := rating_map[split(input.conditions[0].condition_name, " ")[3]]
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_sonarqube.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_", image_sha, "_sonarqube.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name, "&scanOperation=sonarqubescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name ,"&scanOperation=sonarqubescan"] )
 
 	request = {
 			"method": "GET",
@@ -3987,58 +4294,49 @@ var scriptMap = map[int]string{
 	response = http.send(request)
 	score = [response.body.measures[i].period.value | response.body.measures[i].metric == "new_security_rating"][0]
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		score == ""
-		msg := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
-		sugg := "Kindly verify if the token provided has permissions to read the quality metrics. Also, verify if the required quality metrics are available for the project."
-		error := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	score == ""
+	msg := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
+	sugg := "Kindly verify if the token provided has permissions to read the quality metrics. Also, verify if the required quality metrics are available for the project."
+	error := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
-		score == required_rating_score
-		not policy_name in exception_list
-		msg := sprintf("The SonarQube metric %s stands at %s for project %s, falling short of the expected value.", [required_rating_name, score, input.metadata.sonarqube_projectKey])
-		sugg := sprintf("Adhere to code security standards to improve score for project %s.", [input.metadata.sonarqube_projectKey])
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": policy_name, "alertStatus": alertStatus}]{
-		score == required_rating_score
-		policy_name in exception_list
-		msg := sprintf("The SonarQube metric %s stands at %s for project %s, falling short of the expected value.", [required_rating_name, score, input.metadata.sonarqube_projectKey])
-		sugg := sprintf("Adhere to code security standards to improve score for project %s.", [input.metadata.sonarqube_projectKey])
-		error := ""
-		alertStatus := "exception"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
+	score == required_rating_score
+	msg := sprintf("The SonarQube metric %s stands at %s for project %s, falling short of the expected value.", [required_rating_name, score, input.metadata.sonarqube_projectKey])
+	sugg := sprintf("Adhere to code security standards to improve score for project %s.", [input.metadata.sonarqube_projectKey])
+	error := ""
 	}`,
 
 	73: `
 	package opsmx
 	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
 	default score = ""
 
 	rating_map := {
-		"A": "1.0",
-		"B": "2.0",
-		"C": "3.0",
-		"D": "4.0",
-		"E": "5.0"
+	"A": "1.0",
+	"B": "2.0",
+	"C": "3.0",
+	"D": "4.0",
+	"E": "5.0"
 	}
 
 	required_rating_name := concat("", ["new_", lower(split(input.conditions[0].condition_name, " ")[1]), "_rating"])
 	required_rating_score := rating_map[split(input.conditions[0].condition_name, " ")[3]]
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_sonarqube.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_", image_sha, "_sonarqube.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name, "&scanOperation=sonarqubescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name ,"&scanOperation=sonarqubescan"] )
 
 	request = {
 			"method": "GET",
@@ -4048,58 +4346,49 @@ var scriptMap = map[int]string{
 	response = http.send(request)
 	score = [response.body.measures[i].period.value | response.body.measures[i].metric == "new_security_rating"][0]
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		score == ""
-		msg := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
-		sugg := "Kindly verify if the token provided has permissions to read the quality metrics. Also, verify if the required quality metrics are available for the project."
-		error := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	score == ""
+	msg := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
+	sugg := "Kindly verify if the token provided has permissions to read the quality metrics. Also, verify if the required quality metrics are available for the project."
+	error := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
-		score == required_rating_score
-		not policy_name in exception_list
-		msg := sprintf("The SonarQube metric %s stands at %s for project %s, falling short of the expected value.", [required_rating_name, score, input.metadata.sonarqube_projectKey])
-		sugg := sprintf("Adhere to code security standards to improve score for project %s.", [input.metadata.sonarqube_projectKey])
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": policy_name, "alertStatus": alertStatus}]{
-		score == required_rating_score
-		policy_name in exception_list
-		msg := sprintf("The SonarQube metric %s stands at %s for project %s, falling short of the expected value.", [required_rating_name, score, input.metadata.sonarqube_projectKey])
-		sugg := sprintf("Adhere to code security standards to improve score for project %s.", [input.metadata.sonarqube_projectKey])
-		error := ""
-		alertStatus := "exception"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
+	score == required_rating_score
+	msg := sprintf("The SonarQube metric %s stands at %s for project %s, falling short of the expected value.", [required_rating_name, score, input.metadata.sonarqube_projectKey])
+	sugg := sprintf("Adhere to code security standards to improve score for project %s.", [input.metadata.sonarqube_projectKey])
+	error := ""
 	}`,
 
 	74: `
 	package opsmx
 	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
 	default score = ""
 
 	rating_map := {
-		"A": "1.0",
-		"B": "2.0",
-		"C": "3.0",
-		"D": "4.0",
-		"E": "5.0"
+	"A": "1.0",
+	"B": "2.0",
+	"C": "3.0",
+	"D": "4.0",
+	"E": "5.0"
 	}
 
 	required_rating_name := concat("", ["new_", lower(split(input.conditions[0].condition_name, " ")[1]), "_rating"])
 	required_rating_score := rating_map[split(input.conditions[0].condition_name, " ")[3]]
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_sonarqube.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_", image_sha, "_sonarqube.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name, "&scanOperation=sonarqubescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name ,"&scanOperation=sonarqubescan"] )
 
 	request = {
 			"method": "GET",
@@ -4109,58 +4398,49 @@ var scriptMap = map[int]string{
 	response = http.send(request)
 	score = [response.body.measures[i].period.value | response.body.measures[i].metric == "new_security_rating"][0]
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		score == ""
-		msg := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
-		sugg := "Kindly verify if the token provided has permissions to read the quality metrics. Also, verify if the required quality metrics are available for the project."
-		error := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	score == ""
+	msg := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
+	sugg := "Kindly verify if the token provided has permissions to read the quality metrics. Also, verify if the required quality metrics are available for the project."
+	error := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
-		score == required_rating_score
-		not policy_name in exception_list
-		msg := sprintf("The SonarQube metric %s stands at %s for project %s, falling short of the expected value.", [required_rating_name, score, input.metadata.sonarqube_projectKey])
-		sugg := sprintf("Adhere to code security standards to improve score for project %s.", [input.metadata.sonarqube_projectKey])
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": policy_name, "alertStatus": alertStatus}]{
-		score == required_rating_score
-		policy_name in exception_list
-		msg := sprintf("The SonarQube metric %s stands at %s for project %s, falling short of the expected value.", [required_rating_name, score, input.metadata.sonarqube_projectKey])
-		sugg := sprintf("Adhere to code security standards to improve score for project %s.", [input.metadata.sonarqube_projectKey])
-		error := ""
-		alertStatus := "exception"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
+	score == required_rating_score
+	msg := sprintf("The SonarQube metric %s stands at %s for project %s, falling short of the expected value.", [required_rating_name, score, input.metadata.sonarqube_projectKey])
+	sugg := sprintf("Adhere to code security standards to improve score for project %s.", [input.metadata.sonarqube_projectKey])
+	error := ""
 	}`,
 
 	75: `
 	package opsmx
 	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
 	default score = ""
 
 	rating_map := {
-		"A": "1.0",
-		"B": "2.0",
-		"C": "3.0",
-		"D": "4.0",
-		"E": "5.0"
+	"A": "1.0",
+	"B": "2.0",
+	"C": "3.0",
+	"D": "4.0",
+	"E": "5.0"
 	}
 
 	required_rating_name := concat("", ["new_", lower(split(input.conditions[0].condition_name, " ")[1]), "_rating"])
 	required_rating_score := rating_map[split(input.conditions[0].condition_name, " ")[3]]
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_sonarqube.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_", image_sha, "_sonarqube.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name, "&scanOperation=sonarqubescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name ,"&scanOperation=sonarqubescan"] )
 
 	request = {
 			"method": "GET",
@@ -4170,30 +4450,18 @@ var scriptMap = map[int]string{
 	response = http.send(request)
 	score = [response.body.measures[i].period.value | response.body.measures[i].metric == "new_reliability_rating"][0]
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		score == ""
-		msg := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
-		sugg := "Kindly verify if the token provided has permissions to read the quality metrics. Also, verify if the required quality metrics are available for the project."
-		error := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	score == ""
+	msg := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
+	sugg := "Kindly verify if the token provided has permissions to read the quality metrics. Also, verify if the required quality metrics are available for the project."
+	error := sprintf("Required Metric %v for sonarqube project could not be obtained.", [required_rating_name])
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
-		score == required_rating_score
-		not policy_name in exception_list
-		msg := sprintf("The SonarQube metric %s stands at %s for project %s, falling short of the expected value.", [required_rating_name, score, input.metadata.sonarqube_projectKey])
-		sugg := sprintf("Adhere to code security standards to improve score for project %s.", [input.metadata.sonarqube_projectKey])
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": policy_name, "alertStatus": alertStatus}]{
-		score == required_rating_score
-		policy_name in exception_list
-		msg := sprintf("The SonarQube metric %s stands at %s for project %s, falling short of the expected value.", [required_rating_name, score, input.metadata.sonarqube_projectKey])
-		sugg := sprintf("Adhere to code security standards to improve score for project %s.", [input.metadata.sonarqube_projectKey])
-		error := ""
-		alertStatus := "exception"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
+	score == required_rating_score
+	msg := sprintf("The SonarQube metric %s stands at %s for project %s, falling short of the expected value.", [required_rating_name, score, input.metadata.sonarqube_projectKey])
+	sugg := sprintf("Adhere to code security standards to improve score for project %s.", [input.metadata.sonarqube_projectKey])
+	error := ""
 	}`,
 
 	76: `
@@ -4213,94 +4481,2956 @@ var scriptMap = map[int]string{
 	77: `
 	package opsmx
 	import future.keywords.in
-
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error, "exception": "", "alertStatus": alertStatus}] {
-		policy = input.conditions[0].condition_name																																																																	
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+	  	policy = input.conditions[0].condition_name																																																																	
 
 		input.metadata.results[i].control_title == policy
 		control_struct = input.metadata.results[i]
 		failed_resources = control_struct.failed_resources
 		counter = count(failed_resources)
 		counter > 0
-		not policy_name in exception_list
 		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",\n",failed_resources)])
 		error := ""
 		suggestion := input.metadata.suggestion
-		alertStatus := "active"
-	}
+	}`,
 
-	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error, "exception": policy_name, "alertStatus": alertStatus}] {
-		policy = input.conditions[0].condition_name																																																																	
-
+	78: `
+	package opsmx
+	import future.keywords.in
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
 		input.metadata.results[i].control_title == policy
 		control_struct = input.metadata.results[i]
 		failed_resources = control_struct.failed_resources
 		counter = count(failed_resources)
 		counter > 0
-		policy_name in exception_list
 		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",\n",failed_resources)])
 		error := ""
 		suggestion := input.metadata.suggestion
-		alertStatus := "exception"
+	}`,
+
+	79: `
+	package opsmx
+	import future.keywords.in
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+	  policy = input.conditions[0].condition_name
+	  
+	  input.metadata.results[i].control_title == policy
+	  control_struct = input.metadata.results[i]
+	  failed_resources = control_struct.failed_resources
+	  counter = count(failed_resources)
+	  counter > 0
+	  msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",\n",failed_resources)])
+	  error := ""
+	  suggestion := input.metadata.suggestion
+	}`,
+
+	80: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	81: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	82: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	83: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	84: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	85: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	86: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	87: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	88: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	89: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	90: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	91: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+	policy = input.conditions[0].condition_name
+	
+	input.metadata.results[i].control_title == policy
+	control_struct = input.metadata.results[i]
+	failed_resources = control_struct.failed_resources
+	counter = count(failed_resources)
+	counter > 0
+	msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+	error := ""
+	suggestion := input.metadata.suggestion
+	}`,
+
+	92: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	93: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	94: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	95: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	96: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	97: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	98: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	99: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	100: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	101: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	102: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	103: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	104: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	105: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	106: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	107: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	108: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	109: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	110: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	111: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	112: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	113: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	114: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	115: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	116: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	117: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	118: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	119: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	120: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	121: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	122: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	123: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	124: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	125: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	126: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	127: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	128: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	129: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	130: `
+	package opsmx
+	import future.keywords.in
+
+		deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	131: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	132: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	133: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	134: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	135: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	136: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	137: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	138: `
+	package opsmx
+		import future.keywords.in
+
+		deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	139: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	140: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	141: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	142: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	143: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	144: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	145: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	146: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	147: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	148: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	149: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	150: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	151: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	152: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	153: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	154: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	155: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	156: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	157: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	158: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	159: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	160: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	161: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	162: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	163: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	164: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	165: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	166: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	167: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	168: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	169: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	170: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	171: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	172: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	173: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	174: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	175: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	176: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	177: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	178: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	179: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	180: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	181: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	182: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	183: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	184: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	185: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	186: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	187: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	188: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	189: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	190: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	191: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	192: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	193: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	194: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	195: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	196: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
+	}`,
+
+	197: `
+	package opsmx
+	import future.keywords.in
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":error}] {
+		policy = input.conditions[0].condition_name
+		
+		input.metadata.results[i].control_title == policy
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v on cluster %v due to following resources: %v", [input.metadata.scan_type, policy, input.metadata.account_name, concat(",",failed_resources)])
+		error := ""
+		suggestion := input.metadata.suggestion
 	}`,
 
 	198: `
 	package opsmx
 	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
 
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	199: `
+	package opsmx
+	import future.keywords.in
 
 	policy = input.conditions[0].condition_name
 	control_id = split(policy, " -")[0]
 
-
-	deny[{"alertMsg":msg, "suggestion":suggestion, "error":"", "exception": "", "alertStatus": alertStatus}] {
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
 		input.metadata.results[i].control_id == control_id
 		control_struct = input.metadata.results[i]
 		failed_resources = control_struct.failed_resources
 		counter = count(failed_resources)
 		counter > 0
-		not policy_name in exception_list
 		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
 		suggestion := input.metadata.suggestion
-		alertStatus := "active"
-	}
+	}`,
 
-	deny[{"alertMsg":msg, "suggestion":suggestion, "error":"", "exception": policy_name, "alertStatus": alertStatus}] {
+	200: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
 		input.metadata.results[i].control_id == control_id
 		control_struct = input.metadata.results[i]
 		failed_resources = control_struct.failed_resources
 		counter = count(failed_resources)
 		counter > 0
-		policy_name in exception_list
 		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
 		suggestion := input.metadata.suggestion
-		alertStatus := "exception"
+	}`,
+
+	201: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	202: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	203: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	204: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	205: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	206: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	207: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	208: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	209: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	210: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	211: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	212: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	213: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	214: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	215: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	216: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	217: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	218: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	219: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	220: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	221: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	222: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	223: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	224: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	225: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	226: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	227: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	228: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	229: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	230: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	231: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	232: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	233: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	234: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	235: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	236: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	237: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	238: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	239: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	240: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	241: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	242: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	243: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	244: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	245: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	246: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	247: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
+	}`,
+
+	248: `
+	package opsmx
+	import future.keywords.in
+
+	policy = input.conditions[0].condition_name
+	control_id = split(policy, " -")[0]
+	
+	deny[{"alertMsg":msg, "suggestion":suggestion, "error":""}] {
+		input.metadata.results[i].control_id == control_id
+		control_struct = input.metadata.results[i]
+		failed_resources = control_struct.failed_resources
+		counter = count(failed_resources)
+		counter > 0
+		msg := sprintf("%v scan failed for control %v:%v on cluster %v due to following resources: %v", [input.metadata.scan_type, control_struct.control_id, control_struct.control_title, input.metadata.account_name, concat(",",failed_resources)])
+		suggestion := input.metadata.suggestion
 	}`,
 
 	249: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	condition_value := input.conditions[0].condition_value
 	min_threshold_str := split(condition_value, "-")[0]
@@ -4308,36 +7438,67 @@ var scriptMap = map[int]string{
 	min_threshold := to_number(min_threshold_str)
 	max_threshold := to_number(max_threshold_str)
 
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": "", "exception": "", "alertStatus": alertStatus}] {
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": ""}] {
 		score := input.metadata.compliance_score
 		score > min_threshold
 		score <= max_threshold
-		not policy_name in exception_list
 		msg := sprintf("%v Scan failed for cluster %v as Compliance Score was found to be %v which is below threshold %v.", [input.metadata.scan_type, input.metadata.account_name, score, max_threshold])
 		sugg := input.metadata.suggestion
-		alertStatus := "active"
-	}
+	}`,
 
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": "", "exception": policy_name, "alertStatus": alertStatus}] {
+	250: `
+	package opsmx
+
+	condition_value := input.conditions[0].condition_value
+	min_threshold_str := split(condition_value, "-")[0]
+	max_threshold_str := split(condition_value, "-")[1]
+	min_threshold := to_number(min_threshold_str)
+	max_threshold := to_number(max_threshold_str)
+
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": ""}] {
 		score := input.metadata.compliance_score
 		score > min_threshold
 		score <= max_threshold
-		policy_name in exception_list
 		msg := sprintf("%v Scan failed for cluster %v as Compliance Score was found to be %v which is below threshold %v.", [input.metadata.scan_type, input.metadata.account_name, score, max_threshold])
 		sugg := input.metadata.suggestion
-		alertStatus := "exception"
+	}`,
+
+	251: `
+	package opsmx
+
+	condition_value := input.conditions[0].condition_value
+	min_threshold_str := split(condition_value, "-")[0]
+	max_threshold_str := split(condition_value, "-")[1]
+	min_threshold := to_number(min_threshold_str)
+	max_threshold := to_number(max_threshold_str)
+
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": ""}] {
+		score := input.metadata.compliance_score
+		score > min_threshold
+		score <= max_threshold
+		msg := sprintf("%v Scan failed for cluster %v as Compliance Score was found to be %v which is below threshold %v.", [input.metadata.scan_type, input.metadata.account_name, score, max_threshold])
+		sugg := input.metadata.suggestion
+	}`,
+
+	252: `
+	package opsmx
+
+	condition_value := input.conditions[0].condition_value
+	min_threshold_str := split(condition_value, "-")[0]
+	max_threshold_str := split(condition_value, "-")[1]
+	min_threshold := to_number(min_threshold_str)
+	max_threshold := to_number(max_threshold_str)
+
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": ""}] {
+		score := input.metadata.compliance_score
+		score > min_threshold
+		score <= max_threshold
+		msg := sprintf("%v Scan failed for cluster %v as Compliance Score was found to be %v which is below threshold %v.", [input.metadata.scan_type, input.metadata.account_name, score, max_threshold])
+		sugg := input.metadata.suggestion
 	}`,
 
 	253: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	condition_value := input.conditions[0].condition_value
 	min_threshold_str := split(condition_value, "-")[0]
@@ -4345,36 +7506,67 @@ var scriptMap = map[int]string{
 	min_threshold := to_number(min_threshold_str)
 	max_threshold := to_number(max_threshold_str)
 
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": "", "exception": "", "alertStatus": alertStatus}] {
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": ""}] {
 		score := input.metadata.compliance_score
 		score > min_threshold
 		score <= max_threshold
-		not policy_name in exception_list
 		msg := sprintf("%v Scan failed for cluster %v as Compliance Score was found to be %v which is below threshold %v.", [input.metadata.scan_type, input.metadata.account_name, score, max_threshold])
 		sugg := input.metadata.suggestion
-		alertStatus := "active"
-	}
+	}`,
 
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": "", "exception": policy_name, "alertStatus": alertStatus}] {
+	254: `
+	package opsmx
+
+	condition_value := input.conditions[0].condition_value
+	min_threshold_str := split(condition_value, "-")[0]
+	max_threshold_str := split(condition_value, "-")[1]
+	min_threshold := to_number(min_threshold_str)
+	max_threshold := to_number(max_threshold_str)
+
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": ""}] {
 		score := input.metadata.compliance_score
 		score > min_threshold
 		score <= max_threshold
-		policy_name in exception_list
 		msg := sprintf("%v Scan failed for cluster %v as Compliance Score was found to be %v which is below threshold %v.", [input.metadata.scan_type, input.metadata.account_name, score, max_threshold])
 		sugg := input.metadata.suggestion
-		alertStatus := "exception"
+	}`,
+
+	255: `
+	package opsmx
+
+	condition_value := input.conditions[0].condition_value
+	min_threshold_str := split(condition_value, "-")[0]
+	max_threshold_str := split(condition_value, "-")[1]
+	min_threshold := to_number(min_threshold_str)
+	max_threshold := to_number(max_threshold_str)
+
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": ""}] {
+		score := input.metadata.compliance_score
+		score > min_threshold
+		score <= max_threshold
+		msg := sprintf("%v Scan failed for cluster %v as Compliance Score was found to be %v which is below threshold %v.", [input.metadata.scan_type, input.metadata.account_name, score, max_threshold])
+		sugg := input.metadata.suggestion
+	}`,
+
+	256: `
+	package opsmx
+
+	condition_value := input.conditions[0].condition_value
+	min_threshold_str := split(condition_value, "-")[0]
+	max_threshold_str := split(condition_value, "-")[1]
+	min_threshold := to_number(min_threshold_str)
+	max_threshold := to_number(max_threshold_str)
+
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": ""}] {
+		score := input.metadata.compliance_score
+		score > min_threshold
+		score <= max_threshold
+		msg := sprintf("%v Scan failed for cluster %v as Compliance Score was found to be %v which is below threshold %v.", [input.metadata.scan_type, input.metadata.account_name, score, max_threshold])
+		sugg := input.metadata.suggestion
 	}`,
 
 	257: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	condition_value := input.conditions[0].condition_value
 	min_threshold_str := split(condition_value, "-")[0]
@@ -4382,45 +7574,77 @@ var scriptMap = map[int]string{
 	min_threshold := to_number(min_threshold_str)
 	max_threshold := to_number(max_threshold_str)
 
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": "", "exception": "", "alertStatus": alertStatus}] {
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": ""}] {
 		score := input.metadata.compliance_score
 		score > min_threshold
 		score <= max_threshold
-		not policy_name in exception_list
 		msg := sprintf("%v Scan failed for cluster %v as Compliance Score was found to be %v which is below threshold %v.", [input.metadata.scan_type, input.metadata.account_name, score, max_threshold])
 		sugg := sprintf("Implement best practices as mentioned in %v to improve overall compliance score.", [input.metadata.references])
-		alertStatus := "active"
-	}
+	}`,
 
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": "", "exception": policy_name, "alertStatus": alertStatus}] {
+	258: `
+	package opsmx
+
+	condition_value := input.conditions[0].condition_value
+	min_threshold_str := split(condition_value, "-")[0]
+	max_threshold_str := split(condition_value, "-")[1]
+	min_threshold := to_number(min_threshold_str)
+	max_threshold := to_number(max_threshold_str)
+
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": ""}] {
 		score := input.metadata.compliance_score
 		score > min_threshold
 		score <= max_threshold
-		policy_name in exception_list
 		msg := sprintf("%v Scan failed for cluster %v as Compliance Score was found to be %v which is below threshold %v.", [input.metadata.scan_type, input.metadata.account_name, score, max_threshold])
 		sugg := sprintf("Implement best practices as mentioned in %v to improve overall compliance score.", [input.metadata.references])
-		alertStatus := "exception"
+	}`,
+
+	259: `
+	package opsmx
+
+	condition_value := input.conditions[0].condition_value
+	min_threshold_str := split(condition_value, "-")[0]
+	max_threshold_str := split(condition_value, "-")[1]
+	min_threshold := to_number(min_threshold_str)
+	max_threshold := to_number(max_threshold_str)
+
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": ""}] {
+		score := input.metadata.compliance_score
+		score > min_threshold
+		score <= max_threshold
+		msg := sprintf("%v Scan failed for cluster %v as Compliance Score was found to be %v which is below threshold %v.", [input.metadata.scan_type, input.metadata.account_name, score, max_threshold])
+		sugg := sprintf("Implement best practices as mentioned in %v to improve overall compliance score.", [input.metadata.references])
+	}`,
+
+	260: `
+	package opsmx
+
+	condition_value := input.conditions[0].condition_value
+	min_threshold_str := split(condition_value, "-")[0]
+	max_threshold_str := split(condition_value, "-")[1]
+	min_threshold := to_number(min_threshold_str)
+	max_threshold := to_number(max_threshold_str)
+
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": ""}] {
+		score := input.metadata.compliance_score
+		score > min_threshold
+		score <= max_threshold
+		msg := sprintf("%v Scan failed for cluster %v as Compliance Score was found to be %v which is below threshold %v.", [input.metadata.scan_type, input.metadata.account_name, score, max_threshold])
+		sugg := sprintf("Implement best practices as mentioned in %v to improve overall compliance score.", [input.metadata.references])
 	}`,
 
 	261: `
 	package opsmx
 	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
+	
 	default allow = false
 	default auto_merge_config = ""
-
+	
 	request_components = [input.metadata.ssd_secret.github.url,"repos", input.metadata.owner, input.metadata.repository]
 	request_url = concat("/",request_components)
-
+	
 	token = input.metadata.ssd_secret.github.token
-
+	
 	request = {
 		"method": "GET",
 		"url": request_url,
@@ -4428,139 +7652,68 @@ var scriptMap = map[int]string{
 			"Authorization": sprintf("Bearer %v", [token]),
 		},
 	}
-
+	
 	response = http.send(request)
-
+	
 	auto_merge_config = response.body.allow_auto_merge
 	status_code = response.status_code
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 404
-		error := sprintf("The branch protection policy for %s branch for Repository %s/%s not found while trying to fetch repository branch protection policy configuration.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check if the repository provided is correct and the branch protection policy is configured."
-		msg := ""
-		alertStatus := "error"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  response.status_code == 401
+	  msg := "Unauthorized to check the Branch Protection Policy"
+	  error := "401 Unauthorized"
+	  sugg := "Kindly check the access token. It must have enough permissions to read the branch protection policy for repository."
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 401
-		error := sprintf("Unauthorized to check repository branch protection policy configuration for branch %s of repository %s/%s due to Bad Credentials.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		msg := ""
-		sugg := "Kindly check the access token. It must have enough permissions to get repository branch protection policy configurations."
-		alertStatus := "error"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  codes = [401, 200, 301, 302]
+	  not response.status_code in codes
+	  msg = "Unable to fetch Branch Protection Policy"
+	  error = sprintf("Error %v:%v receieved from Github upon trying to fetch Branch Protection Policy.", [status_code, response.body.message])
+	  sugg = "Kindly check Github API is reachable and the provided access token has required permissions."
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := sprintf("500 Internal Server Error. Received Error while checking repository branch configuration for %s/%s.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "error"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  status_code in [200, 301, 302]
+	  auto_merge_config == ""
+	  msg = "Auto Merge Config Not Found, indicates Branch Protection Policy is not set"
+	  error = ""
+	  sugg = "Kindly configure Branch Protection Policy for source code repository and make sure to restrict auto merge."
 	}
-
-	deny[{"alertMsg": msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		not response.status_code in [401, 404, 500, 200, 301, 302]
-		msg := ""
-		error := sprintf("Error %v:%v receieved from Github upon trying to fetch repository branch protection policy configuration for %v/%v.", [response.status_code, response.body.message, input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
-		alertStatus := "error"
-	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		status_code in [200, 301, 302]
-		auto_merge_config == ""
-		not policy_name in exception_list
-		msg = sprintf("Auto Merge Config Not Found, indicates Branch Protection Policy is not set for repository %v/%v.", [input.metadata.owner, input.metadata.repository])
-		error = ""
-		sugg = "Kindly configure Branch Protection Policy for source code repository and make sure to restrict auto merge."
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		status_code in [200, 301, 302]
-		auto_merge_config == ""
-		policy_name in exception_list
-		msg = sprintf("Auto Merge Config Not Found, indicates Branch Protection Policy is not set for repository %v/%v.", [input.metadata.owner, input.metadata.repository])
-		error = ""
-		sugg = "Kindly configure Branch Protection Policy for source code repository and make sure to restrict auto merge."
-		alertStatus := "exception"
-	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		status_code in [200, 301, 302]
-		auto_merge_config == true
-		not policy_name in exception_list
-		msg = sprintf("Auto Merge is allowed in github repository %v/%v.", [input.metadata.owner, input.metadata.repository])
-		error = ""
-		sugg = sprintf("Kindly modify existing Branch Protection Policies of github repository %v/%v to restrict Auto Merge operations.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		status_code in [200, 301, 302]
-		auto_merge_config == true
-		policy_name in exception_list
-		msg = sprintf("Auto Merge is allowed in github repository %v/%v.", [input.metadata.owner, input.metadata.repository])
-		error = ""
-		sugg = sprintf("Kindly modify existing Branch Protection Policies of github repository %v/%v to restrict Auto Merge operations.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "exception"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  status_code in [200, 301, 302]
+	  auto_merge_config != input.conditions[0].condition_value
+	  msg = sprintf("Auto Merge is allowed in repo %v", [input.metadata.repository])
+	  error = ""
+	  sugg = "Kindly restrict auto merge in Branch Protection Policy applied to repository."  
 	}`,
 
 	262: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-	input_stages = input.metadata.stages
-	manualJudgment_stages = [input.metadata.stages[i] | input.metadata.stages[i].type == "manualJudgment"]
-	counter = count(manualJudgment_stages)
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": "", "exception": "", "alertStatus": alertStatus}]{
+		input_stages = input.metadata.stages
+		manualJudgment_stages = [input.metadata.stages[i] | input.metadata.stages[i].type == "manualJudgment"]
+		counter = count(manualJudgment_stages)
+		deny["No manual judgement stages configured in pipeline"]{
 		count(manualJudgment_stages) < 1
-		not policy_name in exception_list
-		msg := "No manual judgement stages configured in pipeline."
-		sugg := "Kindly follow security best practices by introducing manual judgement stage before deployment to critical environments."
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": "", "exception": policy_name, "alertStatus": alertStatus}]{
-		count(manualJudgment_stages) < 1
-		policy_name in exception_list
-		msg := "No manual judgement stages configured in pipeline."
-		sugg := "Kindly follow security best practices by introducing manual judgement stage before deployment to critical environments."
-		alertStatus := "exception"
 	}`,
 
 	263: `
 	package opsmx
-	import future.keywords.in 
 
 	default allow = false
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-	repo_search = [input.metadata.ssd_secret.github.url,"repos", input.metadata.owner, input.metadata.repository]
+	
+	repo_search = [input.metadata.ssd_secret.github.url,"repos", input.metadata.github_org, input.metadata.github_repo]
 	repo_searchurl = concat("/",repo_search)
-
-	branch_search = [input.metadata.ssd_secret.github.url,"repos", input.metadata.owner, input.metadata.repository,"branches",input.metadata.branch]
+	
+	branch_search = [input.metadata.ssd_secret.github.url,"repos", input.metadata.github_org, input.metadata.github_repo,"branches",input.metadata.default_branch]
 	branch_searchurl = concat("/",branch_search)
-
-	protect_components = [input.metadata.ssd_secret.github.url,"repos", input.metadata.owner, input.metadata.repository,"branches",input.metadata.branch,"protection"]
+	
+	protect_components = [input.metadata.ssd_secret.github.url,"repos", input.metadata.github_org, input.metadata.github_repo,"branches",input.metadata.default_branch,"protection"]
 	protect_url = concat("/",protect_components)
-
+	
 	token = input.metadata.ssd_secret.github.token
-
+	
 	repo_search_request = {
 		"method": "GET",
 		"url": repo_searchurl,
@@ -4568,7 +7721,7 @@ var scriptMap = map[int]string{
 			"Authorization": sprintf("Bearer %v", [token]),
 		},
 	}
-
+	
 	branch_search_request = {
 		"method": "GET",
 		"url": branch_searchurl,
@@ -4576,7 +7729,7 @@ var scriptMap = map[int]string{
 			"Authorization": sprintf("Bearer %v", [token]),
 		},
 	}
-
+	
 	protect_search_request = {
 		"method": "GET",
 		"url": protect_url,
@@ -4584,302 +7737,160 @@ var scriptMap = map[int]string{
 			"Authorization": sprintf("Bearer %v", [token]),
 		},
 	}
-
+	
 	response = http.send(repo_search_request)
-
+	
 	branch_response = http.send(branch_search_request)
-
+	
 	branch_protect = http.send(protect_search_request)
-
-	branch_check = response.body.branch
-
+	
+	branch_check = response.body.default_branch
+	
 	AllowAutoMerge = response.body.allow_auto_merge
-
+	
 	delete_branch_on_merge = response.body.delete_branch_on_merge
-
+	
 	branch_protected = branch_response.body.protected
-
+	
 	RequiredReviewers = branch_protect.body.required_pull_request_reviews.required_approving_review_count
-
+	
 	AllowForcePushes = branch_protect.body.allow_force_pushes.enabled
-
+	
 	AllowDeletions = branch_response.body.allow_deletions.enabled
-
+	
 	RequiredSignatures = branch_protect.body.required_signatures.enabled
-
+	
 	EnforceAdmins = branch_protect.body.enforce_admins.enabled
-
+	
 	RequiredStatusCheck = branch_protect.body.required_status_checks.strict
-
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		AllowAutoMerge == true
-		not policy_name in exception_list
-		msg := sprintf("The Auto Merge is enabled for the %s branch of %s/%s repository.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Please disable the Auto Merge for the %s branch of %s/%s repository.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "active"
+	
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  branch_check = " "
+	  msg := "Github does not have any branch"
+	  sugg := "Please create a branch"
+	  error := ""
+	} 
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  AllowAutoMerge = true
+	  msg := sprintf("The Auto Merge is enabled for the %s owner %s repo", [input.metadata.github_repo, input.metadata.default_branch])
+	  sugg := "Please disable the Auto Merge"
+	  error := ""
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		AllowAutoMerge == true
-		policy_name in exception_list
-		msg := sprintf("The Auto Merge is enabled for the %s branch of %s/%s repository.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Please disable the Auto Merge for the %s branch of %s/%s repository.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "exception"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  delete_branch_on_merge = true
+	  msg := "The branch protection policy that allows branch deletion is enabled."
+	  sugg := sprintf("Please disable the branch deletion of branch %s of repo %s", [input.metadata.default_branch,input.metadata.github_repo])
+	  error := ""
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		delete_branch_on_merge == true
-		not policy_name in exception_list
-		msg := "The branch protection policy that allows branch deletion is enabled."
-		sugg := sprintf("Please disable the branch deletion of branch %s of repository %s/%s.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "active"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  branch_protected = false
+	  msg := sprintf("Github repo %v and branch %v is not protected", [input.metadata.github_repo, input.metadata.default_branch])
+	  sugg := sprintf("Make sure branch %v of %v repo has some branch policies", [input.metadata.github_repo,input.metadata.default_branch])
+	  error := ""
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		delete_branch_on_merge == true
-		policy_name in exception_list
-		msg := "The branch protection policy that allows branch deletion is enabled."
-		sugg := sprintf("Please disable the branch deletion of branch %s of repository %s/%s.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "exception"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  RequiredReviewers = 0
+	  msg := "The branch protection policy that mandates the minimum review for branch protection has been deactivated."
+	  sugg := sprintf("Activate branch protection: pull request and minimum 1 approval before merging for branch %s of %s repo",[input.metadata.default_branch,input.metadata.github_repo])
+	  error := ""
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		branch_protected == false
-		not policy_name in exception_list
-		msg := sprintf("Branch %v of Github repository %v/%v is not protected.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Make sure branch %v of %v/%v repo has some branch protection policies.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "active"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  AllowForcePushes = true
+	  msg := "The branch protection policy that allows force pushes is enabled."
+	  sugg := sprintf("Please disable force push of branch %v of repo %v", [input.metadata.default_branch,input.metadata.github_repo])
+	  error := ""
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		branch_protected == false
-		policy_name in exception_list
-		msg := sprintf("Branch %v of Github repository %v/%v is not protected.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Make sure branch %v of %v/%v repo has some branch protection policies.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "exception"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  AllowDeletions = true
+	  msg := "The branch protection policy that allows branch deletion is enabled."
+	  sugg := sprintf("Please disable the branch deletion of branch %v of repo %v",[input.metadata.default_branch,input.metadata.github_repo])
+	  error := ""
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		RequiredReviewers == 0
-		not policy_name in exception_list
-		msg := sprintf("The branch protection policy that mandates the minimum review for code merge requests has been deactivated for Branch %v of Github repository %v/%v.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Activate branch protection: pull request and minimum 1 approval before merging for branch %s of %s/%s repository.",[input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "active"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  RequiredSignatures = true
+	  msg := "The branch protection policy that requires signature is disabled."
+	  sugg := sprintf("Please activate the mandatory GitHub signature policy for branch %v signatures of %v repo",[input.metadata.default_branch,input.metadata.github_repo])
+	  error := ""
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		RequiredReviewers == 0
-		policy_name in exception_list
-		msg := sprintf("The branch protection policy that mandates the minimum review for code merge requests has been deactivated for Branch %v of Github repository %v/%v.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Activate branch protection: pull request and minimum 1 approval before merging for branch %s of %s/%s repository.",[input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "exception"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  EnforceAdmins = true
+	  msg := sprintf("The branch protection policy that enforces status checks for repository administrators is disabled", [input.metadata.github_repo])
+	  sugg := sprintf("Please activate the branch protection policy, dont by pass status checks for repository administrators of branch %s of %s repo",[input.metadata.default_branch,input.metadata.github_repo])
+	  error := ""
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		AllowForcePushes == true
-		not policy_name in exception_list
-		msg := sprintf("The branch protection policy that allows force pushes is enabled for Branch %v of Github repository %v/%v.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Disable force push for branch %v of repository %v/%v.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		AllowForcePushes == true
-		policy_name in exception_list
-		msg := sprintf("The branch protection policy that allows force pushes is enabled for Branch %v of Github repository %v/%v.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Disable force push for branch %v of repository %v/%v.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "exception"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		AllowDeletions == true
-		not policy_name in exception_list
-		msg := sprintf("The branch protection policy that allows branch deletion is enabled for Branch %v of Github repository %v/%v.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Please disable the branch deletion of branch %v of repository %v/%v.",[input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		AllowDeletions == true
-		policy_name in exception_list
-		msg := sprintf("The branch protection policy that allows branch deletion is enabled for Branch %v of Github repository %v/%v.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Please disable the branch deletion of branch %v of repository %v/%v.",[input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "exception"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		RequiredSignatures == true
-		not policy_name in exception_list
-		msg := sprintf("The branch protection policy that requires signature association with commits is disabled for Branch %v of Github repository %v/%v.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Please activate the mandatory GitHub signature policy for branch %v of %v/%v repositoty.",[input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		RequiredSignatures == true
-		policy_name in exception_list
-		msg := sprintf("The branch protection policy that requires signature association with commits is disabled for Branch %v of Github repository %v/%v.", [input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Please activate the mandatory GitHub signature policy for branch %v of %v/%v repositoty.",[input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "exception"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		EnforceAdmins == true
-		not policy_name in exception_list
-		msg := sprintf("The branch protection policy that enforces status checks for repository administrators is disabled for repository %v/%v.", [input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Please activate the branch protection policy, dont by pass status checks for repository administrators of branch %s of %s/%s repository.",[input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		EnforceAdmins == true
-		policy_name in exception_list
-		msg := sprintf("The branch protection policy that enforces status checks for repository administrators is disabled for repository %v/%v.", [input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Please activate the branch protection policy, dont by pass status checks for repository administrators of branch %s of %s/%s repository.",[input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "exception"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		RequiredStatusCheck == true
-		not policy_name in exception_list
-		msg := sprintf("The branch protection policy that requires status check is disabled for the repository %s/%s.", [input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Please activate the branch protection policy, requiring a need to be up-to-date with the base branch before merging for branch %s of %s/%s repo",[input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		RequiredStatusCheck == true
-		policy_name in exception_list
-		msg := sprintf("The branch protection policy that requires status check is disabled for the repository %s/%s.", [input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Please activate the branch protection policy, requiring a need to be up-to-date with the base branch before merging for branch %s of %s/%s repo",[input.metadata.branch, input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "exception"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  RequiredStatusCheck = true
+	  msg := sprintf("The branch protection policy that requires status check is disabled for the repo %s", [input.metadata.github_repo])
+	  sugg := sprintf("Please activate the branch protection policy, requiring a need to be up-to-date with the base branch before merging for branch %s of %s repo",[input.metadata.default_branch,input.metadata.github_repo])
+	  error := ""
 	}`,
 
 	264: `
 	package opsmx
 	import future.keywords.in
+	default approved_servers_count = 0
+	default list_approved_user_str = []
 
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-	default approved_servers = ""
-	default list_approved_user_str = ""
-
-	list_approved_user_str = input.metadata.ssd_secret.build_access_config.approved_user
-	list_approved_users = split(list_approved_user_str, ",")
-	approved_servers = input.metadata.ssd_secret.build_access_config.url
+	list_approved_user_str = {input.metadata.ssd_secret.build_access_config.credentials[i].approved_user | split(input.metadata.ssd_secret.build_access_config.credentials[i].url, "/")[2] == build_url}
+	list_approved_users = split(list_approved_user_str[_], ",")
+	approved_servers_count = count(input.metadata.ssd_secret.build_access_config.credentials)
 	build_url = split(input.metadata.build_url, "/")[2]
-	build_user = input.metadata.build_user
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus }] {
-		approved_servers == ""
-		msg:=""
-		sugg:="Set the BuildAccessConfig.Credentials parameter with trusted build server URLs and users to strengthen artifact validation during the deployment process."
-		error:="The essential list of approved build URLs and users remains unspecified."
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error }] {
+	  approved_servers_count == 0
+	  msg:=""
+	  sugg:="Set the BuildAccessConfig.Credentials parameter with trusted build server URLs and users to strengthen artifact validation during the deployment process."
+	  error:="The essential list of approved build URLs and users remains unspecified."
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error,  "exception": "", "alertStatus": alertStatus }]{
-		approved_servers != ""
-		list_approved_user_str == ""
-		msg := ""
-		sugg := "Please set the list of authorised users in integrations configuration to strengthen artifact validation during the deployment process."
-		error := "The essential list of approved build users remains unspecified."
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error }]{
+	  count(input.metadata.ssd_secret.build_access_config.credentials) > 0
+	  list_approved_user_str == []
+	  msg := ""
+	  sugg := "Set the BuildAccessConfig.Credentials parameter with trusted build server URLs and users to strengthen artifact validation during the deployment process."
+	  error := "The essential list of approved build users remains unspecified."
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus }]{
-		approved_servers != ""
-		not input.metadata.build_user in list_approved_users
-		not policy_name in exception_list
-		msg:=sprintf("The artifact build has not been created by an approved user.\nPlease verify the artifacts origin.\nBuild User: %v \nApproved Users: %v", [build_user, list_approved_user_str])
-		sugg:="Ensure the artifact is sourced from an approved user."
-		error:=""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus }]{
-		approved_servers != ""
-		not input.metadata.build_user in list_approved_users
-		policy_name in exception_list
-		msg:=sprintf("The artifact build has not been created by an approved user.\nPlease verify the artifacts origin.\nBuild User: %v \nApproved Users: %v", [build_user, list_approved_user_str])
-		sugg:="Ensure the artifact is sourced from an approved user."
-		error:=""
-		alertStatus := "exception"
+	  
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error }]{
+	  count(input.metadata.ssd_secret.build_access_config.credentials) > 0
+	  not input.metadata.build_user in list_approved_users
+	  msg:="The artifact has not been sourced from an approved user.\nPlease verify the artifacts origin."
+	  sugg:="Ensure the artifact is sourced from an approved user."
+	  error:=""
 	}`,
 
 	265: `
 	package opsmx
 	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		input.metadata.parent_repo != ""
-		parent_repo_owner = split(input.metadata.parent_repo, "/")[0]
-		parent_repo_owner != input.metadata.owner
-		not policy_category in exception_list
-		msg := sprintf("The pipeline uses a forked repo from a different organization %s from %s.", [input.metadata.parent_repo, input.metadata.owner])
-		sugg := "Refrain from running pipelines originating from forked repos not belonging to the same organization."
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		input.metadata.parent_repo != ""
-		parent_repo_owner = split(input.metadata.parent_repo, "/")[0]
-		parent_repo_owner != input.metadata.owner
-		policy_category in exception_list
-		msg := sprintf("The pipeline uses a forked repo from a different organization %s from %s.", [input.metadata.parent_repo, input.metadata.owner])
-		sugg := "Refrain from running pipelines originating from forked repos not belonging to the same organization."
-		error := ""
-		alertStatus := "exception"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  input.metadata.parent_repo != ""
+	  parent_repo_owner = split(input.metadata.parent_repo, "/")[0]
+	  parent_repo_owner != input.metadata.owner
+	  msg := sprintf("The pipeline uses a forked repo from a different organization %s from %s.", [input.metadata.parent_repo, input.metadata.owner])
+	  sugg := "Refrain from running pipelines originating from forked repos not belonging to the same organization."
+	  error := ""
 	}`,
 
 	266: `
 	package opsmx
 	import future.keywords.in
-
+	
 	default allow = false
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
+	
 	maintainers_url = concat("/", [input.metadata.ssd_secret.github.url, "repos", input.metadata.owner, input.metadata.repository, "collaborators?permission=maintain&per_page=100"])
 	admins_url = concat("/", [input.metadata.ssd_secret.github.url, "repos", input.metadata.owner, input.metadata.repository, "collaborators?permission=admin&per_page=100"])
-
+	
 	maintainers_request = {
 		"method": "GET",
 		"url": maintainers_url,
@@ -4887,11 +7898,11 @@ var scriptMap = map[int]string{
 			"Authorization": sprintf("Bearer %v", [input.metadata.ssd_secret.github.token]),
 		},
 	}
-
+	
 	default maintainers_response = ""
 	maintainers_response = http.send(maintainers_request)
 	maintainers = [maintainers_response.body[i].login | maintainers_response.body[i].type == "User"]
-
+	
 	admins_request = {
 		"method": "GET",
 		"url": admins_url,
@@ -4899,83 +7910,78 @@ var scriptMap = map[int]string{
 			"Authorization": sprintf("Bearer %v", [input.metadata.ssd_secret.github.token]),
 		},
 	}
-
+	
 	default admins_response = ""
 	admins_response = http.send(admins_request)
-
+	
 	admins = [admins_response.body[i].login | admins_response.body[i].type == "User"]
 	non_admin_maintainers = [maintainers[idx] | not maintainers[idx] in admins]
 	complete_list = array.concat(admins, non_admin_maintainers)
-
+	
 	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
-		maintainers_response.status_code == 401
-		error := sprintf("Unauthorized to check repository collaborators for repository %s/%s due to Bad Credentials.", [input.metadata.owner, input.metadata.repository])
-		msg := ""
-		sugg := "Kindly check the access token. It must have enough permissions to get repository collaborators."
-		alertStatus := "error"
+	  maintainers_response.status_code == 401
+	  msg := ""
+	  error := "401 Unauthorized: Unauthorized to check repository collaborators."
+	  sugg := "Kindly check the access token. It must have enough permissions to get repository collaborators."
 	}
-
+	
 	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
-		admins_response.status_code == 401
-		error := sprintf("Unauthorized to check repository collaborators for repository %s/%s due to Bad Credentials.", [input.metadata.owner, input.metadata.repository])
-		msg := ""
-		sugg := "Kindly check the access token. It must have enough permissions to get repository collaborators."
-		alertStatus := "error"
+	  admins_response.status_code == 401
+	  msg := ""
+	  error := "401 Unauthorized: Unauthorized to check repository collaborators."
+	  sugg := "Kindly check the access token. It must have enough permissions to get repository collaborators."
 	}
-
-
+	
+	
 	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
-		maintainers_response.status_code == 404
-		msg := ""
-		sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository collaborators."
-		error := "Mentioned branch for Repository not found while trying to fetch repository collaborators."
-		alertStatus := "error"
+	  maintainers_response.status_code == 404
+	  msg := ""
+	  sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository collaborators."
+	  error := "Mentioned branch for Repository not found while trying to fetch repository collaborators. Repo name or Organisation is incorrect."
 	}
-
+	
 	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
-		admins_response.status_code == 404
-		msg := ""
-		sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository collaborators."
-		error := "Mentioned branch for Repository not found while trying to fetch repository collaborators."
-		alertStatus := "error"
+	  admins_response.status_code == 404
+	  msg := ""
+	  sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository collaborators."
+	  error := "Mentioned branch for Repository not found while trying to fetch repository collaborators. Repo name or Organisation is incorrect."
 	}
-
-
+	
+	
 	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
-		admins_response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := sprintf("500 Internal Server Error. Received Error while checking repository collaborators for %s/%s.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "error"
+	  admins_response.status_code == 500
+	  msg := "Internal Server Error."
+	  sugg := ""
+	  error := "GitHub is not reachable."
 	}
-
+	
 	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
-		maintainers_response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := "GitHub is not reachable."
+	  maintainers_response.status_code == 500
+	  msg := "Internal Server Error."
+	  sugg := ""
+	  error := "GitHub is not reachable."
 	}
-
+	
 	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
-		codes = [401, 404, 500, 200, 301, 302]
-		not admins_response.status_code in codes
-		msg := ""
-		error := sprintf("Unable to fetch repository collaborators. Error %v:%v receieved from Github.", [admins_response.status_code, admins_response.body.message])
-		sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
+	  codes = [401, 404, 500, 200, 301, 302]
+	  not admins_response.status_code in codes
+	  msg := ""
+	  error := sprintf("Unable to fetch repository collaborators. Error %v:%v receieved from Github.", [admins_response.status_code, admins_response.body.message])
+	  sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
 	}
-
+	
 	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
-		codes = [401, 404, 500, 200, 301, 302]
-		not maintainers_response.status_code in codes
-		msg := ""
-		error := sprintf("Unable to fetch repository collaborators. Error %v:%v receieved from Github.", [maintainers_response.status_code, maintainers_response.body.message])
-		sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
+	  codes = [401, 404, 500, 200, 301, 302]
+	  not maintainers_response.status_code in codes
+	  msg := ""
+	  error := sprintf("Unable to fetch repository collaborators. Error %v:%v receieved from Github.", [maintainers_response.status_code, maintainers_response.body.message])
+	  sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
 	}
-
+	
 	default denial_list = false
-
+	
 	denial_list = matched_users
-
+	
 	matched_users[user] {
 		users := complete_list
 		user := users[_]
@@ -4983,47 +7989,27 @@ var scriptMap = map[int]string{
 		some pattern in patterns
 			regex.match(pattern, user)
 	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}] {
-		counter := count(denial_list)
-		counter > 0
-		denial_list_str := concat(", ", denial_list)
-		not policy_name in exception_list
-		msg := sprintf("Maintainer and Admin access of Github Repository providing ability to merge code is granted to bot users. Number of bot users having permissions to merge: %v. Name of bots having permissions to merge: %v", [counter, denial_list_str])
-		sugg := sprintf("Adhere to the company policy and revoke access of bot user for %v/%v Repository.", [input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}] {
-		counter := count(denial_list)
-		counter > 0
-		denial_list_str := concat(", ", denial_list)
-		policy_name in exception_list
-		msg := sprintf("Maintainer and Admin access of Github Repository providing ability to merge code is granted to bot users. Number of bot users having permissions to merge: %v. Name of bots having permissions to merge: %v", [counter, denial_list_str])
-		sugg := sprintf("Adhere to the company policy and revoke access of bot user for %v/%v Repository.", [input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "exception"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}] {
+	  counter := count(denial_list)
+	  counter > 0
+	  denial_list_str := concat(", ", denial_list)
+	  msg := sprintf("Maintainer and Admin access of Github Repository providing ability to merge code is granted to bot users. Number of bot users having permissions to merge: %v. Name of bots having permissions to merge: %v", [counter, denial_list_str])
+	  sugg := sprintf("Adhere to the company policy and revoke access of bot user for %v/%v Repository.", [input.metadata.repository,input.metadata.owner])
+	  error := ""
 	}`,
 
 	267: `
 	package opsmx
 	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
 	default allow = false
-
+	
 	request_components = [input.metadata.ssd_secret.github.url,"repos", input.metadata.owner, input.metadata.repository, "collaborators"]
 	request_url = concat("/",request_components)
-
+	
 	token = input.metadata.ssd_secret.github.token
-
+	
 	request = {
 		"method": "GET",
 		"url": request_url,
@@ -5031,86 +8017,55 @@ var scriptMap = map[int]string{
 			"Authorization": sprintf("Bearer %v", [token]),
 		},
 	}
-
+	
 	response = http.send(request)
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 401
-		error := sprintf("Unauthorized to check repository collaborators for repository %s/%s due to Bad Credentials.", [input.metadata.owner, input.metadata.repository])
-		msg := ""
-		sugg := "Kindly check the access token. It must have enough permissions to get repository collaborators."
-		alertStatus := "error"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  response.status_code == 401
+	  msg := ""
+	  error := "401 Unauthorized: Unauthorized to check repository collaborators."
+	  sugg := "Kindly check the access token. It must have enough permissions to get repository collaborators."
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 404
-		msg := ""
-		sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository collaborators."
-		error := "Mentioned branch for Repository not found while trying to fetch repository collaborators."
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 404
+	  msg := ""
+	  sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository collaborators."
+	  error := "Mentioned branch for Repository not found while trying to fetch repository collaborators. Repo name or Organisation is incorrect."
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := sprintf("500 Internal Server Error. Received Error while checking repository collaborators for %s/%s.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 500
+	  msg := "Internal Server Error."
+	  sugg := ""
+	  error := "GitHub is not reachable."
 	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		codes = [401, 404, 500, 200, 301, 302]
-		not response.status_code in codes
-		msg := ""
-		error := sprintf("Unable to fetch repository collaborators. Error %v:%v receieved from Github.", [response.status_code, response.body.message])
-		sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
-		alertStatus := "error"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  codes = [401, 404, 500, 200, 301, 302]
+	  not response.status_code in codes
+	  msg := ""
+	  error := sprintf("Unable to fetch repository collaborators. Error %v:%v receieved from Github.", [response.status_code, response.body.message])
+	  sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
 	}
-
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		admins = [response.body[i].login | response.body[i].role_name == "admin"]
-		total_users = count(response.body[i])
-		admin_users = count(admins)
-		admin_percentage = admin_users / total_users * 100
-
-		admin_percentage > 5
-		not policy_name in exception_list
-		msg := sprintf("More than 5 percentage of total collaborators of %v github repository have admin access", [input.metadata.repository])
-		sugg := sprintf("Adhere to the company policy and revoke admin access to some users of the repo %v", [input.metadata.repository])
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		admins = [response.body[i].login | response.body[i].role_name == "admin"]
-		total_users = count(response.body[i])
-		admin_users = count(admins)
-		admin_percentage = admin_users / total_users * 100
-
-		admin_percentage > 5
-		policy_name in exception_list
-		msg := sprintf("More than 5 percentage of total collaborators of %v github repository have admin access", [input.metadata.repository])
-		sugg := sprintf("Adhere to the company policy and revoke admin access to some users of the repo %v", [input.metadata.repository])
-		error := ""
-		alertStatus := "exception"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  admins = [response.body[i].login | response.body[i].role_name == "admin"]
+	  total_users = count(response.body[i])
+	  admin_users = count(admins)
+	  admin_percentage = admin_users / total_users * 100
+	
+	  admin_percentage > 5
+	  msg := sprintf("More than 5 percentage of total collaborators of %v github repository have admin access", [input.metadata.repository])
+	  sugg := sprintf("Adhere to the company policy and revoke admin access to some users of the repo %v", [input.metadata.repository])
+	  error := ""
 	}`,
 
-	268: `
-	package opsmx
-	import future.keywords.in
+	268: `package opsmx
+	token = input.metadata.github_access_token
+	request_components = [input.metadata.ssd_secret.github.url,"repos", input.metadata.github_org, input.metadata.github_repo, "activity?time_period=quarter&activity_type=push&per_page=500"]
 
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-	token = input.metadata.ssd_secret.github.token
-	request_components = [input.metadata.ssd_secret.github.url,"repos", input.metadata.owner, input.metadata.repository, "activity?time_period=quarter&activity_type=push&per_page=500"]
-
-	collaborators_components = [input.metadata.ssd_secret.github.url,"repos", input.metadata.owner, input.metadata.repository, "collaborators"]
+	collaborators_components = [input.metadata.ssd_secret.github.url,"repos", input.metadata.github_org, input.metadata.github_repo, "collaborators"]
 	collaborators_url = concat("/",collaborators_components)
 
 	collaborators = {
@@ -5167,46 +8122,26 @@ var scriptMap = map[int]string{
 		login = user.actor.login
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		allusers = coll_users[_]
-		eventlogins = evnt_logins[_]
-		allusers.login == login_values[_]
-		not policy_name in exception_list
-		msg := sprintf("Access of Github repository %s has been granted to users %v who have no activity from last three months", [input.metadata.github_repo,login_values[_]])
-		sugg := "Adhere to the company policy and revoke access of inactive members"
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		allusers = coll_users[_]
-		eventlogins = evnt_logins[_]
-		allusers.login == login_values[_]
-		policy_name in exception_list
-		msg := sprintf("Access of Github repository %s has been granted to users %v who have no activity from last three months", [input.metadata.github_repo,login_values[_]])
-		sugg := "Adhere to the company policy and revoke access of inactive members"
-		error := ""
-		alertStatus := "exception"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	allusers = coll_users[_]
+	eventlogins = evnt_logins[_]
+	allusers.login == login_values[_]
+	msg := sprintf("Access of Github repository %s has been granted to users %v who have no activity from last three months", [input.metadata.github_repo,login_values[_]])
+	sugg := "Adhere to the company policy and revoke access of inactive members"
+	error := ""
 	}`,
 
 	269: `
 	package opsmx
 	import future.keywords.in
-
+	
 	default allow = false
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
+	
 	request_components = [input.metadata.ssd_secret.github.url,"repos", input.metadata.owner, input.metadata.repository,"dependency-graph/sbom"]
 	request_url = concat("/",request_components)
-
+	
 	token = input.metadata.ssd_secret.github.token
-
+	
 	request = {
 		"method": "GET",
 		"url": request_url,
@@ -5214,97 +8149,74 @@ var scriptMap = map[int]string{
 			"Authorization": sprintf("Bearer %v", [token]),
 		},
 	}
-
+	
 	response = http.send(request)
-
+	
 	allow {
-		response.status_code = 200
+	  response.status_code = 200
 	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 401
-		error := "Unauthorized to check repository configuration due to Bad Credentials."
-		msg := ""
-		sugg := "Kindly check the access token. It must have enough permissions to get repository configurations."
-		alertStatus := "error"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  response.status_code == 401
+	  error := "Unauthorized to check repository configuration due to Bad Credentials."
+	  msg := ""
+	  sugg := "Kindly check the access token. It must have enough permissions to get repository configurations."
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 404
-		error := "Repository not found or SBOM could not be fetched."
-		sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository configuration. Also, kindly verify if dependency tracking is enabled for the repository."
-		msg := ""
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 404
+	  error := "Repository not found or SBOM could not be fetched."
+	  sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository configuration. Also, kindly verify if dependency tracking is enabled for the repository."
+	  msg := ""
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := "GitHub is not reachable."
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 500
+	  msg := "Internal Server Error."
+	  sugg := ""
+	  error := "GitHub is not reachable."
 	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		codes = [401, 404, 500, 200, 301, 302]
-		not response.status_code in codes
-		msg := ""
-		error := sprintf("Error %v:%v receieved from Github upon trying to fetch Repository Configuration.", [response.status_code, response.body.message])
-		sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
-		alertStatus := "error"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  codes = [401, 404, 500, 200, 301, 302]
+	  not response.status_code in codes
+	  msg := ""
+	  error := sprintf("Error %v:%v receieved from Github upon trying to fetch Repository Configuration.", [response.status_code, response.body.message])
+	  sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}] {
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}] {
 		response.body.sbom = "" 
 		error := sprintf("The SBOM could not be fetched, hence Centralized package manager settings Policy cannot be validated.", [input.metadata.repository])
 		sugg := "Please make sure there are some packages in the GitHub Repository."
 		msg := ""
-		alertStatus := "error"
 	}
-
+	
 	default pkg_without_version = []
-
+	
 	pkg_without_version = [pkg2.name | pkg2 := response.body.sbom.packages[_]
 								pkg2.name != response.body.sbom.name
 								not startswith(pkg2.name, "actions:")
 								pkg2.versionInfo == ""]
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
 		count(pkg_without_version) != 0
-		not policy_name in exception_list
 		msg := sprintf("The GitHub repository %v/%v exhibits packages with inadequate versioning.", [input.metadata.owner, input.metadata.repository])
 		sugg := sprintf("Adhere to the company policy and mandate proper tagging and versioning for packages of %v/%v repository.", [input.metadata.owner, input.metadata.repository])
 		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		count(pkg_without_version) != 0
-		policy_name in exception_list
-		msg := sprintf("The GitHub repository %v/%v exhibits packages with inadequate versioning.", [input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Adhere to the company policy and mandate proper tagging and versioning for packages of %v/%v repository.", [input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "exception"
 	}`,
 
 	270: `
 	package opsmx
 	import future.keywords.in
-
+	
 	default allow = false
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
+	
 	request_components = [input.metadata.ssd_secret.github.url,"repos", input.metadata.owner, input.metadata.repository,"dependency-graph/sbom"]
 	request_url = concat("/",request_components)
-
+	
 	token = input.metadata.ssd_secret.github.token
-
+	
 	request = {
 		"method": "GET",
 		"url": request_url,
@@ -5312,923 +8224,579 @@ var scriptMap = map[int]string{
 			"Authorization": sprintf("Bearer %v", [token]),
 		},
 	}
-
+	
 	response = http.send(request)
-
+	
 	allow {
-		response.status_code = 200
+	  response.status_code = 200
 	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 401
-		error := sprintf("Unauthorized to check repository configurations for repository %s/%s due to Bad Credentials.", [input.metadata.owner, input.metadata.repository])
-		msg := ""
-		sugg := "Kindly check the access token. It must have enough permissions to get repository configurations."
-		alertStatus := "error"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  response.status_code == 401
+	  msg := "Unauthorized to check repository configuration due to Bad Credentials."
+	  error := "401 Unauthorized."
+	  sugg := "Kindly check the access token. It must have enough permissions to get repository configurations."
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 404
-		msg := "Repository SBOM not found while trying to fetch Repository Configuration."
-		sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository configuration. Also, check if dependency mapping is enabled."
-		error := ""
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 404
+	  msg := "Repository SBOM not found while trying to fetch Repository Configuration."
+	  sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository configuration. Also, check if dependency mapping is enabled."
+	  error := ""
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := sprintf("500 Internal Server Error. Received Error while checking repository configurations for %s/%s.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 500
+	  msg := "Internal Server Error."
+	  sugg := ""
+	  error := "GitHub is not reachable."
 	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		codes = [401, 404, 500, 200, 301, 302]
-		not response.status_code in codes
-		msg := "Unable to fetch repository configuration."
-		error := sprintf("Error %v:%v receieved from Github upon trying to fetch Repository Configuration.", [response.status_code, response.body.message])
-		sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
-		alertStatus := "error"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  codes = [401, 404, 500, 200, 301, 302]
+	  not response.status_code in codes
+	  msg := "Unable to fetch repository configuration."
+	  error := sprintf("Error %v:%v receieved from Github upon trying to fetch Repository Configuration.", [response.status_code, response.body.message])
+	  sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}] {
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}] {
 		response.body.sbom = "" 
-		error := sprintf("The SBOM could not be fetched for repository %v/%v, hence Centralized package manager settings Policy cannot be validated.", [input.metadata.owner, input.metadata.repository])
+		error := sprintf("The SBOM could not be fetched, hence Centralized package manager settings Policy cannot be validated.", [input.metadata.repository])
 		sugg := "Please make sure there are some packages in the GitHub Repository."
 		msg := ""
-		alertStatus := "error"
 	}
-
+	
 	default_pkg_list = []
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
 		pkg_list = [pkg.name | pkg := response.body.sbom.packages[_]
 								pkg.name != response.body.sbom.name
 								not startswith(pkg.name, "actions:")]
-
+	
 		count(pkg_list) == 0
-		not policy_name in exception_list
 		msg := sprintf("The GitHub repository %v/%v lacks the necessary configuration files for package managers.", [input.metadata.owner, input.metadata.repository])
 		sugg := sprintf("Adhere to the company policy and consider adding the necessary package manager configuration files to the GitHub repository %v/%v.", [input.metadata.owner, input.metadata.repository])
 		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		pkg_list = [pkg.name | pkg := response.body.sbom.packages[_]
-								pkg.name != response.body.sbom.name
-								not startswith(pkg.name, "actions:")]
-
-		count(pkg_list) == 0
-		policy_name in exception_list
-		msg := sprintf("The GitHub repository %v/%v lacks the necessary configuration files for package managers.", [input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Adhere to the company policy and consider adding the necessary package manager configuration files to the GitHub repository %v/%v.", [input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "exception"
 	}`,
 
 	271: `
 	package opsmx
-	import future.keywords.in
+
 	import data.strings
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
+	
 	body := {
 		"image": input.metadata.image,
 		"imageTag": input.metadata.image_tag,
-		"username": input.metadata.ssd_secret.imageCreds.username,
-		"password": input.metadata.ssd_secret.imageCreds.password
+		"username": input.metadata.ssd_secret.docker_registry.user,
+		"password": input.metadata.ssd_secret.docker_registry.password
 	}
-
+	
 	request_url = concat("",[input.metadata.toolchain_addr, "/api", "/v1", "/artifactSign"])
-
+	
 	request = {
 		"method": "POST",
 		"url": request_url,
 		"body": body
 	}
-
+	
 	response = http.send(request) 
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
 		response.body.code == 500
-		not policy_name in exception_list
 		msg = sprintf("Artifact %v:%v is not a signed artifact. Kindly verify authenticity of the artifact and its source.",[input.metadata.image, input.metadata.image_tag])
-		sugg := "Kindly use only trusted artifacts in critical environments. To validate trust, the signature must be associated with the artifact."
+		sugg := ""
 		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		response.body.code == 500
-		policy_name in exception_list
-		msg = sprintf("Artifact %v:%v is not a signed artifact. Kindly verify authenticity of the artifact and its source.",[input.metadata.image, input.metadata.image_tag])
-		sugg := "Kindly use only trusted artifacts in critical environments. To validate trust, the signature must be associated with the artifact."
-		error := ""
-		alertStatus := "exception"
 	}`,
 
 	272: `
 	package opsmx
 
-	import future.keywords.in
 	import data.strings
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
 	default signed_imge_sha = ""
-
+	
 	body := {
 		"image": input.metadata.image,
 			"imageTag": input.metadata.image_tag,
-			"username": input.metadata.ssd_secret.imageCreds.username,
-			"password": input.metadata.ssd_secret.imageCreds.password
+			"username": input.metadata.ssd_secret.docker_registry.user,
+			"password": input.metadata.ssd_secret.docker_registry.password
 	}
-
+	
 	request_url = concat("",[input.metadata.toolchain_addr, "/api", "/v1", "/artifactSign"])
-
+	
 	request = {
 		"method": "POST",
 		"url": request_url,
 		"body": body
 	}
-
+	
 	response = http.send(request) 
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
 		response.body.code == 500
-		not policy_name in exception_list
 		msg = sprintf("Artifact %v:%v is not a signed artifact. Kindly verify authenticity of the artifact and its source.",[input.metadata.image, input.metadata.image_tag])
 		sugg := ""
-		error := "Kindly use only trusted artifacts in critical environments. To validate trust, the signature of deployed artifact must be associated."
-		alertStatus := "active"
+		error := ""
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		response.body.code == 500
-		policy_name in exception_list
-		msg = sprintf("Artifact %v:%v is not a signed artifact. Kindly verify authenticity of the artifact and its source.",[input.metadata.image, input.metadata.image_tag])
-		sugg := ""
-		error := "Kindly use only trusted artifacts in critical environments. To validate trust, the signature of deployed artifact must be associated."
-		alertStatus := "exception"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
 		response.status_code == 200
 		signed_image_sha = response.body.imageSha
 		signed_image_sha != input.metadata.image_sha
-		not policy_name in exception_list
 		msg := "Artifact SHA deployed in Cloud does not match with Signed Artifact SHA."
-		sugg :="Kindly use only trusted artifacts in critical environments. To validate trust, the signature of deployed artifact must be associated."
+		sugg :="Kindly check the artifact deployed in cloud."
 		error := ""
-		alertStatus := ""
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		response.status_code == 200
-		signed_image_sha = response.body.imageSha
-		signed_image_sha != input.metadata.image_sha
-		policy_name in exception_list
-		msg := "Artifact SHA deployed in Cloud does not match with Signed Artifact SHA."
-		sugg :="Kindly use only trusted artifacts in critical environments. To validate trust, the signature of deployed artifact must be associated."
-		error := ""
-		alertStatus := "exception"
 	}`,
 
 	273: `sample script`,
 
 	274: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	default secrets_count = 0
-
+	
 	request_url = concat("",[input.metadata.toolchain_addr,"api/", "v1/", "scanResult?fileName="])
-	filename_components = [input.metadata.owner, input.metadata.repository, input.metadata.build_id, "codeScanResult.json"]
-	filename = concat("_", filename_components)
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
-	complete_url = concat("", [request_url, filename, "&scanOperation=codeSecretScan"])
-
-	request = {
-			"method": "GET",
-			"url": complete_url
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codeScanResult.json"]) {
+		input.metadata.source_code_path == ""
 	}
 
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_codeScanResult.json"]) {
+		input.metadata.source_code_path != ""
+	}
+		
+	complete_url = concat("", [request_url, file_name, "&scanOperation=codeSecretScan"])
+	
+	request = {
+		"method": "GET",
+		"url": complete_url
+	}
+	
 	response = http.send(request)
-
+	
 	high_severity_secrets = [response.body.Results[0].Secrets[i].Title | response.body.Results[0].Secrets[i].Severity == "HIGH"]
 	secrets_count = count(high_severity_secrets)
-
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		secrets_count > 0
-		some i in high_severity_secrets
-		not i in exception_list
-		title := sprintf("High Severity Secret detected in code: %v", [i])
-		msg := sprintf("Secret found for %v/%v code repository in branch %v.\nSecret identified:\n %s", [input.metadata.owner, input.metadata.repository, input.metadata.branch, i])
-		sugg := "Eliminate the aforementioned sensitive information to safeguard confidential data."
-		error := ""
-		alertStatus := "active"
-	}
-
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": exception_cause, "alertStatus": alertStatus}]{
-		secrets_count > 0
-		some i in high_severity_secrets
-		i in exception_list
-		title := sprintf("High Severity Secret detected in code: %v", [i])
-		msg := sprintf("Secret found for %v/%v code repository in branch %v.\nSecret identified:\n %s", [input.metadata.owner, input.metadata.repository, input.metadata.branch, i])
-		sugg := "Eliminate the aforementioned sensitive information to safeguard confidential data."
-		error := ""
-		alertStatus := "exception"
-		exception_cause := i
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  secrets_count > 0
+	
+	  msg := sprintf("Secret found for %v/%v Github repository for branch %v.\nBelow are the secrets identified:\n %s", [input.metadata.owner, input.metadata.repository, input.metadata.branch, concat(",\n", high_severity_secrets)])
+	  sugg := "Eliminate the aforementioned sensitive information to safeguard confidential data."
+	  error := ""
 	}`,
 
 	275: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	default secrets_count = 0
-
+	
 	request_url = concat("",[input.metadata.toolchain_addr,"api/", "v1/", "scanResult?fileName="])
-	filename_components = [input.metadata.owner, input.metadata.repository, input.metadata.build_id, "codeScanResult.json"]
-	filename = concat("_", filename_components)
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
-	complete_url = concat("", [request_url, filename, "&scanOperation=codeSecretScan"])
-
-	request = {
-			"method": "GET",
-			"url": complete_url
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codeScanResult.json"]) {
+		input.metadata.source_code_path == ""
 	}
 
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_codeScanResult.json"]) {
+		input.metadata.source_code_path != ""
+	}
+		
+	complete_url = concat("", [request_url, file_name, "&scanOperation=codeSecretScan"])
+		
+	request = {
+		"method": "GET",
+		"url": complete_url
+	}
+	
 	response = http.send(request)
-
+	
 	critical_severity_secrets = [response.body.Results[0].Secrets[i].Title | response.body.Results[0].Secrets[i].Severity == "CRITICAL"]
 	secrets_count = count(critical_severity_secrets)
-
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		secrets_count > 0
-		some i in critical_severity_secrets
-		not i in exception_list
-		title := sprintf("Critical Secret detected in code: %v", [i])
-		msg := sprintf("Secret found for %v/%v code repository in branch %v.\nSecret identified:\n %s", [input.metadata.owner, input.metadata.repository, input.metadata.branch, i])
-		sugg := "Eliminate the aforementioned sensitive information to safeguard confidential data."
-		error := ""
-		alertStatus := "active"
-	}
-
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": exception_cause, "alertStatus": alertStatus}]{
-		secrets_count > 0
-		some i in critical_severity_secrets
-		i in exception_list
-		title := sprintf("Critical Secret detected in code: %v", [i])
-		msg := sprintf("Secret found for %v/%v code repository in branch %v.\nSecret identified:\n %s", [input.metadata.owner, input.metadata.repository, input.metadata.branch, i])
-		sugg := "Eliminate the aforementioned sensitive information to safeguard confidential data."
-		error := ""
-		alertStatus := "exception"
-		exception_cause := i
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  secrets_count > 0
+	
+	  msg := sprintf("Secret found for %v/%v Github repository for branch %v.\nBelow are the secrets identified:\n %s", [input.metadata.owner, input.metadata.repository, input.metadata.branch, concat(",\n", critical_severity_secrets)])
+	  sugg := "Eliminate the aforementioned sensitive information to safeguard confidential data."
+	  error := ""
 	}`,
 
 	276: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	default secrets_count = 0
-
+	
 	request_url = concat("",[input.metadata.toolchain_addr,"api/", "v1/", "scanResult?fileName="])
-	filename_components = [input.metadata.owner, input.metadata.repository, input.metadata.build_id, "codeScanResult.json"]
-	filename = concat("_", filename_components)
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
-	complete_url = concat("", [request_url, filename, "&scanOperation=codeSecretScan"])
-
-	request = {
-			"method": "GET",
-			"url": complete_url
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codeScanResult.json"]) {
+		input.metadata.source_code_path == ""
 	}
 
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_codeScanResult.json"]) {
+		input.metadata.source_code_path != ""
+	}
+		
+	complete_url = concat("", [request_url, file_name, "&scanOperation=codeSecretScan"])
+	
+	request = {
+		"method": "GET",
+		"url": complete_url
+	}
+	
 	response = http.send(request)
-
+	
 	medium_severity_secrets = [response.body.Results[0].Secrets[i].Title | response.body.Results[0].Secrets[i].Severity == "MEDIUM"]
 	secrets_count = count(medium_severity_secrets)
-
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		secrets_count > 0
-		some i in medium_severity_secrets
-		not i in exception_list
-		title := sprintf("Medium Severity Secret detected in code: %v", [i])
-		msg := sprintf("Secret found for %v/%v code repository in branch %v.\nSecret identified:\n %s", [input.metadata.owner, input.metadata.repository, input.metadata.branch, i])
-		sugg := "Eliminate the aforementioned sensitive information to safeguard confidential data."
-		error := ""
-		alertStatus := "active"
-	}
-
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": exception_cause, "alertStatus": alertStatus}]{
-		secrets_count > 0
-		some i in medium_severity_secrets
-		i in exception_list
-		title := sprintf("Medium Severity Secret detected in code: %v", [i])
-		msg := sprintf("Secret found for %v/%v code repository in branch %v.\nSecret identified:\n %s", [input.metadata.owner, input.metadata.repository, input.metadata.branch, i])
-		sugg := "Eliminate the aforementioned sensitive information to safeguard confidential data."
-		error := ""
-		alertStatus := "exception"
-		exception_cause := i
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  secrets_count > 0
+	
+	  msg := sprintf("Secret found for %v/%v Github repository for branch %v.\nBelow are the secrets identified:\n %s", [input.metadata.owner, input.metadata.repository, input.metadata.branch, concat(",\n", medium_severity_secrets)])
+	  sugg := "Eliminate the aforementioned sensitive information to safeguard confidential data."
+	  error := ""
 	}`,
 
 	277: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	default secrets_count = 0
-
+	
 	request_url = concat("",[input.metadata.toolchain_addr,"api/", "v1/", "scanResult?fileName="])
-	filename_components = [input.metadata.owner, input.metadata.repository, input.metadata.build_id, "codeScanResult.json"]
-	filename = concat("_", filename_components)
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
-	complete_url = concat("", [request_url, filename, "&scanOperation=codeSecretScan"])
-
-	request = {
-			"method": "GET",
-			"url": complete_url
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codeScanResult.json"]) {
+		input.metadata.source_code_path == ""
 	}
 
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_codeScanResult.json"]) {
+		input.metadata.source_code_path != ""
+	}
+		
+	complete_url = concat("", [request_url, file_name, "&scanOperation=codeSecretScan"])
+	
+	request = {
+		"method": "GET",
+		"url": complete_url
+	}
+	
 	response = http.send(request)
-
+	
 	low_severity_secrets = [response.body.Results[0].Secrets[i].Title | response.body.Results[0].Secrets[i].Severity == "LOW"]
 	secrets_count = count(low_severity_secrets)
-
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		secrets_count > 0
-		some i in low_severity_secrets
-		not i in exception_list
-		title := sprintf("Low Severity Secret detected in code: %v", [i])
-		msg := sprintf("Secret found for %v/%v code repository in branch %v.\nSecret identified:\n %s", [input.metadata.owner, input.metadata.repository, input.metadata.branch, i])
-		sugg := "Eliminate the aforementioned sensitive information to safeguard confidential data."
-		error := ""
-		alertStatus := "active"
-	}
-
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": exception_cause, "alertStatus": alertStatus}]{
-		secrets_count > 0
-		some i in low_severity_secrets
-		i in exception_list
-		title := sprintf("Low Severity Secret detected in code: %v", [i])
-		msg := sprintf("Secret found for %v/%v code repository in branch %v.\nSecret identified:\n %s", [input.metadata.owner, input.metadata.repository, input.metadata.branch, i])
-		sugg := "Eliminate the aforementioned sensitive information to safeguard confidential data."
-		error := ""
-		alertStatus := "exception"
-		exception_cause := i
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  secrets_count > 0
+	
+	  msg := sprintf("Secret found for %v/%v Github repository for branch %v.\nBelow are the secrets identified:\n %s", [input.metadata.owner, input.metadata.repository, input.metadata.branch, concat(",\n", low_severity_secrets)])
+	  sugg := "Eliminate the aforementioned sensitive information to safeguard confidential data."
+	  error := ""
 	}`,
 
 	278: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	default secrets_count = 0
-
+	
 	default image_name = ""
-
+	
 	image_name = input.metadata.image {
 		not contains(input.metadata.image,"/")
 	}
 	image_name = split(input.metadata.image,"/")[1] {
 		contains(input.metadata.image,"/")
 	}
-
+	
 	request_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName="])
-	image_sha = replace(input.metadata.image_sha, ":", "-")
+    image_sha = replace(input.metadata.image_sha, ":", "-")
 	filename_components = [image_sha, "imageSecretScanResult.json"]
 	filename = concat("-", filename_components)
-
+	
 	complete_url = concat("", [request_url, filename, "&scanOperation=imageSecretScan"])
-
+	
 	request = {
 		"method": "GET",
 		"url": complete_url
 	}
-
+	
 	response = http.send(request)
 
-	high_severity_secrets = [response.body.Results[0].Secrets[i].Title | response.body.Results[0].Secrets[i].Severity == "HIGH"]
+        high_severity_secrets = [response.body.Results[0].Secrets[i].Title | response.body.Results[0].Secrets[i].Severity == "HIGH"]
 	secrets_count = count(high_severity_secrets)
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		secrets_count > 0
-		some i in high_severity_secrets
-		not i in exception_list
-		title := sprintf("High Severity Secret detected in container: %v", [i])
-		msg := sprintf("Secret found for Container %v:%v.\nSecret identified:\n %v", [image_name, input.metadata.image_tag, i])
-		sugg := "Eliminate the aforementioned sensitive information to safeguard confidential data."
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": exception_cause, "alertStatus": alertStatus}]{
-		secrets_count > 0
-		some i in high_severity_secrets
-		i in exception_list
-		title := sprintf("High Severity Secret detected in container: %v", [i])
-		msg := sprintf("Secret found for Container %v:%v.\nSecret identified:\n %v", [image_name, input.metadata.image_tag, i])
-		sugg := "Eliminate the aforementioned sensitive information to safeguard confidential data."
-		error := ""
-		exception_cause := i
-		alertStatus := "exception"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  secrets_count > 0
+	
+	  msg := sprintf("Secret found for Artifact %v:%v.\nBelow are the secrets identified:\n %v", [image_name, input.metadata.image_tag, concat(",\n", high_severity_secrets)])
+	  sugg := "Eliminate the aforementioned sensitive information to safeguard confidential data."
+	  error := ""
 	}`,
 
 	279: `
 	package opsmx
-	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 	default secrets_count = 0
-
+	
 	default image_name = ""
-
+	
 	image_name = input.metadata.image {
 		not contains(input.metadata.image,"/")
 	}
 	image_name = split(input.metadata.image,"/")[1] {
 		contains(input.metadata.image,"/")
 	}
-
+	
 	request_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName="])
-	image_sha = replace(input.metadata.image_sha, ":", "-")
+    image_sha = replace(input.metadata.image_sha, ":", "-")
 	filename_components = [image_sha, "imageSecretScanResult.json"]
 	filename = concat("-", filename_components)
-
+	
 	complete_url = concat("", [request_url, filename, "&scanOperation=imageSecretScan"])
-
+	
 	request = {
 		"method": "GET",
 		"url": complete_url
 	}
-
+	
 	response = http.send(request)
 
-	critical_severity_secrets = [response.body.Results[0].Secrets[i].Title | response.body.Results[0].Secrets[i].Severity == "CRITICAL"]
+        critical_severity_secrets = [response.body.Results[0].Secrets[i].Title | response.body.Results[0].Secrets[i].Severity == "CRITICAL"]
 	secrets_count = count(critical_severity_secrets)
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		secrets_count > 0
-		some i in critical_severity_secrets
-		not i in exception_list
-		title := sprintf("Critical Severity Secret detected in container: %v", [i])
-		msg := sprintf("Secret found for Container %v:%v.\nSecret identified:\n %v", [image_name, input.metadata.image_tag, i])
-		sugg := "Eliminate the aforementioned sensitive information to safeguard confidential data."
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": exception_cause, "alertStatus": alertStatus}]{
-		secrets_count > 0
-		some i in critical_severity_secrets
-		i in exception_list
-		title := sprintf("Critical Severity Secret detected in container: %v", [i])
-		msg := sprintf("Secret found for Container %v:%v.\nSecret identified:\n %v", [image_name, input.metadata.image_tag, i])
-		sugg := "Eliminate the aforementioned sensitive information to safeguard confidential data."
-		error := ""
-		exception_cause := i
-		alertStatus := "exception"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  secrets_count > 0
+	
+	  msg := sprintf("Secret found for Artifact %v:%v.\nBelow are the secrets identified:\n %v", [image_name, input.metadata.image_tag, concat(",\n", critical_severity_secrets)])
+	  sugg := "Eliminate the aforementioned sensitive information to safeguard confidential data."
+	  error := ""
 	}`,
 
 	280: `
 	package opsmx
-	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 	default secrets_count = 0
-
+	
 	default image_name = ""
-
+	
 	image_name = input.metadata.image {
 		not contains(input.metadata.image,"/")
 	}
 	image_name = split(input.metadata.image,"/")[1] {
 		contains(input.metadata.image,"/")
 	}
-
+	
 	request_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName="])
-	image_sha = replace(input.metadata.image_sha, ":", "-")
+    image_sha = replace(input.metadata.image_sha, ":", "-")
 	filename_components = [image_sha, "imageSecretScanResult.json"]
 	filename = concat("-", filename_components)
-
+	
 	complete_url = concat("", [request_url, filename, "&scanOperation=imageSecretScan"])
-
+	
 	request = {
 		"method": "GET",
 		"url": complete_url
 	}
-
+	
 	response = http.send(request)
 
-	medium_severity_secrets = [response.body.Results[0].Secrets[i].Title | response.body.Results[0].Secrets[i].Severity == "MEDIUM"]
+        medium_severity_secrets = [response.body.Results[0].Secrets[i].Title | response.body.Results[0].Secrets[i].Severity == "MEDIUM"]
 	secrets_count = count(medium_severity_secrets)
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		secrets_count > 0
-		some i in medium_severity_secrets
-		not i in exception_list
-		title := sprintf("Medium Severity Secret detected in container: %v", [i])
-		msg := sprintf("Secret found for Container %v:%v.\nSecret identified:\n %v", [image_name, input.metadata.image_tag, i])
-		sugg := "Eliminate the aforementioned sensitive information to safeguard confidential data."
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": exception_cause, "alertStatus": alertStatus}]{
-		secrets_count > 0
-		some i in medium_severity_secrets
-		i in exception_list
-		title := sprintf("Medium Severity Secret detected in container: %v", [i])
-		msg := sprintf("Secret found for Container %v:%v.\nSecret identified:\n %v", [image_name, input.metadata.image_tag, i])
-		sugg := "Eliminate the aforementioned sensitive information to safeguard confidential data."
-		error := ""
-		exception_cause := i
-		alertStatus := "exception"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  secrets_count > 0
+	
+	  msg := sprintf("Secret found for Artifact %v:%v.\nBelow are the secrets identified:\n %v", [image_name, input.metadata.image_tag, concat(",\n", medium_severity_secrets)])
+	  sugg := "Eliminate the aforementioned sensitive information to safeguard confidential data."
+	  error := ""
 	}`,
 
 	281: `
 	package opsmx
-	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 	default secrets_count = 0
-
+	
 	default image_name = ""
-
+	
 	image_name = input.metadata.image {
 		not contains(input.metadata.image,"/")
 	}
 	image_name = split(input.metadata.image,"/")[1] {
 		contains(input.metadata.image,"/")
 	}
-
+	
 	request_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName="])
-	image_sha = replace(input.metadata.image_sha, ":", "-")
+    image_sha = replace(input.metadata.image_sha, ":", "-")
 	filename_components = [image_sha, "imageSecretScanResult.json"]
 	filename = concat("-", filename_components)
-
+	
 	complete_url = concat("", [request_url, filename, "&scanOperation=imageSecretScan"])
-
+	
 	request = {
 		"method": "GET",
 		"url": complete_url
 	}
-
+	
 	response = http.send(request)
 
-	low_severity_secrets = [response.body.Results[0].Secrets[i].Title | response.body.Results[0].Secrets[i].Severity == "LOW"]
+        low_severity_secrets = [response.body.Results[0].Secrets[i].Title | response.body.Results[0].Secrets[i].Severity == "LOW"]
 	secrets_count = count(low_severity_secrets)
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		secrets_count > 0
-		some i in low_severity_secrets
-		not i in exception_list
-		title := sprintf("Low Severity Secret detected in container: %v", [i])
-		msg := sprintf("Secret found for Container %v:%v.\nSecret identified:\n %v", [image_name, input.metadata.image_tag, i])
-		sugg := "Eliminate the aforementioned sensitive information to safeguard confidential data."
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": exception_cause, "alertStatus": alertStatus}]{
-		secrets_count > 0
-		some i in low_severity_secrets
-		i in exception_list
-		title := sprintf("Low Severity Secret detected in container: %v", [i])
-		msg := sprintf("Secret found for Container %v:%v.\nSecret identified:\n %v", [image_name, input.metadata.image_tag, i])
-		sugg := "Eliminate the aforementioned sensitive information to safeguard confidential data."
-		error := ""
-		exception_cause := i
-		alertStatus := "exception"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  secrets_count > 0
+	
+	  msg := sprintf("Secret found for Artifact %v:%v.\nBelow are the secrets identified:\n %v", [image_name, input.metadata.image_tag, concat(",\n", low_severity_secrets)])
+	  sugg := "Eliminate the aforementioned sensitive information to safeguard confidential data."
+	  error := ""
 	}`,
 
 	282: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
 	default high_severities = []
-
+	
 	default multi_alert = false
 	default exists_alert = false
-
+	
 	exists_alert = check_if_high_alert_exists
 	multi_alert = check_if_multi_alert
-
+	
 	check_if_high_alert_exists = exists_flag {
-		high_severities_counter = count(input.metadata.results[0].HighSeverity)
-		high_severities_counter > 0
-		exists_flag = true
+	  high_severities_counter = count(input.metadata.results[0].HighSeverity)
+	  high_severities_counter > 0
+	  exists_flag = true
 	}
-
+	
 	check_if_multi_alert() = multi_flag {
-		high_severities_counter = count(input.metadata.results[0].HighSeverity)
-		high_severities_counter > 1
-		multi_flag = true
+	  high_severities_counter = count(input.metadata.results[0].HighSeverity)
+	  high_severities_counter > 1
+	  multi_flag = true
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		check_if_high_alert_exists
-		check_if_multi_alert
-		
-		some i
-		rule = input.metadata.results[0].HighSeverity[i].RuleID
-		title = input.metadata.results[0].HighSeverity[i].Title
-		targets = concat(",\n", input.metadata.results[0].HighSeverity[i].TargetResources)
-		resolution = input.metadata.results[0].HighSeverity[i].Resolution
-		not policy_name in exception_list
-		msg := sprintf("Rule ID: %v,\nTitle: %v. \nBelow are the sources of High severity:\n %v", [rule, title, targets])
-		sugg := resolution
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		check_if_high_alert_exists
-		check_if_multi_alert
-		
-		some i
-		rule = input.metadata.results[0].HighSeverity[i].RuleID
-		title = input.metadata.results[0].HighSeverity[i].Title
-		targets = concat(",\n", input.metadata.results[0].HighSeverity[i].TargetResources)
-		resolution = input.metadata.results[0].HighSeverity[i].Resolution
-		policy_name in exception_list
-		msg := sprintf("Rule ID: %v,\nTitle: %v. \nBelow are the sources of High severity:\n %v", [rule, title, targets])
-		sugg := resolution
-		error := ""
-		alertStatus := exception
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error }]{
+	  check_if_high_alert_exists
+	  check_if_multi_alert
+	  
+	  some i
+	  rule = input.metadata.results[0].HighSeverity[i].RuleID
+	  title = input.metadata.results[0].HighSeverity[i].Title
+	  targets = concat(",\n", input.metadata.results[0].HighSeverity[i].TargetResources)
+	  resolution = input.metadata.results[0].HighSeverity[i].Resolution
+	  msg := sprintf("Rule ID: %v,\nTitle: %v. \nBelow are the sources of High severity:\n %v", [rule, title, targets])
+	  sugg := resolution
+	  error := ""
 	}`,
 
 	283: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
 	default critical_severities = []
-
+	
 	default multi_alert = false
 	default exists_alert = false
-
+	
 	exists_alert = check_if_critical_alert_exists
 	multi_alert = check_if_multi_alert
-
+	
 	check_if_critical_alert_exists = exists_flag {
-		critical_severities_counter = count(input.metadata.results[0].CriticalSeverity)
-		critical_severities_counter > 0
-		exists_flag = true
+	  critical_severities_counter = count(input.metadata.results[0].CriticalSeverity)
+	  critical_severities_counter > 0
+	  exists_flag = true
 	}
-
+	
 	check_if_multi_alert() = multi_flag {
-		critical_severities_counter = count(input.metadata.results[0].CriticalSeverity)
-		critical_severities_counter > 1
-		multi_flag = true
+	  critical_severities_counter = count(input.metadata.results[0].CriticalSeverity)
+	  critical_severities_counter > 1
+	  multi_flag = true
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		check_if_critical_alert_exists
-		check_if_multi_alert
-		
-		some i
-		rule = input.metadata.results[0].CriticalSeverity[i].RuleID
-		title = input.metadata.results[0].CriticalSeverity[i].Title
-		targets = concat(",\n", input.metadata.results[0].CriticalSeverity[i].TargetResources)
-		resolution = input.metadata.results[0].CriticalSeverity[i].Resolution
-		not policy_name in exception_list
-		msg := sprintf("Rule ID: %v,\nTitle: %v. \nBelow are the sources of Critical severity:\n %v", [rule, title, targets])
-		sugg := resolution
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		check_if_critical_alert_exists
-		check_if_multi_alert
-		
-		some i
-		rule = input.metadata.results[0].CriticalSeverity[i].RuleID
-		title = input.metadata.results[0].CriticalSeverity[i].Title
-		targets = concat(",\n", input.metadata.results[0].CriticalSeverity[i].TargetResources)
-		resolution = input.metadata.results[0].CriticalSeverity[i].Resolution
-		policy_name in exception_list
-		msg := sprintf("Rule ID: %v,\nTitle: %v. \nBelow are the sources of Critical severity:\n %v", [rule, title, targets])
-		sugg := resolution
-		error := ""
-		alertStatus := exception
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error }]{
+	  check_if_critical_alert_exists
+	  check_if_multi_alert
+	  
+	  some i
+	  rule = input.metadata.results[0].CriticalSeverity[i].RuleID
+	  title = input.metadata.results[0].CriticalSeverity[i].Title
+	  targets = concat(",\n", input.metadata.results[0].CriticalSeverity[i].TargetResources)
+	  resolution = input.metadata.results[0].CriticalSeverity[i].Resolution
+	  msg := sprintf("Rule ID: %v,\nTitle: %v. \nBelow are the sources of critical severity:\n %v", [rule, title, targets])
+	  sugg := resolution
+	  error := ""
 	}`,
 
 	284: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
 	default medium_severities = []
-
+	
 	default multi_alert = false
 	default exists_alert = false
-
+	
 	exists_alert = check_if_medium_alert_exists
 	multi_alert = check_if_multi_alert
-
+	
 	check_if_medium_alert_exists = exists_flag {
-		medium_severities_counter = count(input.metadata.results[0].MediumSeverity)
-		medium_severities_counter > 0
-		exists_flag = true
+	  medium_severities_counter = count(input.metadata.results[0].MediumSeverity)
+	  medium_severities_counter > 0
+	  exists_flag = true
 	}
-
+	
 	check_if_multi_alert() = multi_flag {
-		medium_severities_counter = count(input.metadata.results[0].MediumSeverity)
-		medium_severities_counter > 1
-		multi_flag = true
+	  medium_severities_counter = count(input.metadata.results[0].MediumSeverity)
+	  medium_severities_counter > 1
+	  multi_flag = true
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		check_if_medium_alert_exists
-		check_if_multi_alert
-		
-		some i
-		rule = input.metadata.results[0].MediumSeverity[i].RuleID
-		title = input.metadata.results[0].MediumSeverity[i].Title
-		targets = concat(",\n", input.metadata.results[0].MediumSeverity[i].TargetResources)
-		resolution = input.metadata.results[0].MediumSeverity[i].Resolution
-		not policy_name in exception_list
-		msg := sprintf("Rule ID: %v,\nTitle: %v. \nBelow are the sources of Medium severity:\n %v", [rule, title, targets])
-		sugg := resolution
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		check_if_medium_alert_exists
-		check_if_multi_alert
-		
-		some i
-		rule = input.metadata.results[0].MediumSeverity[i].RuleID
-		title = input.metadata.results[0].MediumSeverity[i].Title
-		targets = concat(",\n", input.metadata.results[0].MediumSeverity[i].TargetResources)
-		resolution = input.metadata.results[0].MediumSeverity[i].Resolution
-		policy_name in exception_list
-		msg := sprintf("Rule ID: %v,\nTitle: %v. \nBelow are the sources of Medium severity:\n %v", [rule, title, targets])
-		sugg := resolution
-		error := ""
-		alertStatus := exception
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error }]{
+	  check_if_medium_alert_exists
+	  check_if_multi_alert
+	  
+	  some i
+	  rule = input.metadata.results[0].MediumSeverity[i].RuleID
+	  title = input.metadata.results[0].MediumSeverity[i].Title
+	  targets = concat(",\n", input.metadata.results[0].MediumSeverity[i].TargetResources)
+	  resolution = input.metadata.results[0].MediumSeverity[i].Resolution
+	  msg := sprintf("Rule ID: %v,\nTitle: %v. \nBelow are the sources of medium severity:\n %v", [rule, title, targets])
+	  sugg := resolution
+	  error := ""
 	}`,
 
 	285: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
 	default low_severities = []
-
+	
 	default multi_alert = false
 	default exists_alert = false
-
+	
 	exists_alert = check_if_low_alert_exists
 	multi_alert = check_if_multi_alert
-
+	
 	check_if_low_alert_exists = exists_flag {
-		low_severities_counter = count(input.metadata.results[0].LowSeverity)
-		low_severities_counter > 0
-		exists_flag = true
+	  low_severities_counter = count(input.metadata.results[0].LowSeverity)
+	  low_severities_counter > 0
+	  exists_flag = true
 	}
-
+	
 	check_if_multi_alert() = multi_flag {
-		low_severities_counter = count(input.metadata.results[0].LowSeverity)
-		low_severities_counter > 1
-		multi_flag = true
+	  low_severities_counter = count(input.metadata.results[0].LowSeverity)
+	  low_severities_counter > 1
+	  multi_flag = true
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		check_if_low_alert_exists
-		check_if_multi_alert
-		
-		some i
-		rule = input.metadata.results[0].LowSeverity[i].RuleID
-		title = input.metadata.results[0].LowSeverity[i].Title
-		targets = concat(",\n", input.metadata.results[0].LowSeverity[i].TargetResources)
-		resolution = input.metadata.results[0].LowSeverity[i].Resolution
-		not policy_name in exception_list
-		msg := sprintf("Rule ID: %v,\nTitle: %v. \nBelow are the sources of Low severity:\n %v", [rule, title, targets])
-		sugg := resolution
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		check_if_low_alert_exists
-		check_if_multi_alert
-		
-		some i
-		rule = input.metadata.results[0].LowSeverity[i].RuleID
-		title = input.metadata.results[0].LowSeverity[i].Title
-		targets = concat(",\n", input.metadata.results[0].LowSeverity[i].TargetResources)
-		resolution = input.metadata.results[0].LowSeverity[i].Resolution
-		policy_name in exception_list
-		msg := sprintf("Rule ID: %v,\nTitle: %v. \nBelow are the sources of Low severity:\n %v", [rule, title, targets])
-		sugg := resolution
-		error := ""
-		alertStatus := exception
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error }]{
+	  check_if_low_alert_exists
+	  check_if_multi_alert
+	  
+	  some i
+	  rule = input.metadata.results[0].LowSeverity[i].RuleID
+	  title = input.metadata.results[0].LowSeverity[i].Title
+	  targets = concat(",\n", input.metadata.results[0].LowSeverity[i].TargetResources)
+	  resolution = input.metadata.results[0].LowSeverity[i].Resolution
+	  msg := sprintf("Rule ID: %v,\nTitle: %v. \nBelow are the sources of low severity:\n %v", [rule, title, targets])
+	  sugg := resolution
+	  error := ""
 	}`,
 
 	286: `
 	package opsmx
 	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-
+	
 	default allow = false
 	default private_repo = ""
 
@@ -6250,67 +8818,45 @@ var scriptMap = map[int]string{
 	response.status_code = 200
 	}
 
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 401
-		msg := ""
-		error := "Unauthorized to check repository configuration due to Bad Credentials."
-		sugg := "Kindly check the access token. It must have enough permissions to get repository configurations."
-		alertStatus := "error"
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	response.status_code == 401
+	msg := ""
+	error := "Unauthorized to check repository configuration due to Bad Credentials."
+	sugg := "Kindly check the access token. It must have enough permissions to get repository configurations."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 404
-		msg := ""
-		sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository configuration."
-		error := "Repository not found while trying to fetch Repository Configuration."
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	response.status_code == 404
+	msg := ""
+	sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository configuration."
+	error := "Repository not found while trying to fetch Repository Configuration."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := "Gitlab is not reachable."
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	response.status_code == 500
+	msg := "Internal Server Error."
+	sugg := ""
+	error := "Gitlab is not reachable."
 	}
 
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		codes = [401, 404, 500, 200, 302]
-		not response.status_code in codes
-		msg := ""
-		error := sprintf("Error %v receieved from Github upon trying to fetch Repository Configuration.", [response.body.message])
-		sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
-		alertStatus := "error"
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	codes = [401, 404, 500, 200, 302]
+	not response.status_code in codes
+	msg := ""
+	error := sprintf("Error %v receieved from Github upon trying to fetch Repository Configuration.", [response.body.message])
+	sugg := "Kindly check Github API is reachable and the provided access token has required permissions."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.body.visibility != "private"
-		not policy_name in exception_list
-		msg := sprintf("Gitlab Project %v is publically visible.", [input.metadata.repository])
-		sugg := "Kindly adhere to security standards and change the visibility of the repository to private."
-		error := ""
-		alertStatus := "error"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		response.body.visibility != "private"
-		policy_name in exception_list
-		msg := sprintf("Gitlab Project %v is publically visible.", [input.metadata.repository])
-		sugg := "Kindly adhere to security standards and change the visibility of the repository to private."
-		error := ""
-		alertStatus := "exception"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	response.body.visibility != "private"
+	msg := sprintf("Gitlab Project %v is publically visible.", [input.metadata.repository])
+	sugg := "Kindly adhere to security standards and change the visibility of the repository to private."
+	error := ""
 	}`,
 
 	287: `
 	package opsmx
 	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	default allow = false
 	default number_of_merges = 0
@@ -6332,37 +8878,33 @@ var scriptMap = map[int]string{
 
 	response = http.send(request)
 
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 401
-		msg := ""
-		error := "Unauthorized to check repository branch protection policy configuration due to Bad Credentials."
-		sugg := "Kindly check the access token. It must have enough permissions to get repository branch protection policy configurations."
-		alertStatus := "error"
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	response.status_code == 401
+	msg := ""
+	error := "Unauthorized to check repository branch protection policy configuration due to Bad Credentials."
+	sugg := "Kindly check the access token. It must have enough permissions to get repository branch protection policy configurations."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 404
-		msg := ""
-		sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository branch protection policy configuration."
-		error := "Mentioned branch for Repository not found while trying to fetch repository branch protection policy configuration."
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	response.status_code == 404
+	msg := ""
+	sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository branch protection policy configuration."
+	error := "Mentioned branch for Repository not found while trying to fetch repository branch protection policy configuration."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := "Gitlab is not reachable."
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	response.status_code == 500
+	msg := "Internal Server Error."
+	sugg := ""
+	error := "Gitlab is not reachable."
 	}
 
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		codes = [401, 404, 500, 200, 302]
-		not response.status_code in codes
-		msg := ""
-		error := sprintf("Error %v receieved from Gitlab upon trying to fetch Repository Configuration.", [response.body.message])
-		sugg := "Kindly check Gitlab API is reachable and the provided access token has required permissions."
-		alertStatus := "error"
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	codes = [401, 404, 500, 200, 302]
+	not response.status_code in codes
+	msg := ""
+	error := sprintf("Error %v receieved from Gitlab upon trying to fetch Repository Configuration.", [response.body.message])
+	sugg := "Kindly check Gitlab API is reachable and the provided access token has required permissions."
 	}
 
 	number_of_merges = count(response.body)
@@ -6370,70 +8912,30 @@ var scriptMap = map[int]string{
 	merges_reviewed_by_bots = [response.body[i].iid | contains(response.body[i].reviewers[j].username, "bot")]
 	merges_reviewed_by_author = [response.body[i].iid | response.body[i].reviewers[j].username == response.body[i].author.username]
 
-	deny[{"alertMsg": msg, "error": error, "suggestion": sugg, "exception": "", "alertStatus": alertStatus}]{
-		count(merges_reviewed_by_bots) > 0
-		not policy_name in exception_list
-		msg := sprintf("Merge Request with bot user as reviewer found. Merge Request ID: %v.",[merges_reviewed_by_bots])
-		sugg := "Adhere to security standards by restricting reviews by bot users."
-		error := ""
-		alertStatus := "active"
+	deny[{"alertMsg": msg, "error": error, "suggestion": sugg}]{
+	count(merges_reviewed_by_bots) > 0
+	msg := sprintf("Merge Request with bot user as reviewer found. Merge Request ID: %v.",[merges_reviewed_by_bots])
+	sugg := "Adhere to security standards by restricting reviews by bot users."
+	error := ""
 	}
 
-	deny[{"alertMsg": msg, "error": error, "suggestion": sugg, "exception": policy_name, "alertStatus": alertStatus}]{
-		count(merges_reviewed_by_bots) > 0
-		policy_name in exception_list
-		msg := sprintf("Merge Request with bot user as reviewer found. Merge Request ID: %v.",[merges_reviewed_by_bots])
-		sugg := "Adhere to security standards by restricting reviews by bot users."
-		error := ""
-		alertStatus := "exception"
+	deny[{"alertMsg": msg, "error": error, "suggestion": sugg}]{
+	count(merges_reviewed_by_author) > 0
+	msg := sprintf("Merge Request with Author as reviewer found. Merge Request ID: %v.",[merges_reviewed_by_author])
+	sugg := "Adhere to security standards by restricting reviews by authors."
+	error := ""
 	}
 
-	deny[{"alertMsg": msg, "error": error, "suggestion": sugg, "exception": "", "alertStatus": alertStatus}]{
-		count(merges_reviewed_by_author) > 0
-		not policy_name in exception_list
-		msg := sprintf("Merge Request with Author as reviewer found. Merge Request ID: %v.",[merges_reviewed_by_author])
-		sugg := "Adhere to security standards by restricting reviews by authors."
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "error": error, "suggestion": sugg, "exception": policy_name, "alertStatus": alertStatus}]{
-		count(merges_reviewed_by_author) > 0
-		policy_name in exception_list
-		msg := sprintf("Merge Request with Author as reviewer found. Merge Request ID: %v.",[merges_reviewed_by_author])
-		sugg := "Adhere to security standards by restricting reviews by authors."
-		error := ""
-		alertStatus := "exception"
-	}
-
-	deny[{"alertMsg": msg, "error": error, "suggestion": sugg, "exception": "", "alertStatus": alertStatus}]{
-		count(merges_unreviewed) > 0
-		not policy_name in exception_list
-		msg := sprintf("Unreviewed Merge Requests found to be merged. Merge Request ID: %v.",[merges_unreviewed])
-		sugg := "Adhere to security standards by restricting merges without reviews."
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "error": error, "suggestion": sugg, "exception": policy_name, "alertStatus": alertStatus}]{
-		count(merges_unreviewed) > 0
-		policy_name in exception_list
-		msg := sprintf("Unreviewed Merge Requests found to be merged. Merge Request ID: %v.",[merges_unreviewed])
-		sugg := "Adhere to security standards by restricting merges without reviews."
-		error := ""
-		alertStatus := "exception"
+	deny[{"alertMsg": msg, "error": error, "suggestion": sugg}]{
+	count(merges_unreviewed) > 0
+	msg := sprintf("Unreviewed Merge Requests found to be merged. Merge Request ID: %v.",[merges_unreviewed])
+	sugg := "Adhere to security standards by restricting merges without reviews."
+	error := ""
 	}`,
 
 	288: `
 	package opsmx
 	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	default allow = false
 
@@ -6455,71 +8957,47 @@ var scriptMap = map[int]string{
 	response.status_code = 200
 	}
 
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 401
-		msg := ""
-		error := "Unauthorized to check repository branch protection policy configuration due to Bad Credentials."
-		sugg := "Kindly check the access token. It must have enough permissions to get repository branch protection policy configurations."
-		alertStatus := "error"
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	response.status_code == 401
+	msg := ""
+	error := "Unauthorized to check repository branch protection policy configuration due to Bad Credentials."
+	sugg := "Kindly check the access token. It must have enough permissions to get repository branch protection policy configurations."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 404
-		msg := ""
-		sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository branch protection policy configuration."
-		error := "Mentioned branch for Repository not found while trying to fetch repository branch protection policy configuration."
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	response.status_code == 404
+	msg := ""
+	sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository branch protection policy configuration."
+	error := "Mentioned branch for Repository not found while trying to fetch repository branch protection policy configuration."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := "Gitlab is not reachable."
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	response.status_code == 500
+	msg := "Internal Server Error."
+	sugg := ""
+	error := "Gitlab is not reachable."
 	}
 
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		codes = [401, 404, 500, 200, 302]
-		not response.status_code in codes
-		msg := ""
-		error := sprintf("Error %v receieved from Gitlab upon trying to fetch Repository Configuration.", [response.body.message])
-		sugg := "Kindly check Gitlab API is reachable and the provided access token has required permissions."
-		alertStatus := "error"
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	codes = [401, 404, 500, 200, 302]
+	not response.status_code in codes
+	msg := ""
+	error := sprintf("Error %v receieved from Gitlab upon trying to fetch Repository Configuration.", [response.body.message])
+	sugg := "Kindly check Gitlab API is reachable and the provided access token has required permissions."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code in [200]
-		response.body.protected == false
-		not policy_name in exception_list
-		msg := sprintf("Branch %v of Gitlab repository %v is not protected by a branch protection policy.", [input.metadata.branch, input.metadata.repository])
-		sugg := sprintf("Adhere to the company policy by enforcing Branch Protection Policy for branches of %v Gitlab repository.",[input.metadata.repository])
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		response.status_code in [200]
-		response.body.protected == false
-		policy_name in exception_list
-		msg := sprintf("Branch %v of Gitlab repository %v is not protected by a branch protection policy.", [input.metadata.branch, input.metadata.repository])
-		sugg := sprintf("Adhere to the company policy by enforcing Branch Protection Policy for branches of %v Gitlab repository.",[input.metadata.repository])
-		error := ""
-		alertStatus := "exception"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	response.status_code in [200]
+	response.body.protected == false
+	msg := sprintf("Branch %v of Gitlab repository %v is not protected by a branch protection policy.", [input.metadata.branch, input.metadata.repository])
+	sugg := sprintf("Adhere to the company policy by enforcing Branch Protection Policy for branches of %v Gitlab repository.",[input.metadata.repository])
+	error := ""
 	}`,
 
 	289: `
 	package opsmx
 
 	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
 	request_url = concat("", [input.metadata.ssd_secret.gitlab.url,"api/v4/projects/", input.metadata.gitlab_project_id, "/members"])
 
 	token = input.metadata.ssd_secret.gitlab.token
@@ -6534,37 +9012,33 @@ var scriptMap = map[int]string{
 
 	response = http.send(request)
 
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 401
-		msg := ""
-		error := "Unauthorized to check repository members due to Bad Credentials."
-		sugg := "Kindly check the access token. It must have enough permissions to get repository members."
-		alertStatus := "error"
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	response.status_code == 401
+	msg := ""
+	error := "Unauthorized to check repository members due to Bad Credentials."
+	sugg := "Kindly check the access token. It must have enough permissions to get repository members."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 404
-		msg := ""
-		sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository members."
-		error := "Mentioned branch for Repository not found while trying to fetch repository members."
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	response.status_code == 404
+	msg := ""
+	sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository members."
+	error := "Mentioned branch for Repository not found while trying to fetch repository members."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := "Gitlab is not reachable."
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	response.status_code == 500
+	msg := "Internal Server Error."
+	sugg := ""
+	error := "Gitlab is not reachable."
 	}
 
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		codes = [401, 404, 500, 200, 302]
-		not response.status_code in codes
-		msg := ""
-		error := sprintf("Error %v receieved from Gitlab upon trying to fetch Repository Configuration.", [response.body.message])
-		sugg := "Kindly check Gitlab API is reachable and the provided access token has required permissions."
-		alertStatus := "error"
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	codes = [401, 404, 500, 200, 302]
+	not response.status_code in codes
+	msg := ""
+	error := sprintf("Error %v receieved from Gitlab upon trying to fetch Repository Configuration.", [response.body.message])
+	sugg := "Kindly check Gitlab API is reachable and the provided access token has required permissions."
 	}
 
 	default denial_list = false
@@ -6579,39 +9053,19 @@ var scriptMap = map[int]string{
 			regex.match(pattern, user)
 	}
 
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}] {
-		counter := count(denial_list)
-		counter > 0
-		not policy_name in exception_list
-		denial_list_str := concat(", ", denial_list)
-		msg := sprintf("Owner access of Gitlab Repository is granted to bot users. \n Number of bot users having owner access: %v. \n Name of bots having owner access: %v", [counter, denial_list_str])
-		sugg := sprintf("Adhere to the company policy and revoke access of bot user for %v/%v Repository.", [input.metadata.repository,input.metadata.owner])
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}] {
-		counter := count(denial_list)
-		counter > 0
-		policy_name in exception_list
-		denial_list_str := concat(", ", denial_list)
-		msg := sprintf("Owner access of Gitlab Repository is granted to bot users. \n Number of bot users having owner access: %v. \n Name of bots having owner access: %v", [counter, denial_list_str])
-		sugg := sprintf("Adhere to the company policy and revoke access of bot user for %v/%v Repository.", [input.metadata.repository,input.metadata.owner])
-		error := ""
-		alertStatus := "exception"
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}] {
+	counter := count(denial_list)
+	counter > 0
+	denial_list_str := concat(", ", denial_list)
+	msg := sprintf("Owner access of Gitlab Repository is granted to bot users. \n Number of bot users having owner access: %v. \n Name of bots having owner access: %v", [counter, denial_list_str])
+	sugg := sprintf("Adhere to the company policy and revoke access of bot user for %v/%v Repository.", [input.metadata.repository,input.metadata.owner])
+	error := ""
 	}`,
 
 	290: `
 	package opsmx
 	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
+	
 	default allow = false
 
 	request_url = concat("", [input.metadata.ssd_secret.gitlab.url,"api/v4/projects/", input.metadata.gitlab_project_id, "/repository/files/SECURITY.md?ref=", input.metadata.branch])
@@ -6628,60 +9082,39 @@ var scriptMap = map[int]string{
 
 	response = http.send(request)
 
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 401
-		msg := ""
-		error := "Unauthorized to check repository branch protection policy configuration due to Bad Credentials."
-		sugg := "Kindly check the access token. It must have enough permissions to get repository branch protection policy configurations."
-		alertStatus := "error"
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	response.status_code == 401
+	msg := ""
+	error := "Unauthorized to check repository branch protection policy configuration due to Bad Credentials."
+	sugg := "Kindly check the access token. It must have enough permissions to get repository branch protection policy configurations."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 404
-		not policy_name in exception_list
-		msg := sprintf("SECURITY.md file not found in branch %v of repository %v.", [input.metadata.branch, input.metadata.repository])
-		sugg := "Adhere to security standards and configure SECURITY.md file in the repository."
-		error := ""
-		alertStatus := "active"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	response.status_code == 404
+	msg := sprintf("SECURITY.md file not found in branch %v of repository %v.", [input.metadata.branch, input.metadata.repository])
+	sugg := "Adhere to security standards and configure SECURITY.md file in the repository."
+	error := ""
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		response.status_code == 404
-		policy_name in exception_list
-		msg := sprintf("SECURITY.md file not found in branch %v of repository %v.", [input.metadata.branch, input.metadata.repository])
-		sugg := "Adhere to security standards and configure SECURITY.md file in the repository."
-		error := ""
-		alertStatus := "exception"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	response.status_code == 500
+	msg := "Internal Server Error."
+	sugg := ""
+	error := "Gitlab is not reachable."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := "Gitlab is not reachable."
-		alertStatus := "error"
-	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		codes = [401, 404, 500, 200, 302]
-		not response.status_code in codes
-		msg := ""
-		error := sprintf("Error %v receieved from Gitlab upon trying to fetch Repository Configuration.", [response.body.message])
-		sugg := "Kindly check Gitlab API is reachable and the provided access token has required permissions."
-		alertStatus := "error"
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	codes = [401, 404, 500, 200, 302]
+	not response.status_code in codes
+	msg := ""
+	error := sprintf("Error %v receieved from Gitlab upon trying to fetch Repository Configuration.", [response.body.message])
+	sugg := "Kindly check Gitlab API is reachable and the provided access token has required permissions."
 	}`,
 
 	291: `
 	package opsmx
 	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
+	
 	default allow = false
 
 	request_components = [input.metadata.ssd_secret.gitlab.url,"api/v4/user"]
@@ -6704,69 +9137,47 @@ var scriptMap = map[int]string{
 	response.status_code = 200
 	}
 
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 401
-		msg := ""
-		error := "Unauthorized to check repository branch protection policy configuration due to Bad Credentials."
-		sugg := "Kindly check the access token. It must have enough permissions to get repository branch protection policy configurations."
-		alertStatus := "error"
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	response.status_code == 401
+	msg := ""
+	error := "Unauthorized to check repository branch protection policy configuration due to Bad Credentials."
+	sugg := "Kindly check the access token. It must have enough permissions to get repository branch protection policy configurations."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 404
-		msg := ""
-		sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository branch protection policy configuration."
-		error := "Mentioned branch for Repository not found while trying to fetch repository branch protection policy configuration."
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	response.status_code == 404
+	msg := ""
+	sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository branch protection policy configuration."
+	error := "Mentioned branch for Repository not found while trying to fetch repository branch protection policy configuration."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := "Gitlab is not reachable."
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	response.status_code == 500
+	msg := "Internal Server Error."
+	sugg := ""
+	error := "Gitlab is not reachable."
 	}
 
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		codes = [401, 404, 500, 200, 302]
-		not response.status_code in codes
-		msg := ""
-		error := sprintf("Error %v receieved from Gitlab upon trying to fetch Repository Configuration.", [response.body.message])
-		sugg := "Kindly check Gitlab API is reachable and the provided access token has required permissions."
-		alertStatus := "error"
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	codes = [401, 404, 500, 200, 302]
+	not response.status_code in codes
+	msg := ""
+	error := sprintf("Error %v receieved from Gitlab upon trying to fetch Repository Configuration.", [response.body.message])
+	sugg := "Kindly check Gitlab API is reachable and the provided access token has required permissions."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.body.two_factor_enabled == false
-		not policy_name in exception_list
-		msg := sprintf("Gitlab Organisation %v doesnt have the mfa enabled.", [input.metadata.owner])
-		sugg := sprintf("Adhere to the company policy by enabling 2FA for users of %s organisation.",[input.metadata.owner])
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		response.body.two_factor_enabled == false
-		policy_name in exception_list
-		msg := sprintf("Gitlab Organisation %v doesnt have the mfa enabled.", [input.metadata.owner])
-		sugg := sprintf("Adhere to the company policy by enabling 2FA for users of %s organisation.",[input.metadata.owner])
-		error := ""
-		alertStatus := "exception"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	response.body.two_factor_enabled == false
+	msg := sprintf("Gitlab Organisation %v doesnt have the mfa enabled.", [input.metadata.owner])
+	sugg := sprintf("Adhere to the company policy by enabling 2FA for users of %s organisation.",[input.metadata.owner])
+	error := ""
 	}`,
 
 	292: `
 	package opsmx
 	import future.keywords.in
-
+	
 	default allow = false
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	request_url = concat("", [input.metadata.ssd_secret.gitlab.url,"api/v4/projects/", input.metadata.gitlab_project_id, "/hooks"])
 
@@ -6782,95 +9193,77 @@ var scriptMap = map[int]string{
 
 	response = http.send(request)
 
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 401
-		msg := ""
-		error := "Unauthorized to check repository webhook configuration due to Bad Credentials."
-		sugg := "Kindly check the access token. It must have enough permissions to get webhook configurations."
-		alertStatus := "active"
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	response.status_code == 401
+	msg := ""
+	error := "Unauthorized to check repository webhook configuration due to Bad Credentials."
+	sugg := "Kindly check the access token. It must have enough permissions to get webhook configurations."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 404
-		msg := ""
-		sugg := "Kindly check if the repository provided is correct and the access token has rights to read webhook configuration."
-		error := "Mentioned branch for Repository not found while trying to fetch webhook configuration."
-		alertStatus := "active"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	response.status_code == 404
+	msg := ""
+	sugg := "Kindly check if the repository provided is correct and the access token has rights to read webhook configuration."
+	error := "Mentioned branch for Repository not found while trying to fetch webhook configuration."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := "Gitlab is not reachable."
-		alertStatus := "active"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	response.status_code == 500
+	msg := "Internal Server Error."
+	sugg := ""
+	error := "Gitlab is not reachable."
 	}
 
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		codes = [401, 404, 500, 200, 302]
-		not response.status_code in codes
-		msg := ""
-		error := sprintf("Error %v receieved from Gitlab upon trying to fetch Repository Configuration.", [response.body.message])
-		sugg := "Kindly check Gitlab API is reachable and the provided access token has required permissions."
-		alertStatus := "active"
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	codes = [401, 404, 500, 200, 302]
+	not response.status_code in codes
+	msg := ""
+	error := sprintf("Error %v receieved from Gitlab upon trying to fetch Repository Configuration.", [response.body.message])
+	sugg := "Kindly check Gitlab API is reachable and the provided access token has required permissions."
 	}
 
 	default ssl_disabled_hooks = []
 	ssl_disabled_hooks = [response.body[i].id | response.body[i].enable_ssl_verification == false]
 
-	deny[{"alertMsg": msg, "error": error, "suggestion": sugg, "exception": "", "alertStatus": alertStatus}]{
-		count(ssl_disabled_hooks) > 0
-		not policy_name in exception_list
-		msg := sprintf("Webhook SSL Check failed: SSL/TLS not enabled for %v/%v repository.", [input.metadata.owner,input.metadata.repository])
-		error := ""
-		sugg := sprintf("Adhere to the company policy by enabling the webhook ssl/tls for %v/%v repository.", [input.metadata.owner,input.metadata.repository])
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "error": error, "suggestion": sugg, "exception": policy_name, "alertStatus": alertStatus}]{
-		count(ssl_disabled_hooks) > 0
-		policy_name in exception_list
-		msg := sprintf("Webhook SSL Check failed: SSL/TLS not enabled for %v/%v repository.", [input.metadata.owner,input.metadata.repository])
-		error := ""
-		sugg := sprintf("Adhere to the company policy by enabling the webhook ssl/tls for %v/%v repository.", [input.metadata.owner,input.metadata.repository])
-		alertStatus := "exception"
+	deny[{"alertMsg": msg, "error": error, "suggestion": sugg}]{
+	count(ssl_disabled_hooks) > 0
+	msg := sprintf("Webhook SSL Check failed: SSL/TLS not enabled for %v/%v repository.", [input.metadata.owner,input.metadata.repository])
+	error := ""
+	sugg := sprintf("Adhere to the company policy by enabling the webhook ssl/tls for %v/%v repository.", [input.metadata.owner,input.metadata.repository])
 	}`,
+
+	293: ``,
+
+	294: ``,
 
 	295: `
 	package opsmx
 	import future.keywords.in
 
 	default allow = false
-	default private_repo = ""
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	request_components = [input.metadata.ssd_secret.bitbucket.url,"2.0/repositories", input.metadata.owner, input.metadata.repository]
 
 	request_url = concat("/",request_components)
 
 	headers = {
-		"Authorization": auth_header
+	  "Authorization": auth_header
 	}
 
 	auth_header = sprintf("Basic %s", [base64_encode(concat(":",[username,password]))]) {
-		input.metadata.ssd_secret.bitbucket.isBasicAuth
-		username = input.metadata.ssd_secret.bitbucket.user
-		password = input.metadata.ssd_secret.bitbucket.password
+  		input.metadata.ssd_secret.bitbucket.isBasicAuth
+  		username = input.metadata.ssd_secret.bitbucket.user
+  		password = input.metadata.ssd_secret.bitbucket.password
 	}
 
 	auth_header = sprintf("Bearer %s", [input.metadata.ssd_secret.bitbucket.token]) {
-		not input.metadata.ssd_secret.bitbucket.isBasicAuth
+  		not input.metadata.ssd_secret.bitbucket.isBasicAuth
 	}
 
 
 	# Helper function to base64 encode a string
 	base64_encode(s) = encoded {
-			encoded = base64.encode(s)
+    		encoded = base64.encode(s)
 	}
 
 	request = {
@@ -6881,56 +9274,44 @@ var scriptMap = map[int]string{
 
 	response = http.send(request)
 
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 401
-		msg := sprintf("Unauthorized to check repository configuration for repository %s/%s due to Bad Credentials.", [input.metadata.owner, input.metadata.repository])
-		error := sprintf("401 Unauthorized. Unauthorized to check repository configuration for repository %s/%s due to Bad Credentials.", [input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check the access token. It must have enough permissions to get repository configurations."
-		alertStatus := "error"
+	allow {
+	response.status_code = 200
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 404
-		msg := sprintf("Repository %s/%s not found while trying to fetch Repository Configuration.", [input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository configuration."
-		error := sprintf("Repository %s/%s not found while trying to fetch Repository Configuration.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "error"
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	response.status_code == 401
+	msg := "Unauthorized to check repository configuration due to Bad Credentials."
+	error := "401 Unauthorized."
+	sugg := "Kindly check the access token. It must have enough permissions to get repository configurations."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := sprintf("500 Internal Server Error. Received Error while checking repository configuration for repository %s/%s.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	response.status_code == 404
+	msg := "Repository not found while trying to fetch Repository Configuration."
+	sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository configuration."
+	error := "Repo name or Organisation is incorrect."
 	}
 
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		codes = [401, 404, 500, 200, 301, 302]
-		not response.status_code in codes
-		msg := "Unable to fetch repository configuration."
-		error := sprintf("Error %v:%v receieved from Bitbucket upon trying to fetch Repository Configuration.", [response.status_code, response.body.message])
-		sugg := "Kindly check Bitbucket API is reachable and the provided access token has required permissions."
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	response.status_code == 500
+	msg := "Internal Server Error."
+	sugg := ""
+	error := "GitHub is not reachable."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.body.is_private == false
-		not policy_name in exception_list
-		msg := sprintf("Repository %v/%v is found to be publically accessible.", [input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Adhere to security standards by restricting public accessibility of repository %s/%s.", [input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "active"
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	codes = [401, 404, 500, 200, 301, 302]
+	not response.status_code in codes
+	msg := "Unable to fetch repository configuration."
+	error := sprintf("Error %v:%v receieved from Bitbucket upon trying to fetch Repository Configuration.", [response.status_code, response.body.message])
+	sugg := "Kindly check Bitbucket API is reachable and the provided access token has required permissions."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		response.body.is_private == false
-		policy_name in exception_list
-		msg := sprintf("Repository %v/%v is found to be publically accessible.", [input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Adhere to security standards by restricting public accessibility of repository %s/%s.", [input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "exception"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	response.body.is_private = false
+	msg := sprintf("Bitbucket repository is a public repo %v.", [input.metadata.repository])
+	sugg := "Please change the repository visibility to private."
+	error := ""
 	}`,
 
 	296: `
@@ -7023,149 +9404,30 @@ var scriptMap = map[int]string{
 	package opsmx
 	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
+	default allow = false
 
 	request_components = [input.metadata.ssd_secret.bitbucket.url,"2.0/repositories", input.metadata.owner, input.metadata.repository, "branch-restrictions"]
 
 	request_url = concat("/",request_components)
 
 	headers = {
-		"Authorization": auth_header
+	  "Authorization": auth_header
 	}
 
 	auth_header = sprintf("Basic %s", [base64_encode(concat(":",[username,password]))]) {
-		input.metadata.ssd_secret.bitbucket.isBasicAuth
-		username = input.metadata.ssd_secret.bitbucket.user
-		password = input.metadata.ssd_secret.bitbucket.password
+  		input.metadata.ssd_secret.bitbucket.isBasicAuth
+  		username = input.metadata.ssd_secret.bitbucket.user
+  		password = input.metadata.ssd_secret.bitbucket.password
 	}
 
 	auth_header = sprintf("Bearer %s", [input.metadata.ssd_secret.bitbucket.token]) {
-		not input.metadata.ssd_secret.bitbucket.isBasicAuth
+  		not input.metadata.ssd_secret.bitbucket.isBasicAuth
 	}
 
 
 	# Helper function to base64 encode a string
 	base64_encode(s) = encoded {
-			encoded = base64.encode(s)
-	}
-
-	request = {
-		"method": "GET",
-		"url": request_url,
-		"headers": headers,
-	}
-
-	response = http.send(request)
-
-	branch_protect = [response.body.values[i]| response.body.values[i].type == "branchrestriction"]
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 401
-		msg := sprintf("Unauthorized to check branch protection policy configuration for repository %s/%s due to Bad Credentials.", [input.metadata.owner, input.metadata.repository])
-		error := sprintf("401 Unauthorized. Unauthorized to check repository configuration for repository %s/%s due to Bad Credentials.", [input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check the access token. It must have enough permissions to get repository branch protection policy configurations."
-		alertStatus := "error"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 404
-		msg := sprintf("Repository %s/%s not found while trying to fetch Repository branch protection policy Configuration.", [input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository branch protection policy configuration."
-		error := sprintf("Repository %s/%s not found while trying to fetch Repository branch protection policy Configuration.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "error"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := sprintf("500 Internal Server Error. Received Error while checking configuration for repository %s/%s.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "error"
-	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		codes = [401, 404, 500, 200, 301, 302]
-		not response.status_code in codes
-		msg := "Unable to fetch repository branch protection policy configuration."
-		error := sprintf("Error %v:%v receieved from Bitbucket upon trying to fetch repository branch protection policy configuration.", [response.status_code, response.body.message])
-		sugg := "Kindly check Bitbucket API is reachable and the provided access token has required permissions."
-		alertStatus := "error"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.body.size == 0
-		not policy_name in exception_list
-		msg := sprintf("Branch %v of Bitbucket repository %v/%v is not protected by branch protection policies.", [input.metadata.branch, input.metadata.repository])
-		sugg := sprintf("Adhere to the company policy by enforcing Branch Protection Policy for branches of %v Bitbucket repository.",[input.metadata.repository])
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		response.body.size == 0
-		policy_name in exception_list
-		msg := sprintf("Branch %v of Bitbucket repository %v/%v is not protected by branch protection policies.", [input.metadata.branch, input.metadata.repository])
-		sugg := sprintf("Adhere to the company policy by enforcing Branch Protection Policy for branches of %v Bitbucket repository.",[input.metadata.repository])
-		error := ""
-		alertStatus := "exception"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		count(branch_protect) == 0
-		not policy_name in exception_list
-		msg := sprintf("Branch %v of Bitbucket repository %v/%v is not protected by branch protection policies.", [input.metadata.branch, input.metadata.repository])
-		sugg := sprintf("Adhere to the company policy by enforcing Branch Protection Policy for branches of %v Bitbucket repository.",[input.metadata.repository])
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		count(branch_protect) == 0
-		policy_name in exception_list
-		msg := sprintf("Branch %v of Bitbucket repository %v/%v is not protected by branch protection policies.", [input.metadata.branch, input.metadata.repository])
-		sugg := sprintf("Adhere to the company policy by enforcing Branch Protection Policy for branches of %v Bitbucket repository.",[input.metadata.repository])
-		error := ""
-		alertStatus := "exception"
-	}`,
-
-	298: `
-	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-	request_components = [input.metadata.ssd_secret.bitbucket.url,"2.0/repositories", input.metadata.owner, input.metadata.repository, "branch-restrictions?kind=delete"]
-
-	request_url = concat("/",request_components)
-
-	headers = {
-		"Authorization": auth_header
-	}
-
-	auth_header = sprintf("Basic %s", [base64_encode(concat(":",[username,password]))]) {
-		input.metadata.ssd_secret.bitbucket.isBasicAuth
-		username = input.metadata.ssd_secret.bitbucket.user
-		password = input.metadata.ssd_secret.bitbucket.password
-	}
-
-	auth_header = sprintf("Bearer %s", [input.metadata.ssd_secret.bitbucket.token]) {
-		not input.metadata.ssd_secret.bitbucket.isBasicAuth
-	}
-
-
-	# Helper function to base64 encode a string
-	base64_encode(s) = encoded {
-			encoded = base64.encode(s)
+    		encoded = base64.encode(s)
 	}
 
 	request = {
@@ -7180,91 +9442,73 @@ var scriptMap = map[int]string{
 	response.status_code = 200
 	}
 
+	branch_protect = [response.body.values[i].pattern | response.body.values[i].type == "branchrestriction"]
 
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 401
-		msg := sprintf("Unauthorized to check branch protection policy configuration for repository %s/%s due to Bad Credentials.", [input.metadata.owner, input.metadata.repository])
-		error := sprintf("401 Unauthorized. Unauthorized to check repository configuration for repository %s/%s due to Bad Credentials.", [input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check the access token. It must have enough permissions to get repository branch protection policy configurations."
-		alertStatus := "error"
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	response.status_code == 401
+	msg := "Unauthorized to check repository branch protection policy configuration due to Bad Credentials."
+	error := "401 Unauthorized."
+	sugg := "Kindly check the access token. It must have enough permissions to get repository branch protection policy configurations."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 404
-		msg := sprintf("Repository %s/%s not found while trying to fetch Repository branch protection policy Configuration.", [input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository branch protection policy configuration."
-		error := sprintf("Repository %s/%s not found while trying to fetch Repository branch protection policy Configuration.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	response.status_code == 404
+	msg := "Mentioned branch for Repository not found while trying to fetch repository branch protection policy configuration."
+	sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository branch protection policy configuration."
+	error := "Repo name or Organisation is incorrect."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := sprintf("500 Internal Server Error. Received Error while checking configuration for repository %s/%s.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	response.status_code == 500
+	msg := "Internal Server Error."
+	sugg := ""
+	error := "Bitbucket is not reachable."
 	}
 
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		codes = [401, 404, 500, 200, 301, 302]
-		not response.status_code in codes
-		msg := "Unable to fetch repository branch protection policy configuration."
-		error := sprintf("Error %v:%v receieved from Bitbucket upon trying to fetch repository branch protection policy configuration.", [response.status_code, response.body.message])
-		sugg := "Kindly check Bitbucket API is reachable and the provided access token has required permissions."
-		alertStatus := "error"
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	codes = [401, 404, 500, 200, 301, 302]
+	not response.status_code in codes
+	msg := "Unable to fetch repository branch protection policy configuration."
+	error := sprintf("Error %v:%v receieved from Bitbucket upon trying to fetch repository branch protection policy configuration.", [response.status_code, response.body.message])
+	sugg := "Kindly check Bitbucket API is reachable and the provided access token has required permissions."
 	}
 
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.body.size == 0
-		not policy_name in exception_list
-		msg := sprintf("Branch Protection Policy to prevent deletion of branches is not set for repository %s/%s.", [input.metadata.owner, input.metadata.repository]) 
-		error := ""
-		sugg := sprintf("Kindly introduce branch protection policy to prevent deletion of branches to repository %s/%s.", [input.metadata.owner, input.metadata.repository]) 
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		response.body.size == 0
-		policy_name in exception_list
-		msg := sprintf("Branch Protection Policy to prevent deletion of branches is not set for repository %s/%s.", [input.metadata.owner, input.metadata.repository]) 
-		error := ""
-		sugg := sprintf("Kindly introduce branch protection policy to prevent deletion of branches to repository %s/%s.", [input.metadata.owner, input.metadata.repository]) 
-		alertStatus := "exception"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	protect = branch_protect[_]
+	input.metadata.branch == protect
+	msg := sprintf("Branch %v of Bitbucket repository %v is protected by a branch protection policy.", [input.metadata.branch, input.metadata.repository])
+	sugg := sprintf("Adhere to the company policy by enforcing Branch Protection Policy for branches of %v Bitbucket repository.",[input.metadata.repository])
+	error := ""
 	}`,
 
-	299: `
+	298: `
 	package opsmx
 	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
+	default allow = false
 
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-	request_components = [input.metadata.ssd_secret.bitbucket.url,"2.0/repositories", input.metadata.owner, input.metadata.repository, "branch-restrictions?kind=restrict_merges"]
+	request_components = [input.metadata.ssd_secret.bitbucket.url,"2.0/repositories", input.metadata.owner, "policies/branch-restrictions"]
 
 	request_url = concat("/",request_components)
 
 	headers = {
-		"Authorization": auth_header
+	  "Authorization": auth_header
 	}
 
 	auth_header = sprintf("Basic %s", [base64_encode(concat(":",[username,password]))]) {
-		input.metadata.ssd_secret.bitbucket.isBasicAuth
-		username = input.metadata.ssd_secret.bitbucket.user
-		password = input.metadata.ssd_secret.bitbucket.password
+  		input.metadata.ssd_secret.bitbucket.isBasicAuth
+  		username = input.metadata.ssd_secret.bitbucket.user
+  		password = input.metadata.ssd_secret.bitbucket.password
 	}
 
 	auth_header = sprintf("Bearer %s", [input.metadata.ssd_secret.bitbucket.token]) {
-		not input.metadata.ssd_secret.bitbucket.isBasicAuth
+  		not input.metadata.ssd_secret.bitbucket.isBasicAuth
 	}
 
 
 	# Helper function to base64 encode a string
 	base64_encode(s) = encoded {
-			encoded = base64.encode(s)
+    		encoded = base64.encode(s)
 	}
 
 	request = {
@@ -7275,57 +9519,120 @@ var scriptMap = map[int]string{
 
 	response = http.send(request)
 
+	allow {
+	response.status_code = 200
+	}
+
+	details = [ response.body.values[i].pattern | response.body.values[i].kind == "delete"]
+
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	response.status_code == 401
+	msg := "Unauthorized to check repository branch protection policy configuration due to Bad Credentials."
+	error := "401 Unauthorized."
+	sugg := "Kindly check the access token. It must have enough permissions to get repository branch protection policy configurations."
+	}
+
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	response.status_code == 404
+	msg := "Mentioned branch for Repository not found while trying to fetch repository branch protection policy configuration."
+	sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository branch protection policy configuration."
+	error := "Either the repository could not be found or the restriction policies are not configured, thus could not be fetched."
+	}
+
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	response.status_code == 500
+	msg := "Internal Server Error."
+	sugg := ""
+	error := "Bitbucket is not reachable."
+	}
+
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	codes = [401, 404, 500, 200, 301, 302]
+	not response.status_code in codes
+	msg := "Unable to fetch repository branch protection policy configuration."
+	error := sprintf("Error %v:%v receieved from Bitbucket upon trying to fetch repository branch protection policy configuration.", [response.status_code, response.body.message])
+	sugg := "Kindly check Bitbucket API is reachable and the provided access token has required permissions."
+	}
+
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	list = details[_]
+	input.metadata.branch == list 
+	msg := sprintf("The branch protection policy that mandates branch %v cannot be deleted", [input.metadata.branch])
+	sugg := "Adhere to the company policy branch cannot be deleted in Bitbucket"
+	error := ""
+	}`,
+
+	299: `
+	package opsmx
+	import future.keywords.in
+
+	default allow = false
+
+	request_components = [input.metadata.ssd_secret.bitbucket.url,"2.0/repositories", input.metadata.owner, input.metadata.repository, "branch-restrictions"]
+
+	request_url = concat("/",request_components)
+
+	headers = {
+	  "Authorization": auth_header
+	}
+
+	auth_header = sprintf("Basic %s", [base64_encode(concat(":",[username,password]))]) {
+  		input.metadata.ssd_secret.bitbucket.isBasicAuth
+  		username = input.metadata.ssd_secret.bitbucket.user
+  		password = input.metadata.ssd_secret.bitbucket.password
+	}
+
+	auth_header = sprintf("Bearer %s", [input.metadata.ssd_secret.bitbucket.token]) {
+  		not input.metadata.ssd_secret.bitbucket.isBasicAuth
+	}
+
+
+	# Helper function to base64 encode a string
+	base64_encode(s) = encoded {
+    		encoded = base64.encode(s)
+	}
+
+	request = {
+		"method": "GET",
+		"url": request_url,
+		"headers": headers,
+	}
+
+	response = http.send(request)
+
+	allow {
+	response.status_code = 200
+	}
+
 	admins= [response.body.values[i].users[_].display_name | response.body.values[i].kind == "restrict_merges"]
 
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 401
-		msg := sprintf("Unauthorized to check branch protection policy configuration for repository %s/%s due to Bad Credentials.", [input.metadata.owner, input.metadata.repository])
-		error := sprintf("401 Unauthorized. Unauthorized to check repository configuration for repository %s/%s due to Bad Credentials.", [input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check the access token. It must have enough permissions to get repository branch protection policy configurations."
-		alertStatus := "error"
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	response.status_code == 401
+	msg := "Unauthorized to check organisation configuration due to Bad Credentials."
+	error := "401 Unauthorized."
+	sugg := "Kindly check the access token. It must have enough permissions to get organisation configurations."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 404
-		msg := sprintf("Repository %s/%s not found while trying to fetch Repository branch protection policy Configuration.", [input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository branch protection policy configuration."
-		error := sprintf("Repository %s/%s not found while trying to fetch Repository branch protection policy Configuration.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	response.status_code == 404
+	msg := "Mentioned Organisation not found while trying to fetch org configuration."
+	sugg := "Kindly check if the organisation provided is correct and the access token has rights to read organisation configuration."
+	error := "Organisation name is incorrect."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := sprintf("500 Internal Server Error. Received Error while checking configuration for repository %s/%s.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	response.status_code == 500
+	msg := "Internal Server Error."
+	sugg := ""
+	error := "Bitbucket is not reachable."
 	}
 
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		codes = [401, 404, 500, 200, 301, 302]
-		not response.status_code in codes
-		msg := "Unable to fetch repository branch protection policy configuration."
-		error := sprintf("Error %v:%v receieved from Bitbucket upon trying to fetch repository branch protection policy configuration.", [response.status_code, response.body.message])
-		sugg := "Kindly check Bitbucket API is reachable and the provided access token has required permissions."
-		alertStatus := "error"
-	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}] {
-		response.body.size == 0
-		not policy_name in exception_list
-		msg := sprintf("Branch Protection Policy to restrict merge operations to limited users is not set for repository %v/%v. This indicates that all users can perform merge operations.", [input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Adhere to the company policy and configure restricted merge operations for %v/%v Repository.", [input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}] {
-		response.body.size == 0
-		policy_name in exception_list
-		msg := sprintf("Branch Protection Policy to restrict merge operations to limited users is not set for repository %v/%v. This indicates that all users can perform merge operations.", [input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Adhere to the company policy and configure restricted merge operations for %v/%v Repository.", [input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "exception"
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	codes = [401, 404, 500, 200, 302]
+	not response.status_code in codes
+	msg := "Unable to fetch organisation configuration."
+	error := sprintf("Error %v:%v receieved from Bitbucket upon trying to fetch organisation configuration.", [response.status_code, response.body.message])
+	sugg := "Kindly check Bitbucket API is reachable and the provided access token has required permissions."
 	}
 
 	default denial_list = false
@@ -7340,59 +9647,39 @@ var scriptMap = map[int]string{
 			regex.match(pattern, user)
 	}
 
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}] {
-		counter := count(denial_list)
-		counter > 0
-		denial_list_str := concat(", ", denial_list)
-		not policy_name in exception_list
-		msg := sprintf("Maintainer and Admin access of Bitbucket Repository providing ability to merge code is granted to bot users. Number of bot users having permissions to merge: %v. Name of bots having permissions to merge: %v", [counter, denial_list_str])
-		sugg := sprintf("Adhere to the company policy and revoke access of bot user for %v/%v Repository.", [input.metadata.repository,input.metadata.owner])
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}] {
-		counter := count(denial_list)
-		counter > 0
-		denial_list_str := concat(", ", denial_list)
-		policy_name in exception_list
-		msg := sprintf("Maintainer and Admin access of Bitbucket Repository providing ability to merge code is granted to bot users. Number of bot users having permissions to merge: %v. Name of bots having permissions to merge: %v", [counter, denial_list_str])
-		sugg := sprintf("Adhere to the company policy and revoke access of bot user for %v/%v Repository.", [input.metadata.repository,input.metadata.owner])
-		error := ""
-		alertStatus := "exception"
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}] {
+	counter := count(denial_list)
+	counter > 0
+	denial_list_str := concat(", ", denial_list)
+	msg := sprintf("Maintainer and Admin access of Bitbucket Repository providing ability to merge code is granted to bot users. Number of bot users having permissions to merge: %v. Name of bots having permissions to merge: %v", [counter, denial_list_str])
+	sugg := sprintf("Adhere to the company policy and revoke access of bot user for %v/%v Repository.", [input.metadata.repository,input.metadata.owner])
+	error := ""
 	}`,
 
 	300: `
 	package opsmx
 	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-	request_components = [input.metadata.ssd_secret.bitbucket.url,"2.0/workspaces", input.metadata.owner, "permissions/repositories", input.metadata.repository]
+	default allow = false
+	request_components = [input.metadata.ssd_secret.bitbucket.url,"2.0/workspaces", input.metadata.owner, "permissions/repositories",input.metadata.repository]
 	request_url = concat("/",request_components)
 	headers = {
-		"Authorization": auth_header
+	  "Authorization": auth_header
 	}
 
 	auth_header = sprintf("Basic %s", [base64_encode(concat(":",[username,password]))]) {
-		input.metadata.ssd_secret.bitbucket.isBasicAuth
-		username = input.metadata.ssd_secret.bitbucket.user
-		password = input.metadata.ssd_secret.bitbucket.password
+  		input.metadata.ssd_secret.bitbucket.isBasicAuth
+  		username = input.metadata.ssd_secret.bitbucket.user
+  		password = input.metadata.ssd_secret.bitbucket.password
 	}
 
 	auth_header = sprintf("Bearer %s", [input.metadata.ssd_secret.bitbucket.token]) {
-		not input.metadata.ssd_secret.bitbucket.isBasicAuth
+  		not input.metadata.ssd_secret.bitbucket.isBasicAuth
 	}
 
 
 	# Helper function to base64 encode a string
 	base64_encode(s) = encoded {
-			encoded = base64.encode(s)
+    		encoded = base64.encode(s)
 	}
 	request = {
 		"method": "GET",
@@ -7409,37 +9696,33 @@ var scriptMap = map[int]string{
 
 	response = http.send(request)
 
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 401
-		msg := sprintf("Unauthorized to check collaborators for repository %s/%s due to Bad Credentials.", [input.metadata.owner, input.metadata.repository])
-		error := sprintf("401 Unauthorized. Unauthorized to check repository collaborators for repository %s/%s due to Bad Credentials.", [input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check the access token. It must have enough permissions to get repository collaborators."
-		alertStatus := "error"
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	response.status_code == 401
+	msg := ""
+	error := "401 Unauthorized: Unauthorized to check repository collaborators."
+	sugg := "Kindly check the access token. It must have enough permissions to get repository collaborators."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 404
-		msg := sprintf("Repository %s/%s not found while trying to fetch Repository collaborators.", [input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository collaborators."
-		error := sprintf("Repository %s/%s not found while trying to fetch Repository collaborators.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	response.status_code == 404
+	msg := ""
+	sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository collaborators."
+	error := "Mentioned branch for Repository not found while trying to fetch repository collaborators. Repo name or Organisation is incorrect."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := sprintf("500 Internal Server Error. Received Error while checking collaborators for repository %s/%s.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	response.status_code == 500
+	msg := "Internal Server Error."
+	sugg := ""
+	error := "BitBucket is not reachable."
 	}
 
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		codes = [401, 404, 500, 200, 301, 302]
-		not response.status_code in codes
-		msg := "Unable to fetch repository collaborators."
-		error := sprintf("Error %v:%v receieved from Bitbucket upon trying to fetch repository collaborators.", [response.status_code, response.body.message])
-		sugg := "Kindly check Bitbucket API is reachable and the provided access token has required permissions."
-		alertStatus := "error"
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	codes = [401, 404, 500, 200, 301, 302]
+	not response.status_code in codes
+	msg := ""
+	error := sprintf("Unable to fetch repository collaborators. Error %v:%v receieved from Bitbucket.", [response.status_code, response.body.message])
+	sugg := "Kindly check Bitbucket API is reachable and the provided access token has required permissions."
 	}
 
 	default denial_list = false
@@ -7454,61 +9737,43 @@ var scriptMap = map[int]string{
 			regex.match(pattern, user)
 	}
 
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}] {
-		counter := count(denial_list)
-		counter > 0
-		not policy_name in exception_list
-		denial_list_str := concat(", ", denial_list)
-		msg := sprintf("Admin access of Bitbucket Repository providing ability to merge code is granted to bot users. Number of bot users having permissions as repository admins: %v. Name of bots having permissions as repository admins: %v", [counter, denial_list_str])
-		sugg := sprintf("Adhere to the company policy and revoke access of bot user for %v/%v Repository.", [input.metadata.repository,input.metadata.owner])
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}] {
-		counter := count(denial_list)
-		counter > 0
-		policy_name in exception_list
-		denial_list_str := concat(", ", denial_list)
-		msg := sprintf("Admin access of Bitbucket Repository providing ability to merge code is granted to bot users. Number of bot users having permissions as repository admins: %v. Name of bots having permissions as repository admins: %v", [counter, denial_list_str])
-		sugg := sprintf("Adhere to the company policy and revoke access of bot user for %v/%v Repository.", [input.metadata.repository,input.metadata.owner])
-		error := ""
-		alertStatus := "exception"
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}] {
+	counter := count(denial_list)
+	counter > 0
+	denial_list_str := concat(", ", denial_list)
+	msg := sprintf("Admin access of Bitbucket Repository providing ability to merge code is granted to bot users. Number of bot users having permissions as repository admins: %v. Name of bots having permissions as repository admins: %v", [counter, denial_list_str])
+	sugg := sprintf("Adhere to the company policy and revoke access of bot user for %v/%v Repository.", [input.metadata.repository,input.metadata.owner])
+	error := ""
 	}`,
 
 	301: `
 	package opsmx
 	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
+	default allow = false
 
 	request_components = [input.metadata.ssd_secret.bitbucket.url,"2.0/workspaces", input.metadata.owner, "permissions"]
 
 	request_url = concat("/",request_components)
 
 	headers = {
-		"Authorization": auth_header
+	  "Authorization": auth_header
 	}
 
 	auth_header = sprintf("Basic %s", [base64_encode(concat(":",[username,password]))]) {
-		input.metadata.ssd_secret.bitbucket.isBasicAuth
-		username = input.metadata.ssd_secret.bitbucket.user
-		password = input.metadata.ssd_secret.bitbucket.password
+  		input.metadata.ssd_secret.bitbucket.isBasicAuth
+  		username = input.metadata.ssd_secret.bitbucket.user
+  		password = input.metadata.ssd_secret.bitbucket.password
 	}
 
 	auth_header = sprintf("Bearer %s", [input.metadata.ssd_secret.bitbucket.token]) {
-		not input.metadata.ssd_secret.bitbucket.isBasicAuth
+  		not input.metadata.ssd_secret.bitbucket.isBasicAuth
 	}
 
 
 	# Helper function to base64 encode a string
 	base64_encode(s) = encoded {
-			encoded = base64.encode(s)
+    		encoded = base64.encode(s)
 	}
 
 	request = {
@@ -7519,37 +9784,37 @@ var scriptMap = map[int]string{
 
 	response = http.send(request)
 
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 401
-		msg := sprintf("Unauthorized to check organisation members for organisation %s due to Bad Credentials.", [input.metadata.owner])
-		error := sprintf("401 Unauthorized. Unauthorized to check organisation members for organisation %s due to Bad Credentials.", [input.metadata.owner])
-		sugg := "Kindly check the access token. It must have enough permissions to get organisation members."
-		alertStatus := "error"
+	allow {
+	response.status_code = 200
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 404
-		msg := sprintf("Organisation members %s not found while trying to fetch organisation members.", [input.metadata.owner])
-		sugg := "Kindly check if the organisation provided is correct and the access token has rights to read organisation members."
-		error := sprintf("Organisation %s not found while trying to fetch organisation members.", [input.metadata.owner])
-		alertStatus := "error"
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	response.status_code == 401
+	msg := ""
+	error := "401 Unauthorized: Unauthorized to check organisation members."
+	sugg := "Kindly check the access token. It must have enough permissions to get organisation members."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := sprintf("500 Internal Server Error. Received Error while checking organisation members for organisation %s.", [input.metadata.owner])
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	response.status_code == 404
+	msg := ""
+	sugg := "Kindly check if the repository provided is correct and the access token has rights to read organisation members."
+	error := "Mentioned branch for Repository not found while trying to fetch organisation members. Repo name or Organisation is incorrect."
 	}
 
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		codes = [401, 404, 500, 200, 301, 302]
-		not response.status_code in codes
-		msg := "Unable to fetch organisation members."
-		error := sprintf("Error %v:%v receieved from Bitbucket upon trying to fetch organisation members.", [response.status_code, response.body.message])
-		sugg := "Kindly check Bitbucket API is reachable and the provided access token has required permissions."
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	response.status_code == 500
+	msg := "Internal Server Error."
+	sugg := ""
+	error := "Bitbucket is not reachable."
+	}
+
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	codes = [401, 404, 500, 200, 301, 302]
+	not response.status_code in codes
+	msg := ""
+	error := sprintf("Unable to fetch organisation members. Error %v:%v receieved from Github.", [response.status_code, response.body.message])
+	sugg := "Kindly check Bitbucket API is reachable and the provided access token has required permissions."
 	}
 
 	admins = [response.body.values[i].user.display_name | response.body.values[i].permission == "owner"]
@@ -7566,573 +9831,447 @@ var scriptMap = map[int]string{
 			regex.match(pattern, user)
 	}
 
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}] {
-		counter := count(denial_list)
-		counter > 0
-		not policy_name in exception_list
-		denial_list_str := concat(", ", denial_list)
-		msg := sprintf("Owner access of Bitbucket Organization is granted to bot users. Number of bot users having owner access: %v. Name of bots having owner access: %v", [counter, denial_list_str])
-		sugg := sprintf("Adhere to the company policy and revoke access of bot user for %v Organization.", [input.metadata.owner])
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}] {
-		counter := count(denial_list)
-		counter > 0
-		policy_name in exception_list
-		denial_list_str := concat(", ", denial_list)
-		msg := sprintf("Owner access of Bitbucket Organization is granted to bot users. Number of bot users having owner access: %v. Name of bots having owner access: %v", [counter, denial_list_str])
-		sugg := sprintf("Adhere to the company policy and revoke access of bot user for %v Organization.", [input.metadata.owner])
-		error := ""
-		alertStatus := "exception"
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}] {
+	counter := count(denial_list)
+	counter > 0
+	denial_list_str := concat(", ", denial_list)
+	msg := sprintf("Owner access of Bitbucket Organization is granted to bot users. Number of bot users having owner access: %v. Name of bots having owner access: %v", [counter, denial_list_str])
+	sugg := sprintf("Adhere to the company policy and revoke access of bot user for %v Organization.", [input.metadata.owner])
+	error := ""
 	}`,
 
-	302: `
-	package opsmx
+	302: `package opsmx
 	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-
-	request_components = [input.metadata.ssd_secret.bitbucket.url,"2.0/repositories", input.metadata.owner, input.metadata.repository, "branch-restrictions?kind=allow_auto_merge_when_builds_pass"]
-
+	
+	default allow = false
+	
+	request_components = [input.metadata.ssd_secret.bitbucket.url,"2.0/repositories", input.metadata.owner, "policies/branch-restrictions"]
+	
 	request_url = concat("/",request_components)
-
+	
 	headers = {
-		"Authorization": auth_header
+	  "Authorization": auth_header
 	}
 
 	auth_header = sprintf("Basic %s", [base64_encode(concat(":",[username,password]))]) {
-		input.metadata.ssd_secret.bitbucket.isBasicAuth
-		username = input.metadata.ssd_secret.bitbucket.user
-		password = input.metadata.ssd_secret.bitbucket.password
+  		input.metadata.ssd_secret.bitbucket.isBasicAuth
+  		username = input.metadata.ssd_secret.bitbucket.user
+  		password = input.metadata.ssd_secret.bitbucket.password
 	}
 
 	auth_header = sprintf("Bearer %s", [input.metadata.ssd_secret.bitbucket.token]) {
-		not input.metadata.ssd_secret.bitbucket.isBasicAuth
+  		not input.metadata.ssd_secret.bitbucket.isBasicAuth
 	}
 
 
 	# Helper function to base64 encode a string
 	base64_encode(s) = encoded {
-			encoded = base64.encode(s)
+    		encoded = base64.encode(s)
 	}
-
+	
 	request = {
 		"method": "GET",
 		"url": request_url,
 		"headers": headers,
 	}
-
+	
 	response = http.send(request)
-
+	
 	allow {
-	response.status_code = 200
+	  response.status_code = 200
 	}
-
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 401
-		msg := sprintf("Unauthorized to check branch protection policy configuration for repository %s/%s due to Bad Credentials.", [input.metadata.owner, input.metadata.repository])
-		error := sprintf("401 Unauthorized. Unauthorized to check repository configuration for repository %s/%s due to Bad Credentials.", [input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check the access token. It must have enough permissions to get repository branch protection policy configurations."
-		alertStatus := "error"
+	
+	auto_merge = [ response.body.values[i].pattern | response.body.values[i].kind == "allow_auto_merge_when_builds_pass"]
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  response.status_code == 401
+	  msg := "Unauthorized to check organisation configuration due to Bad Credentials."
+	  error := "401 Unauthorized."
+	  sugg := "Kindly check the access token. It must have enough permissions to get organisation configurations."
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 404
-		msg := sprintf("Repository %s/%s not found while trying to fetch Repository branch protection policy Configuration.", [input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository branch protection policy configuration."
-		error := sprintf("Repository %s/%s not found while trying to fetch Repository branch protection policy Configuration.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 404
+	  msg := "Mentioned Organisation not found while trying to fetch org configuration."
+	  sugg := "Kindly check if the organisation provided is correct and the access token has rights to read organisation configuration."
+	  error := "Organisation name is incorrect."
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := sprintf("500 Internal Server Error. Received Error while checking configuration for repository %s/%s.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 500
+	  msg := "Internal Server Error."
+	  sugg := ""
+	  error := "Bitbucket is not reachable."
 	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		codes = [401, 404, 500, 200, 301, 302]
-		not response.status_code in codes
-		msg := "Unable to fetch repository branch protection policy configuration."
-		error := sprintf("Error %v:%v receieved from Bitbucket upon trying to fetch repository branch protection policy configuration.", [response.status_code, response.body.message])
-		sugg := "Kindly check Bitbucket API is reachable and the provided access token has required permissions."
-		alertStatus := "error"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  codes = [401, 404, 500, 200, 302]
+	  not response.status_code in codes
+	  msg := "Unable to fetch organisation configuration."
+	  error := sprintf("Error %v:%v receieved from Bitbucket upon trying to fetch organisation configuration.", [response.status_code, response.body.message])
+	  sugg := "Kindly check Bitbucket API is reachable and the provided access token has required permissions."
 	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.body.size != 0
-		not policy_name in exception_list
-		msg := sprintf("Branch Protection Policy allows automatic merging of code branch upon build pass conditions for repository %s/%s.", [input.metadata.owner, input.metadata.repository]) 
-		error := ""
-		sugg := sprintf("Kindly restrict branch protection policy that allows automatic merge of branches to repository %s/%s.", [input.metadata.owner, input.metadata.repository]) 
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		response.body.size != 0
-		policy_name in exception_list
-		msg := sprintf("Branch Protection Policy allows automatic merging of code branch upon build pass conditions for repository %s/%s.", [input.metadata.owner, input.metadata.repository]) 
-		error := ""
-		sugg := sprintf("Kindly restrict branch protection policy that allows automatic merge of branches to repository %s/%s.", [input.metadata.owner, input.metadata.repository]) 
-		alertStatus := "exception"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  list = auto_merge[_]
+	  input.metadata.branch == list
+	  msg = sprintf("Auto Merge is allowes in repo %v of branch %v", [input.metadata.repository,input.metadata.branch])
+	  error = ""
+	  sugg = "Kindly restrict auto merge in Branch Protection Policy applied to repository."  
 	}`,
 
-	303: `
-	package opsmx
+	303: `package opsmx
 	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-	request_components = [input.metadata.ssd_secret.bitbucket.url,"2.0/workspaces", input.metadata.owner, "permissions/repositories", input.metadata.repository]
-
+	
+	default allow = false
+	
+	request_components = [input.metadata.ssd_secret.bitbucket.url,"2.0/workspaces", input.metadata.owner, "permissions/repositories",input.metadata.repository]
+	
 	request_url = concat("/",request_components)
-
+	
 	headers = {
-		"Authorization": auth_header
+	  "Authorization": auth_header
 	}
 
 	auth_header = sprintf("Basic %s", [base64_encode(concat(":",[username,password]))]) {
-		input.metadata.ssd_secret.bitbucket.isBasicAuth
-		username = input.metadata.ssd_secret.bitbucket.user
-		password = input.metadata.ssd_secret.bitbucket.password
+  		input.metadata.ssd_secret.bitbucket.isBasicAuth
+  		username = input.metadata.ssd_secret.bitbucket.user
+  		password = input.metadata.ssd_secret.bitbucket.password
 	}
 
 	auth_header = sprintf("Bearer %s", [input.metadata.ssd_secret.bitbucket.token]) {
-		not input.metadata.ssd_secret.bitbucket.isBasicAuth
+  		not input.metadata.ssd_secret.bitbucket.isBasicAuth
 	}
 
 
 	# Helper function to base64 encode a string
 	base64_encode(s) = encoded {
-			encoded = base64.encode(s)
+    		encoded = base64.encode(s)
 	}
-
+	
 	request = {
 		"method": "GET",
 		"url": request_url,
 		"headers": headers,
 	}
-
+	
 	response = http.send(request)
-
+	
 	allow {
-		response.status_code = 200
+	  response.status_code = 200
 	}
-
+	
 	admin = [entry | 
 		entry = response.body.values[i]; 
 		entry.type == "repository_permission"
 		entry.permission == "admin"]
-
+	
 	admin_users = count(admin)
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 401
-		msg := sprintf("Unauthorized to check permissions for repository %s/%s due to Bad Credentials.", [input.metadata.owner, input.metadata.repository])
-		error := sprintf("401 Unauthorized. Unauthorized to check permissions for repository %s/%s due to Bad Credentials.", [input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check the access token. It must have enough permissions to get repository permissions configurations."
-		alertStatus := "error"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  response.status_code == 401
+	  msg := ""
+	  error := "Unauthorized to check repository branch protection policy configuration due to Bad Credentials."
+	  sugg := "Kindly check the access token. It must have enough permissions to get repository branch protection policy configurations."
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 404
-		msg := sprintf("Repository %s/%s not found while trying to fetch Repository permissions Configuration.", [input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository permissions configuration."
-		error := sprintf("Repository %s/%s not found while trying to fetch Repository permissions Configuration.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 404
+	  msg := ""
+	  sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository branch protection policy configuration."
+	  error := "Mentioned branch for Repository not found while trying to fetch repository branch protection policy configuration."
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := sprintf("500 Internal Server Error. Received Error while checking configuration for repository %s/%s.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 500
+	  msg := "Internal Server Error."
+	  sugg := ""
+	  error := "Bitbucket is not reachable."
 	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		codes = [401, 404, 500, 200, 301, 302]
-		not response.status_code in codes
-		msg := "Unable to fetch repository permissions configuration."
-		error := sprintf("Error %v:%v receieved from Bitbucket upon trying to fetch repository permissions configuration.", [response.status_code, response.body.message])
-		sugg := "Kindly check Bitbucket API is reachable and the provided access token has required permissions."
-		alertStatus := "error"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  codes = [401, 404, 500, 200, 301, 302]
+	  not response.status_code in codes
+	  msg := "Unable to fetch repository configuration."
+	  error := sprintf("Error %v:%v receieved from Github upon trying to fetch Repository Configuration.", [response.status_code, response.body.message])
+	  sugg := "Kindly check Bitbucket API is reachable and the provided access token has required permissions."
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code in [200]
-		admin_users <= 1
-		not policy_name in exception_list
-		msg := sprintf("Organisation/Worskspace %v should have more than one owner so access to the code is not jeopardized.",[input.metadata.owner])
-		sugg := "To reduce the attack surface it is recommended to have more than 1 admin of an organization or workspace."
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		response.status_code in [200]
-		admin_users <= 1
-		policy_name in exception_list
-		msg := sprintf("Organisation/Worskspace %v should have more than one owner so access to the code is not jeopardized.",[input.metadata.owner])
-		sugg := "To reduce the attack surface it is recommended to have more than 1 admin of an organization or workspace."
-		error := ""
-		alertStatus := "exception"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code in [200]
+	  admin_users <= 1
+	  msg := sprintf("Organisation/Worskspace %v should have more than one owner so access to the code is not jeopardized",[input.metadata.owner,])
+	  sugg := "To reduce the attack surface it is recommended to have more than 1 admin of an organization or workspace"
+	  error := ""
 	}`,
 
-	304: `
-	package opsmx
+	304: `package opsmx
 	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
+	
+	default allow = false
+	
 	request_components = [input.metadata.ssd_secret.bitbucket.url,"2.0/workspaces", input.metadata.owner, "permissions/repositories",input.metadata.repository]
-
+	
 	request_url = concat("/",request_components)
-
+	
 	headers = {
-		"Authorization": auth_header
+	  "Authorization": auth_header
 	}
 
 	auth_header = sprintf("Basic %s", [base64_encode(concat(":",[username,password]))]) {
-		input.metadata.ssd_secret.bitbucket.isBasicAuth
-		username = input.metadata.ssd_secret.bitbucket.user
-		password = input.metadata.ssd_secret.bitbucket.password
+  		input.metadata.ssd_secret.bitbucket.isBasicAuth
+  		username = input.metadata.ssd_secret.bitbucket.user
+  		password = input.metadata.ssd_secret.bitbucket.password
 	}
 
 	auth_header = sprintf("Bearer %s", [input.metadata.ssd_secret.bitbucket.token]) {
-		not input.metadata.ssd_secret.bitbucket.isBasicAuth
+  		not input.metadata.ssd_secret.bitbucket.isBasicAuth
 	}
 
 
 	# Helper function to base64 encode a string
 	base64_encode(s) = encoded {
-			encoded = base64.encode(s)
+    		encoded = base64.encode(s)
 	}
-
+	
 	request = {
 		"method": "GET",
 		"url": request_url,
 		"headers": headers,
 	}
-
+	
 	response = http.send(request)
-
+	
 	allow {
-		response.status_code = 200
+	  response.status_code = 200
 	}
-
+	
+	#admin = [response.body.values[i] | response.body.values[i].type == "repository_permission" | response.body.values[i].permission == "admin"]
+	
 	admin = [user |
 		user = response.body.values[i];
 		user.type == "repository_permission"
 		user.permission == "admin"
 	]
-
+	
 	admin_users = count(admin)
-
+	
 	all = [user |
 		user = response.body.values[i];
 		user.type == "repository_permission"
 		user.user.type == "user"
 	]
-
+	
 	total_users = count(all)
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 401
-		msg := sprintf("Unauthorized to check permissions for repository %s/%s due to Bad Credentials.", [input.metadata.owner, input.metadata.repository])
-		error := sprintf("401 Unauthorized. Unauthorized to check permissions for repository %s/%s due to Bad Credentials.", [input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check the access token. It must have enough permissions to get repository permissions configurations."
-		alertStatus := "error"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  response.status_code == 401
+	  msg := ""
+	  error := "Unauthorized to check repository branch protection policy configuration due to Bad Credentials."
+	  sugg := "Kindly check the access token. It must have enough permissions to get repository branch protection policy configurations."
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 404
-		msg := sprintf("Repository %s/%s not found while trying to fetch Repository permissions Configuration.", [input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository permissions configuration."
-		error := sprintf("Repository %s/%s not found while trying to fetch Repository permissions Configuration.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 404
+	  msg := ""
+	  sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository branch protection policy configuration."
+	  error := "Mentioned branch for Repository not found while trying to fetch repository branch protection policy configuration."
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := sprintf("500 Internal Server Error. Received Error while checking configuration for repository %s/%s.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 500
+	  msg := "Internal Server Error."
+	  sugg := ""
+	  error := "Bitbucket is not reachable."
 	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		codes = [401, 404, 500, 200, 301, 302]
-		not response.status_code in codes
-		msg := "Unable to fetch repository permissions configuration."
-		error := sprintf("Error %v:%v receieved from Bitbucket upon trying to fetch repository permissions configuration.", [response.status_code, response.body.message])
-		sugg := "Kindly check Bitbucket API is reachable and the provided access token has required permissions."
-		alertStatus := "error"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		admin_percentage = admin_users / total_users * 100
-
-		admin_percentage > 5
-		not policy_name in exception_list
-		msg := sprintf("More than 5 percentage of total collaborators of %v Bitbucket repository have admin access", [input.metadata.repository])
-		sugg := sprintf("Adhere to the company policy and revoke admin access to some users of the repo %v", [input.metadata.repository])
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		admin_percentage = admin_users / total_users * 100
-
-		admin_percentage > 5
-		policy_name in exception_list
-		msg := sprintf("More than 5 percentage of total collaborators of %v Bitbucket repository have admin access", [input.metadata.repository])
-		sugg := sprintf("Adhere to the company policy and revoke admin access to some users of the repo %v", [input.metadata.repository])
-		error := ""
-		alertStatus := "exception"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  admin_percentage = admin_users / total_users * 100
+	
+	  admin_percentage > 5
+	  msg := sprintf("More than 5 percentage of total collaborators of %v Bitbucket repository have admin access", [input.metadata.repository])
+	  sugg := sprintf("Adhere to the company policy and revoke admin access to some users of the repo %v", [input.metadata.repository])
+	  error := ""
 	}`,
 
-	305: `
-	package opsmx
+	305: `package opsmx
 	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
+	
+	default allow = false
+	
 	request_components = [input.metadata.ssd_secret.bitbucket.url,"2.0/repositories", input.metadata.owner, input.metadata.repository, "hooks"]
-
+	
 	request_url = concat("/",request_components)
-
+	
 	headers = {
-		"Authorization": auth_header
+	  "Authorization": auth_header
 	}
 
 	auth_header = sprintf("Basic %s", [base64_encode(concat(":",[username,password]))]) {
-		input.metadata.ssd_secret.bitbucket.isBasicAuth
-		username = input.metadata.ssd_secret.bitbucket.user
-		password = input.metadata.ssd_secret.bitbucket.password
+  		input.metadata.ssd_secret.bitbucket.isBasicAuth
+  		username = input.metadata.ssd_secret.bitbucket.user
+  		password = input.metadata.ssd_secret.bitbucket.password
 	}
 
 	auth_header = sprintf("Bearer %s", [input.metadata.ssd_secret.bitbucket.token]) {
-		not input.metadata.ssd_secret.bitbucket.isBasicAuth
+  		not input.metadata.ssd_secret.bitbucket.isBasicAuth
 	}
 
 
 	# Helper function to base64 encode a string
 	base64_encode(s) = encoded {
-			encoded = base64.encode(s)
+    		encoded = base64.encode(s)
 	}
-
+	
 	request = {
 		"method": "GET",
 		"url": request_url,
 		"headers": headers,
 	}
-
+	
 	response = http.send(request)
-
+	
 	allow {
-		response.status_code = 200
+	  response.status_code = 200
 	}
-
+	
 	webhook = response.body.values
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 401
-		msg := sprintf("Unauthorized to check webhooks for repository %s/%s due to Bad Credentials.", [input.metadata.owner, input.metadata.repository])
-		error := sprintf("401 Unauthorized. Unauthorized to check webhooks for repository %s/%s due to Bad Credentials.", [input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check the access token. It must have enough permissions to get repository webhooks configurations."
-		alertStatus := "error"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  response.status_code == 401
+	  msg := "Unauthorized to check organisation configuration due to Bad Credentials."
+	  error := "401 Unauthorized."
+	  sugg := "Kindly check the access token. It must have enough permissions to get organisation configurations."
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 404
-		msg := sprintf("Repository %s/%s not found while trying to fetch Repository webhooks Configuration.", [input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository webhooks configuration."
-		error := sprintf("Repository %s/%s not found while trying to fetch Repository webhooks Configuration.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 404
+	  msg := "Mentioned Organisation not found while trying to fetch org configuration."
+	  sugg := "Kindly check if the organisation provided is correct and the access token has rights to read organisation configuration."
+	  error := "Organisation name is incorrect."
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := sprintf("500 Internal Server Error. Received Error while checking webhooks configuration for repository %s/%s.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 500
+	  msg := "Internal Server Error."
+	  sugg := ""
+	  error := "Bitbucket is not reachable."
 	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		codes = [401, 404, 500, 200, 301, 302]
-		not response.status_code in codes
-		msg := "Unable to fetch repository webhooks configuration."
-		error := sprintf("Error %v:%v receieved from Bitbucket upon trying to fetch repository webhooks configuration.", [response.status_code, response.body.message])
-		sugg := "Kindly check Bitbucket API is reachable and the provided access token has required permissions."
-		alertStatus := "error"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  codes = [401, 404, 500, 200, 302]
+	  not response.status_code in codes
+	  msg := "Unable to fetch organisation configuration."
+	  error := sprintf("Error %v:%v receieved from Bitbucket upon trying to fetch organisation configuration.", [response.status_code, response.body.message])
+	  sugg := "Kindly check Bitbucket API is reachable and the provided access token has required permissions."
 	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		count(webhook) == 0
-		not policy_name in exception_list
-		msg = sprintf("Webhooks are not configured for the repository %v/%v.", [input.metadata.owner, input.metadata.repository])
-		error = ""
-		sugg = "Kindly enable webhooks for the repository rovide secure way of consuming events from source repository." 
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		count(webhook) == 0
-		policy_name in exception_list
-		msg = sprintf("Webhooks are not configured for the repository %v/%v.", [input.metadata.owner, input.metadata.repository])
-		error = ""
-		sugg = "Kindly enable webhooks for the repository rovide secure way of consuming events from source repository."  
-		alertStatus := "exception"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  count(webhook) == 0
+	  msg = sprintf("Webhooks is not present for the repo %v", [input.metadata.repository])
+	  error = ""
+	  sugg = "Kindly enable webhooks for the repository."  
 	}`,
 
-	306: `
-	package opsmx
+	306: `package opsmx
 	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-
+	
+	default allow = false
+	
 	request_components = [input.metadata.ssd_secret.bitbucket.url,"2.0/repositories", input.metadata.owner, input.metadata.repository, "hooks"]
-
+	
 	request_url = concat("/",request_components)
-
+	
 	headers = {
-		"Authorization": auth_header
+	  "Authorization": auth_header
 	}
 
 	auth_header = sprintf("Basic %s", [base64_encode(concat(":",[username,password]))]) {
-		input.metadata.ssd_secret.bitbucket.isBasicAuth
-		username = input.metadata.ssd_secret.bitbucket.user
-		password = input.metadata.ssd_secret.bitbucket.password
+  		input.metadata.ssd_secret.bitbucket.isBasicAuth
+  		username = input.metadata.ssd_secret.bitbucket.user
+  		password = input.metadata.ssd_secret.bitbucket.password
 	}
 
 	auth_header = sprintf("Bearer %s", [input.metadata.ssd_secret.bitbucket.token]) {
-		not input.metadata.ssd_secret.bitbucket.isBasicAuth
+  		not input.metadata.ssd_secret.bitbucket.isBasicAuth
 	}
 
 
 	# Helper function to base64 encode a string
 	base64_encode(s) = encoded {
-			encoded = base64.encode(s)
+    		encoded = base64.encode(s)
 	}
-
+	
 	request = {
 		"method": "GET",
 		"url": request_url,
 		"headers": headers,
 	}
-
+	
 	response = http.send(request)
-
+	
 	allow {
-		response.status_code = 200
+	  response.status_code = 200
 	}
-
+	
 	certs_check = response.body.values[_].skip_cert_verification
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 401
-		msg := sprintf("Unauthorized to check webhooks for repository %s/%s due to Bad Credentials.", [input.metadata.owner, input.metadata.repository])
-		error := sprintf("401 Unauthorized. Unauthorized to check webhooks for repository %s/%s due to Bad Credentials.", [input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check the access token. It must have enough permissions to get repository webhooks configurations."
-		alertStatus := "error"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  response.status_code == 401
+	  msg := "Unauthorized to check organisation configuration due to Bad Credentials."
+	  error := "401 Unauthorized."
+	  sugg := "Kindly check the access token. It must have enough permissions to get organisation configurations."
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 404
-		msg := sprintf("Repository %s/%s not found while trying to fetch Repository webhooks Configuration.", [input.metadata.owner, input.metadata.repository])
-		sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository webhooks configuration."
-		error := sprintf("Repository %s/%s not found while trying to fetch Repository webhooks Configuration.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 404
+	  msg := "Mentioned Organisation not found while trying to fetch org configuration."
+	  sugg := "Kindly check if the organisation provided is correct and the access token has rights to read organisation configuration."
+	  error := "Organisation name is incorrect."
 	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := sprintf("500 Internal Server Error. Received Error while checking webhooks configuration for repository %s/%s.", [input.metadata.owner, input.metadata.repository])
-		alertStatus := "error"
+	
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	  response.status_code == 500
+	  msg := "Internal Server Error."
+	  sugg := ""
+	  error := "Bitbucket is not reachable."
 	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		codes = [401, 404, 500, 200, 301, 302]
-		not response.status_code in codes
-		msg := "Unable to fetch repository webhooks configuration."
-		error := sprintf("Error %v:%v receieved from Bitbucket upon trying to fetch repository webhooks configuration.", [response.status_code, response.body.message])
-		sugg := "Kindly check Bitbucket API is reachable and the provided access token has required permissions."
-		alertStatus := "error"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  codes = [401, 404, 500, 200, 302]
+	  not response.status_code in codes
+	  msg := "Unable to fetch organisation configuration."
+	  error := sprintf("Error %v:%v receieved from Bitbucket upon trying to fetch organisation configuration.", [response.status_code, response.body.message])
+	  sugg := "Kindly check Bitbucket API is reachable and the provided access token has required permissions."
 	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		certs_check == false
-		not policy_name in exception_list
-		msg := sprintf("Webhook SSL Check failed: SSL/TLS not enabled for %v/%v repository.", [input.metadata.owner,input.metadata.repository])
-		error := ""
-		sugg := sprintf("Adhere to the company policy by enabling the webhook ssl/tls for %v/%v repository.", [input.metadata.owner,input.metadata.repository])
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		certs_check == false
-		policy_name in exception_list
-		msg := sprintf("Webhook SSL Check failed: SSL/TLS not enabled for %v/%v repository.", [input.metadata.owner,input.metadata.repository])
-		error := ""
-		sugg := sprintf("Adhere to the company policy by enabling the webhook ssl/tls for %v/%v repository.", [input.metadata.owner,input.metadata.repository])
-		alertStatus := "exception"
+	
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	  certs_check = false
+	  msg := sprintf("Webhook SSL Check failed: SSL/TLS not enabled for %v/%v repository.", [input.metadata.owner,input.metadata.repository])
+	  error := ""
+	  sugg := sprintf("Adhere to the company policy by enabling the webhook ssl/tls for %v/%v repository.", [input.metadata.owner,input.metadata.repository])
 	}`,
 
 	307: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	severity = "High"
 	default findings_count = 0
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codescan_snyk.json&scanOperation=snykcodescan"]	)
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codescan_snyk.json&scanOperation=snykcodescan"]	)
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codescan_snyk.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_codescan_snyk.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=snykcodescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=snykcodescan"])
 	request = {	
-		"method": "GET",
-		"url": complete_url
+  		"method": "GET",
+  		"url": complete_url
 	}
 
 	response = http.send(request)
@@ -8140,45 +10279,32 @@ var scriptMap = map[int]string{
 	findings_count = count([response.body.snykAnalysis[idx] | response.body.snykAnalysis[idx].severity == severity])
 	findings = [response.body.snykAnalysis[idx] | response.body.snykAnalysis[idx].severity == severity]
 
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
-		findings_count > 0
-		some i
-		not findings[i].ruleName in exception_list
-		title := sprintf("Snyk Code Scan: %v ",[findings[i].ruleName])
-		msg := sprintf("%v: %v", [findings[i].ruleName, findings[i].ruleMessage])
-		sugg := "Please examine the high severity findings in the Snyk analysis data, available through the View Findings button and proactively review your code for common issues and apply best coding practices during development to prevent such alerts from arising."
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
-		findings_count > 0
-		some i
-		findings[i].ruleName in exception_list
-		title := sprintf("Snyk Code Scan: %v ",[findings[i].ruleName])
-		msg := sprintf("%v: %v", [findings[i].ruleName, findings[i].ruleMessage])
-		sugg := "Please examine the high severity findings in the Snyk analysis data, available through the View Findings button and proactively review your code for common issues and apply best coding practices during development to prevent such alerts from arising."
-		error := ""
-		exception_cause := findings[i].ruleName
-		alertStatus := "exception"
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
+  		findings_count > 0
+  		some i
+  		title := sprintf("Snyk Code Scan: %v ",[findings[i].ruleName])
+  		msg := sprintf("%v: %v", [findings[i].ruleName, findings[i].ruleMessage])
+  		sugg := "Please examine the high severity findings in the Snyk analysis data, available through the View Findings button and proactively review your code for common issues and apply best coding practices during development to prevent such alerts from arising."
+  		error := ""
 	}`,
 
 	308: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	severity = "Medium"
 	default findings_count = 0
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codescan_snyk.json&scanOperation=snykcodescan"]	)
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codescan_snyk.json&scanOperation=snykcodescan"]	)
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codescan_snyk.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_codescan_snyk.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=snykcodescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=snykcodescan"])
 	request = {	
 		"method": "GET",
 		"url": complete_url
@@ -8189,45 +10315,32 @@ var scriptMap = map[int]string{
 	findings_count = count([response.body.snykAnalysis[idx] | response.body.snykAnalysis[idx].severity == severity])
 	findings = [response.body.snykAnalysis[idx] | response.body.snykAnalysis[idx].severity == severity]
 
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
 		findings_count > 0
 		some i
-		not findings[i].ruleName in exception_list
 		title := sprintf("Snyk Code Scan: %v ",[findings[i].ruleName])
 		msg := sprintf("%v: %v", [findings[i].ruleName, findings[i].ruleMessage])
 		sugg := "Please examine the medium severity findings in the Snyk analysis data, available through the View Findings button and proactively review your code for common issues and apply best coding practices during development to prevent such alerts from arising."
 		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
-		findings_count > 0
-		some i
-		findings[i].ruleName in exception_list
-		title := sprintf("Snyk Code Scan: %v ",[findings[i].ruleName])
-		msg := sprintf("%v: %v", [findings[i].ruleName, findings[i].ruleMessage])
-		sugg := "Please examine the medium severity findings in the Snyk analysis data, available through the View Findings button and proactively review your code for common issues and apply best coding practices during development to prevent such alerts from arising."
-		error := ""
-		exception_cause := findings[i].ruleName
-		alertStatus := "exception"
 	}`,
 
 	309: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	severity = "Low"
 	default findings_count = 0
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codescan_snyk.json&scanOperation=snykcodescan"]	)
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codescan_snyk.json&scanOperation=snykcodescan"]	)
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codescan_snyk.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_codescan_snyk.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=snykcodescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=snykcodescan"])
 	request = {	
 		"method": "GET",
 		"url": complete_url
@@ -8238,44 +10351,31 @@ var scriptMap = map[int]string{
 	findings_count = count([response.body.snykAnalysis[idx] | response.body.snykAnalysis[idx].severity == severity])
 	findings = [response.body.snykAnalysis[idx] | response.body.snykAnalysis[idx].severity == severity]
 
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
 		findings_count > 0
 		some i
-		not findings[i].ruleName in exception_list
 		title := sprintf("Snyk Code Scan: %v ",[findings[i].ruleName])
 		msg := sprintf("%v: %v", [findings[i].ruleName, findings[i].ruleMessage])
-		sugg := "Please examine the medium severity findings in the Snyk analysis data, available through the View Findings button and proactively review your code for common issues and apply best coding practices during development to prevent such alerts from arising."
+		sugg := "Please examine the low severity findings in the Snyk analysis data, available through the View Findings button and proactively review your code for common issues and apply best coding practices during development to prevent such alerts from arising."
 		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
-		findings_count > 0
-		some i
-		findings[i].ruleName in exception_list
-		title := sprintf("Snyk Code Scan: %v ",[findings[i].ruleName])
-		msg := sprintf("%v: %v", [findings[i].ruleName, findings[i].ruleMessage])
-		sugg := "Please examine the medium severity findings in the Snyk analysis data, available through the View Findings button and proactively review your code for common issues and apply best coding practices during development to prevent such alerts from arising."
-		error := ""
-		exception_cause := findings[i].ruleName
-		alertStatus := "exception"
-	}}`,
+	}`,
 
 	310: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	default license_count = 0
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codeLicenseScanResult.json&scanOperation=codelicensescan"]	)
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codeLicenseScanResult.json&scanOperation=codelicensescan"]	)
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codeLicenseScanResult.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_codeLicenseScanResult.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=codelicensescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=codelicensescan"])
 	request = {	
 		"method": "GET",
 		"url": complete_url
@@ -8284,45 +10384,40 @@ var scriptMap = map[int]string{
 	response = http.send(request)
 	results := response.body.Results
 
-	licenses = [input.Results[i].Licenses[j] | count(input.Results[i].Licenses) > 0]
+	licenses := [lic |
+		results[_].Class == "license-file"
+		result := results[_]
+		lic := result.Licenses[_]
+		lic.Name != ""
+	]
 
 	license_count = count(licenses)
 
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
 		license_count == 0
-		not policy_name in exception_list
 		title := "Code License Scan: No license found."
 		msg := sprintf("Code License Scan: No license found to be associated with repository %v:%v.",[input.metadata.owner, input.metadata.repository])
 		sugg := "Please associate appropriate license with code repository to be able to evaluate quality of license."
 		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": policy_name, "alertStatus": alertStatus}]{
-		license_count == 0
-		policy_name in exception_list
-		title := "Code License Scan: No license found."
-		msg := sprintf("Code License Scan: No license found to be associated with repository %v:%v.",[input.metadata.owner, input.metadata.repository])
-		sugg := "Please associate appropriate license with code repository to be able to evaluate quality of license."
-		error := ""
-		alertStatus := "exception"
 	}`,
 
 	311: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	default license_count = 0
 	default low_severity_licenses = []
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codeLicenseScanResult.json&scanOperation=codelicensescan"]      )
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codeLicenseScanResult.json&scanOperation=codelicensescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codeLicenseScanResult.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_codeLicenseScanResult.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=codelicensescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=codelicensescan"])
 	request = {
 			"method": "GET",
 			"url": complete_url
@@ -8331,122 +10426,105 @@ var scriptMap = map[int]string{
 	response = http.send(request)
 	results := response.body.Results
 
-	licenses = [results[idx1].Licenses[idx2] | count(results[idx1].Licenses) > 0]
+	licenses := [lic |
+			results[_].Class == "license-file"
+			result := results[_]
+			lic := result.Licenses[_]
+			lic.Name != ""
+	]
 
 	license_count = count(licenses)
 
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
 			license_count == 0
 			title := "Code License Scan: No license found."
 			msg := sprintf("Code License Scan: No license found to be associated with repository %v:%v.",[input.metadata.owner, input.metadata.repository])
 			sugg := "Please associate appropriate license with code repository to be able to evaluate quality of license."
 			error := sprintf("No licenses found to be associated with repository %v:%v.", [input.metadata1.owner, input.metadata1.repository])
-			alertStatus := "error"
 	}
 
-	low_severity_licenses = [licenses[idx] | licenses[idx].Severity == "LOW"]
-	low_severity_licenses_with_exception = [low_severity_licenses[idx] | low_severity_licenses[idx].Name in exception_list]
-	low_severity_licenses_without_exception = [low_severity_licenses[idx] | not low_severity_licenses[idx].Name in exception_list] 
+	low_severity_licenses = [licenses[idx].Name | licenses[idx].Severity == "LOW"]
+	license_names = concat(",", low_severity_licenses)
 
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
-			count(low_severity_licenses_without_exception) > 0
-			some i in low_severity_licenses_without_exception
-			title := sprintf("Code License Scan: Package: %v/ License: %v/ Category: %v", [i.PkgName, i.Name, i.Category])
-			msg := sprintf("Code License Scan: Low Severity License: %v found to be associated with repository %v:%v.",[i.Name, input.metadata.owner, input.metadata.repository])
-			sugg := "Please associate appropriate licenses with code repository and its package dependencies."
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
+			count(low_severity_licenses) > 0
+			title := "Code License Scan: Low Severity Licenses Found."
+			msg := sprintf("Code License Scan: Low Severity License: %v found to be associated with repository %v:%v.",[license_names, input.metadata.owner, input.metadata.repository])
+			sugg := "Please associate appropriate license with code repository."
 			error := ""
-			alertStatus := "active" 
-			exception := ""
-	}
-
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
-			count(low_severity_licenses_with_exception) > 0
-			some j in low_severity_licenses_with_exception
-			title := sprintf("Code License Scan: Package: %v/ License: %v/ Category: %v", [j.PkgName, j.Name, j.Category])
-			msg := sprintf("Code License Scan: Low Severity License: %v found to be associated with repository %v:%v.",[j.Name, input.metadata.owner, input.metadata.repository])
-			sugg := "Please associate appropriate licenses with code repository and its package dependencies."
-			error := ""
-			exception_cause := j.Name
-			alertStatus = "exception"
 	}`,
 
 	312: `
 	package opsmx
 	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
 	default license_count = 0
 	default medium_severity_licenses = []
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codeLicenseScanResult.json&scanOperation=codelicensescan"]      )
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codeLicenseScanResult.json&scanOperation=codelicensescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codeLicenseScanResult.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_codeLicenseScanResult.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=codelicensescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=codelicensescan"])
 	request = {
 			"method": "GET",
 			"url": complete_url
 	}
 
 	response = http.send(request)
-	results := response.body.Results
+	results := input.Results
 
-	licenses = [results[idx1].Licenses[idx2] | count(results[idx1].Licenses) > 0]
+	licenses := [lic |
+			results[_].Class == "license-file"
+			result := results[_]
+			lic := result.Licenses[_]
+			lic.Name != ""
+	]
 
 	license_count = count(licenses)
 
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
 			license_count == 0
 			title := "Code License Scan: No license found."
 			msg := sprintf("Code License Scan: No license found to be associated with repository %v:%v.",[input.metadata.owner, input.metadata.repository])
 			sugg := "Please associate appropriate license with code repository to be able to evaluate quality of license."
 			error := sprintf("No licenses found to be associated with repository %v:%v.", [input.metadata1.owner, input.metadata1.repository])
-			alertStatus := "error"
 	}
 
-	medium_severity_licenses = [licenses[idx] | licenses[idx].Severity == "MEDIUM"]
-	medium_severity_licenses_with_exception = [medium_severity_licenses[idx] | medium_severity_licenses[idx].Name in exception_list]
-	medium_severity_licenses_without_exception = [medium_severity_licenses[idx] | not medium_severity_licenses[idx].Name in exception_list] 
+	medium_severity_licenses = [licenses[idx].Name | licenses[idx].Severity in ["MEDIUM", "UNKNOWN"]]
+	license_names = concat(",", medium_severity_licenses)
 
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
-			count(medium_severity_licenses_without_exception) > 0
-			some i in medium_severity_licenses_without_exception
-			title := sprintf("Code License Scan: Package: %v/ License: %v/ Category: %v", [i.PkgName, i.Name, i.Category])
-			msg := sprintf("Code License Scan: Medium Severity License: %v found to be associated with repository %v:%v.",[i.Name, input.metadata.owner, input.metadata.repository])
-			sugg := "Please associate appropriate licenses with code repository and its package dependencies."
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
+			count(medium_severity_licenses) > 0
+			title := "Code License Scan: Medium Severity Licenses Found."
+			msg := sprintf("Code License Scan: Medium Severity License: %v found to be associated with repository %v:%v.",[license_names, input.metadata.owner, input.metadata.repository])
+			sugg := "Please associate appropriate license with code repository."
 			error := ""
-			alertStatus := "active" 
-			exception := ""
-	}
-
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
-			count(medium_severity_licenses_with_exception) > 0
-			some j in medium_severity_licenses_with_exception
-			title := sprintf("Code License Scan: Package: %v/ License: %v/ Category: %v", [j.PkgName, j.Name, j.Category])
-			msg := sprintf("Code License Scan: Medium Severity License: %v found to be associated with repository %v:%v.",[j.Name, input.metadata.owner, input.metadata.repository])
-			sugg := "Please associate appropriate licenses with code repository and its package dependencies."
-			error := ""
-			exception_cause := j.Name
-			alertStatus = "exception"
 	}`,
 
 	313: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	default license_count = 0
 	default high_severity_licenses = []
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codeLicenseScanResult.json&scanOperation=codelicensescan"]      )
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codeLicenseScanResult.json&scanOperation=codelicensescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codeLicenseScanResult.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_codeLicenseScanResult.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=codelicensescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=codelicensescan"])
 	request = {
 			"method": "GET",
 			"url": complete_url
@@ -8455,60 +10533,51 @@ var scriptMap = map[int]string{
 	response = http.send(request)
 	results := response.body.Results
 
-	licenses = [results[idx1].Licenses[idx2] | count(results[idx1].Licenses) > 0]
+	licenses := [lic |
+			results[_].Class == "license-file"
+			result := results[_]
+			lic := result.Licenses[_]
+			lic.Name != ""
+	]
 
 	license_count = count(licenses)
 
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
 			license_count == 0
 			title := "Code License Scan: No license found."
 			msg := sprintf("Code License Scan: No license found to be associated with repository %v:%v.",[input.metadata.owner, input.metadata.repository])
 			sugg := "Please associate appropriate license with code repository to be able to evaluate quality of license."
 			error := sprintf("No licenses found to be associated with repository %v:%v.", [input.metadata1.owner, input.metadata1.repository])
-			alertStatus := "error"
 	}
 
-	high_severity_licenses = [licenses[idx] | licenses[idx].Severity == "HIGH"]
-	high_severity_licenses_with_exception = [high_severity_licenses[idx] | high_severity_licenses[idx].Name in exception_list]
-	high_severity_licenses_without_exception = [high_severity_licenses[idx] | not high_severity_licenses[idx].Name in exception_list] 
+	high_severity_licenses = [licenses[idx].Name | licenses[idx].Severity == "HIGH"]
+	license_names = concat(",", high_severity_licenses)
 
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
-			count(high_severity_licenses_without_exception) > 0
-			some i in high_severity_licenses_without_exception
-			title := sprintf("Code License Scan: Package: %v/ License: %v/ Category: %v", [i.PkgName, i.Name, i.Category])
-			msg := sprintf("Code License Scan: High Severity License: %v found to be associated with repository %v:%v.",[i.Name, input.metadata.owner, input.metadata.repository])
-			sugg := "Please associate appropriate licenses with code repository and its package dependencies."
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
+			count(high_severity_licenses) > 0
+			title := "Code License Scan: High Severity Licenses Found."
+			msg := sprintf("Code License Scan: High Severity License: %v found to be associated with repository %v:%v.",[license_names, input.metadata.owner, input.metadata.repository])
+			sugg := "Please associate appropriate license with code repository."
 			error := ""
-			alertStatus := "active" 
-			exception := ""
-	}
-
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
-			count(high_severity_licenses_with_exception) > 0
-			some j in high_severity_licenses_with_exception
-			title := sprintf("Code License Scan: Package: %v/ License: %v/ Category: %v", [j.PkgName, j.Name, j.Category])
-			msg := sprintf("Code License Scan: High Severity License: %v found to be associated with repository %v:%v.",[j.Name, input.metadata.owner, input.metadata.repository])
-			sugg := "Please associate appropriate licenses with code repository and its package dependencies."
-			error := ""
-			exception_cause := j.Name
-			alertStatus = "exception"
 	}`,
 
 	314: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	default license_count = 0
 	default critical_severity_licenses = []
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codeLicenseScanResult.json&scanOperation=codelicensescan"]      )
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codeLicenseScanResult.json&scanOperation=codelicensescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codeLicenseScanResult.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_codeLicenseScanResult.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=codelicensescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=codelicensescan"])
 	request = {
 			"method": "GET",
 			"url": complete_url
@@ -8517,55 +10586,36 @@ var scriptMap = map[int]string{
 	response = http.send(request)
 	results := response.body.Results
 
-	licenses = [results[idx1].Licenses[idx2] | count(results[idx1].Licenses) > 0]
+	licenses := [lic |
+			results[_].Class == "license-file"
+			result := results[_]
+			lic := result.Licenses[_]
+			lic.Name != ""
+	]
 
 	license_count = count(licenses)
 
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
 			license_count == 0
 			title := "Code License Scan: No license found."
 			msg := sprintf("Code License Scan: No license found to be associated with repository %v:%v.",[input.metadata.owner, input.metadata.repository])
 			sugg := "Please associate appropriate license with code repository to be able to evaluate quality of license."
 			error := sprintf("No licenses found to be associated with repository %v:%v.", [input.metadata1.owner, input.metadata1.repository])
-			alertStatus := "error"
 	}
 
-	critical_severity_licenses = [licenses[idx] | licenses[idx].Severity == "CRITICAL"]
-	critical_severity_licenses_with_exception = [critical_severity_licenses[idx] | critical_severity_licenses[idx].Name in exception_list]
-	critical_severity_licenses_without_exception = [critical_severity_licenses[idx] | not critical_severity_licenses[idx].Name in exception_list] 
+	critical_severity_licenses = [licenses[idx].Name | licenses[idx].Severity == "CRITICAL"]
+	license_names = concat(",", critical_severity_licenses)
 
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
-			count(critical_severity_licenses_without_exception) > 0
-			some i in critical_severity_licenses_without_exception
-			title := sprintf("Code License Scan: Package: %v/ License: %v/ Category: %v", [i.PkgName, i.Name, i.Category])
-			msg := sprintf("Code License Scan: Critical Severity License: %v found to be associated with repository %v:%v.",[i.Name, input.metadata.owner, input.metadata.repository])
-			sugg := "Please associate appropriate licenses with code repository and its package dependencies."
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
+			count(critical_severity_licenses) > 0
+			title := "Code License Scan: Critical Severity Licenses Found."
+			msg := sprintf("Code License Scan: Critical Severity License: %v found to be associated with repository %v:%v.",[license_names, input.metadata.owner, input.metadata.repository])
+			sugg := "Please associate appropriate license with code repository."
 			error := ""
-			alertStatus := "active" 
-			exception := ""
-	}
-
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
-			count(critical_severity_licenses_with_exception) > 0
-			some j in critical_severity_licenses_with_exception
-			title := sprintf("Code License Scan: Package: %v/ License: %v/ Category: %v", [j.PkgName, j.Name, j.Category])
-			msg := sprintf("Code License Scan: Critical Severity License: %v found to be associated with repository %v:%v.",[j.Name, input.metadata.owner, input.metadata.repository])
-			sugg := "Please associate appropriate licenses with code repository and its package dependencies."
-			error := ""
-			exception_cause := j.Name
-			alertStatus = "exception"
 	}`,
 
 	315: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	default license_count = 0
 
@@ -8581,38 +10631,25 @@ var scriptMap = map[int]string{
 	response = http.send(request)
 	results := response.body.Results
 
-	licenses = [input.Results[i].Licenses[j] | count(input.Results[i].Licenses) > 0]
+	licenses := [lic |
+			results[_].Class == "license-file"
+			result := results[_]
+			lic := result.Licenses[_]
+			lic.Name != ""
+	]
 
 	license_count = count(licenses)
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
 			license_count == 0
-		        not policy_name in exception_list
-			msg := sprintf("Artifact License Scan: No license found to be associated with artifact %v.",[input.metadata.image])
+			title := "Artifact License Scan: No license found."
+			msg := sprintf("Artifact License Scan: No license found to be associated with artifact %v:%v.",[input.metadata.image, input.metadata.image_tag])
 			sugg := "Please associate appropriate license with artifact to be able to evaluate quality of license."
 			error := ""
-			alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": policy_name, "alertStatus": alertStatus}]{
-			license_count == 0
-			policy_name in exception_list
-			msg := sprintf("Artifact License Scan: No license found to be associated with artifact %v.",[input.metadata.image])
-			sugg := "Please associate appropriate license with artifact to be able to evaluate quality of license."
-			error := ""
-			alertStatus := "exception"
 	}`,
 
 	316: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	default license_count = 0
 	default low_severity_licenses = []
@@ -8629,56 +10666,37 @@ var scriptMap = map[int]string{
 	response = http.send(request)
 	results := response.body.Results
 
-	licenses = [input.Results[i].Licenses[j] | count(input.Results[i].Licenses) > 0]
+	licenses := [lic |
+			results[_].Class == "license-file"
+			result := results[_]
+			lic := result.Licenses[_]
+			lic.Name != ""
+	]
 
 	license_count = count(licenses)
 
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
 			license_count == 0
 			title := "Artifact License Scan: No license found."
-			msg := sprintf("Artifact License Scan: No license found to be associated with artifact %v.",[input.metadata.image])
+			msg := sprintf("Artifact License Scan: No license found to be associated with artifact %v:%v.",[input.metadata.image, input.metadata.image_tag])
 			sugg := "Please associate appropriate license with artifact to be able to evaluate quality of license."
-			error := sprintf("No licenses found to be associated with artifact %v.", [input.metadata.image])
-			alertStatus := "error"
+			error := sprintf("No licenses found to be associated with artifact %v:%v.", [input.metadata.image, input.metadata.image_tag])
 	}
 
 	low_severity_licenses = [licenses[idx] | licenses[idx].Severity == "LOW"]
-	low_severity_licenses_with_exception = [low_severity_licenses[idx] | low_severity_licenses[idx].Name in exception_list]
-	low_severity_licenses_without_exception = [low_severity_licenses[idx] | not low_severity_licenses[idx].Name in exception_list] 
 
-
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
-			count(low_severity_licenses_without_exception) > 0
-			some i in low_severity_licenses_without_exception
-			title := sprintf("Artifact License Scan: Package: %v/ License: %v/ Category: %v", [i.PkgName, i.Name, i.Category])
-			msg := sprintf("Artifact License Scan: Low Severity License: %v found to be associated with package %v in artifact %v:%v.",[i.Name, i.PkgName, input.metadata.image, input.metadata.image_tag])
-			sugg := "Please associate appropriate licenses with code repository and its package dependencies."
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
+			count(low_severity_licenses) > 0
+			some i
+			title := sprintf("Artifact License Scan: Package: %v/ License: %v/ Category: %v", [low_severity_licenses[i].PkgName, low_severity_licenses[i].Name, low_severity_licenses[i].Category])
+			msg := sprintf("Artifact License Scan: Critical Severity License: %v found to be associated with %v in artifact %v:%v.",[low_severity_licenses[i].Name, low_severity_licenses[i].PkgName, input.metadata.image, input.metadata.image_tag])
+			sugg := "Please associate appropriate license with artifact and associated dependencies or upgrade the dependencies to their licensed arternatives."
 			error := ""
-			alertStatus := "active" 
-			exception := ""
-	}
-
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
-			count(low_severity_licenses_with_exception) > 0
-			some j in low_severity_licenses_with_exception
-			title := sprintf("Artifact License Scan: Package: %v/ License: %v/ Category: %v", [j.PkgName, j.Name, j.Category])
-			msg := sprintf("Artifact License Scan: Low Severity License: %v found to be associated with package %v in artifact %v:%v.",[j.Name, j.PkgName, input.metadata.image, input.metadata.image_tag])
-			sugg := "Please associate appropriate licenses with code repository and its package dependencies."
-			error := ""
-			exception_cause := j.Name
-			alertStatus = "exception"
 	}`,
 
 	317: `
 	package opsmx
 	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	default license_count = 0
 	default medium_severity_licenses = []
@@ -8695,56 +10713,36 @@ var scriptMap = map[int]string{
 	response = http.send(request)
 	results := response.body.Results
 
-	licenses = [input.Results[i].Licenses[j] | count(input.Results[i].Licenses) > 0]
+	licenses := [lic |
+			results[_].Class == "license-file"
+			result := results[_]
+			lic := result.Licenses[_]
+			lic.Name != ""
+	]
 
 	license_count = count(licenses)
 
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
 			license_count == 0
 			title := "Artifact License Scan: No license found."
-			msg := sprintf("Artifact License Scan: No license found to be associated with artifact %v.",[input.metadata.image])
+			msg := sprintf("Artifact License Scan: No license found to be associated with artifact %v:%v.",[input.metadata.image, input.metadata.image_tag])
 			sugg := "Please associate appropriate license with artifact to be able to evaluate quality of license."
-			error := sprintf("No licenses found to be associated with artifact %v.", [input.metadata.image])
-			alertStatus := "error"
+			error := sprintf("No licenses found to be associated with artifact %v:%v.", [input.metadata.image, input.metadata.image_tag])
 	}
 
-	medium_severity_licenses = [licenses[idx] | licenses[idx].Severity == "MEDIUM"]
-	medium_severity_licenses_with_exception = [medium_severity_licenses[idx] | medium_severity_licenses[idx].Name in exception_list]
-	medium_severity_licenses_without_exception = [medium_severity_licenses[idx] | not medium_severity_licenses[idx].Name in exception_list] 
+	medium_severity_licenses = [licenses[idx] | licenses[idx].Severity in ["MEDIUM", "UNKNOWN"]]
 
-
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
-			count(medium_severity_licenses_without_exception) > 0
-			some i in medium_severity_licenses_without_exception
-			title := sprintf("Artifact License Scan: Package: %v/ License: %v/ Category: %v", [i.PkgName, i.Name, i.Category])
-			msg := sprintf("Artifact License Scan: Medium Severity License: %v found to be associated with package %v in artifact %v:%v.",[i.Name, i.PkgName, input.metadata.image, input.metadata.image_tag])
-			sugg := "Please associate appropriate licenses with code repository and its package dependencies."
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
+			count(medium_severity_licenses) > 0
+			some i
+			title := sprintf("Artifact License Scan: Package: %v/ License: %v/ Category: %v", [medium_severity_licenses[i].PkgName, medium_severity_licenses[i].Name, medium_severity_licenses[i].Category])
+			msg := sprintf("Artifact License Scan: Critical Severity License: %v found to be associated with %v in artifact %v:%v.",[medium_severity_licenses[i].Name, medium_severity_licenses[i].PkgName, input.metadata.image, input.metadata.image_tag])
+			sugg := "Please associate appropriate license with artifact and associated dependencies or upgrade the dependencies to their licensed arternatives."
 			error := ""
-			alertStatus := "active" 
-			exception := ""
-	}
-
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
-			count(medium_severity_licenses_with_exception) > 0
-			some j in medium_severity_licenses_with_exception
-			title := sprintf("Artifact License Scan: Package: %v/ License: %v/ Category: %v", [j.PkgName, j.Name, j.Category])
-			msg := sprintf("Artifact License Scan: Medium Severity License: %v found to be associated with package %v in artifact %v:%v.",[j.Name, j.PkgName, input.metadata.image, input.metadata.image_tag])
-			sugg := "Please associate appropriate licenses with code repository and its package dependencies."
-			error := ""
-			exception_cause := j.Name
-			alertStatus = "exception"
 	}`,
 
 	318: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	default license_count = 0
 	default high_severity_licenses = []
@@ -8761,56 +10759,36 @@ var scriptMap = map[int]string{
 	response = http.send(request)
 	results := response.body.Results
 
-	licenses = [input.Results[i].Licenses[j] | count(input.Results[i].Licenses) > 0]
+	licenses := [lic |
+			results[_].Class == "license-file"
+			result := results[_]
+			lic := result.Licenses[_]
+			lic.Name != ""
+	]
 
 	license_count = count(licenses)
 
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
 			license_count == 0
 			title := "Artifact License Scan: No license found."
-			msg := sprintf("Artifact License Scan: No license found to be associated with artifact %v.",[input.metadata.image])
+			msg := sprintf("Artifact License Scan: No license found to be associated with artifact %v:%v.",[input.metadata.image, input.metadata.image_tag])
 			sugg := "Please associate appropriate license with artifact to be able to evaluate quality of license."
-			error := sprintf("No licenses found to be associated with artifact %v.", [input.metadata.image])
-			alertStatus := "error"
+			error := sprintf("No licenses found to be associated with artifact %v:%v.", [input.metadata.image, input.metadata.image_tag])
 	}
 
 	high_severity_licenses = [licenses[idx] | licenses[idx].Severity == "HIGH"]
-	high_severity_licenses_with_exception = [high_severity_licenses[idx] | high_severity_licenses[idx].Name in exception_list]
-	high_severity_licenses_without_exception = [high_severity_licenses[idx] | not high_severity_licenses[idx].Name in exception_list] 
 
-
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
-			count(high_severity_licenses_without_exception) > 0
-			some i in high_severity_licenses_without_exception
-			title := sprintf("Artifact License Scan: Package: %v/ License: %v/ Category: %v", [i.PkgName, i.Name, i.Category])
-			msg := sprintf("Artifact License Scan: High Severity License: %v found to be associated with package %v in artifact %v:%v.",[i.Name, i.PkgName, input.metadata.image, input.metadata.image_tag])
-			sugg := "Please associate appropriate licenses with code repository and its package dependencies."
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
+			count(high_severity_licenses) > 0
+			some i
+			title := sprintf("Artifact License Scan: Package: %v/ License: %v/ Category: %v", [high_severity_licenses[i].PkgName, high_severity_licenses[i].Name, high_severity_licenses[i].Category])
+			msg := sprintf("Artifact License Scan: Critical Severity License: %v found to be associated with %v in artifact %v:%v.",[high_severity_licenses[i].Name, high_severity_licenses[i].PkgName, input.metadata.image, input.metadata.image_tag])
+			sugg := "Please associate appropriate license with artifact and associated dependencies or upgrade the dependencies to their licensed arternatives."
 			error := ""
-			alertStatus := "active" 
-			exception := ""
-	}
-
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
-			count(high_severity_licenses_with_exception) > 0
-			some j in high_severity_licenses_with_exception
-			title := sprintf("Artifact License Scan: Package: %v/ License: %v/ Category: %v", [j.PkgName, j.Name, j.Category])
-			msg := sprintf("Artifact License Scan: High Severity License: %v found to be associated with package %v in artifact %v:%v.",[j.Name, j.PkgName, input.metadata.image, input.metadata.image_tag])
-			sugg := "Please associate appropriate licenses with code repository and its package dependencies."
-			error := ""
-			exception_cause := j.Name
-			alertStatus = "exception"
 	}`,
 
 	319: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	default license_count = 0
 	default critical_severity_licenses = []
@@ -8827,64 +10805,53 @@ var scriptMap = map[int]string{
 	response = http.send(request)
 	results := response.body.Results
 
-	licenses = [input.Results[i].Licenses[j] | count(input.Results[i].Licenses) > 0]
+	licenses := [lic |
+			results[_].Class == "license-file"
+			result := results[_]
+			lic := result.Licenses[_]
+			lic.Name != ""
+	]
 
 	license_count = count(licenses)
 
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
 			license_count == 0
 			title := "Artifact License Scan: No license found."
-			msg := sprintf("Artifact License Scan: No license found to be associated with artifact %v.",[input.metadata.image])
+			msg := sprintf("Artifact License Scan: No license found to be associated with artifact %v:%v.",[input.metadata.image, input.metadata.image_tag])
 			sugg := "Please associate appropriate license with artifact to be able to evaluate quality of license."
-			error := sprintf("No licenses found to be associated with artifact %v.", [input.metadata.image])
-			alertStatus := "error"
+			error := sprintf("No licenses found to be associated with artifact %v:%v.", [input.metadata.image, input.metadata.image_tag])
 	}
 
 	critical_severity_licenses = [licenses[idx] | licenses[idx].Severity == "CRITICAL"]
-	critical_severity_licenses_with_exception = [critical_severity_licenses[idx] | critical_severity_licenses[idx].Name in exception_list]
-	critical_severity_licenses_without_exception = [critical_severity_licenses[idx] | not critical_severity_licenses[idx].Name in exception_list] 
 
-
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
-			count(critical_severity_licenses_without_exception) > 0
-			some i in critical_severity_licenses_without_exception
-			title := sprintf("Artifact License Scan: Package: %v/ License: %v/ Category: %v", [i.PkgName, i.Name, i.Category])
-			msg := sprintf("Artifact License Scan: Critical Severity License: %v found to be associated with package %v in artifact %v:%v.",[i.Name, i.PkgName, input.metadata.image, input.metadata.image_tag])
-			sugg := "Please associate appropriate licenses with code repository and its package dependencies."
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
+			count(critical_severity_licenses) > 0
+			some i
+			title := sprintf("Artifact License Scan: Package: %v/ License: %v/ Category: %v", [critical_severity_licenses[i].PkgName, critical_severity_licenses[i].Name, critical_severity_licenses[i].Category])
+			msg := sprintf("Artifact License Scan: Critical Severity License: %v found to be associated with %v in artifact %v:%v.",[critical_severity_licenses[i].Name, critical_severity_licenses[i].PkgName, input.metadata.image, input.metadata.image_tag])
+			sugg := "Please associate appropriate license with artifact and associated dependencies or upgrade the dependencies to their licensed arternatives."
 			error := ""
-			alertStatus := "active" 
-			exception := ""
-	}
-
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
-			count(critical_severity_licenses_with_exception) > 0
-			some j in critical_severity_licenses_with_exception
-			title := sprintf("Artifact License Scan: Package: %v/ License: %v/ Category: %v", [j.PkgName, j.Name, j.Category])
-			msg := sprintf("Artifact License Scan: Critical Severity License: %v found to be associated with package %v in artifact %v:%v.",[j.Name, j.PkgName, input.metadata.image, input.metadata.image_tag])
-			sugg := "Please associate appropriate licenses with code repository and its package dependencies."
-			error := ""
-			exception_cause := j.Name
-			alertStatus = "exception"
 	}`,
 
 	320: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	default url_count = 0
 	default malicious_urls = []
 	default malicious_urls_count = 0
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_virustotal_url_scan.json&scanOperation=virustotalscan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_virustotal_url_scan.json&scanOperation=virustotalscan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_virustotal_url_scan.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_virustotal_url_scan.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=virustotalscan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=virustotalscan"])
 
 	request = {
 			"method": "GET",
@@ -8900,47 +10867,34 @@ var scriptMap = map[int]string{
 
 	malicious_urls_count = count(malicious_urls)
 
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
 			malicious_urls_count > 0
 			some i
-			not malicious_urls[i].url in exception_list
 			title := sprintf("Suspicious URL %v found in Repository: %v Branch: %v.", [malicious_urls[i].url, repo_name, branch])
 			msg := sprintf("Suspicious URL %v found in Repository: %v Branch: %v. \nSummary of Scan Results: \nHarmless: %v\nMalicious: %v\nSuspicious: %v\nUndetected: %v\nTimeout: %v",[malicious_urls[i].url, repo_name, branch, malicious_urls[i].harmless, malicious_urls[i].malicious, malicious_urls[i].malicious, malicious_urls[i].undetected, malicious_urls[i].timeout])
 			sugg := "Suggest securing the webhook endpoints from malicious activities by enabling security measures and remove any unwanted URL references from source code repository and configurations."
 			error := ""
-			alertStatus := "active"
-	}
-
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
-			malicious_urls_count > 0
-			some i
-			malicious_urls[i].url in exception_list
-			title := sprintf("Suspicious URL %v found in Repository: %v Branch: %v.", [malicious_urls[i].url, repo_name, branch])
-			msg := sprintf("Suspicious URL %v found in Repository: %v Branch: %v. \nSummary of Scan Results: \nHarmless: %v\nMalicious: %v\nSuspicious: %v\nUndetected: %v\nTimeout: %v",[malicious_urls[i].url, repo_name, branch, malicious_urls[i].harmless, malicious_urls[i].malicious, malicious_urls[i].malicious, malicious_urls[i].undetected, malicious_urls[i].timeout])
-			sugg := "Suggest securing the webhook endpoints from malicious activities by enabling security measures and remove any unwanted URL references from source code repository and configurations."
-			error := ""
-			exception_cause := malicious_urls[i].url
-			alertStatus := "exception"
 	}`,
 
 	321: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	default url_count = 0
 	default suspicious_urls = []
 	default suspicious_urls_count = 0
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_virustotal_url_scan.json&scanOperation=virustotalscan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_virustotal_url_scan.json&scanOperation=virustotalscan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_virustotal_url_scan.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_virustotal_url_scan.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=virustotalscan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=virustotalscan"])
 
 	request = {
 			"method": "GET",
@@ -8956,40 +10910,19 @@ var scriptMap = map[int]string{
 
 	suspicious_urls_count = count(suspicious_urls)
 
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
 			suspicious_urls_count > 0
 			some i
-			not suspicious_urls[i].url in exception_list
 			title := sprintf("Suspicious URL %v found in Repository: %v Branch: %v.", [suspicious_urls[i].url, repo_name, branch])
 			msg := sprintf("Suspicious URL %v found in Repository: %v Branch: %v. \nSummary of Scan Results: \nHarmless: %v\nMalicious: %v\nSuspicious: %v\nUndetected: %v\nTimeout: %v",[suspicious_urls[i].url, repo_name, branch, suspicious_urls[i].harmless, suspicious_urls[i].malicious, suspicious_urls[i].suspicious, suspicious_urls[i].undetected, suspicious_urls[i].timeout])
 			sugg := "Suggest securing the webhook endpoints from suspicious activities by enabling security measures and remove any unwanted URL references from source code repository and configurations."
 			error := ""
-			alertStatus := "active"
-	}
-
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
-			suspicious_urls_count > 0
-			some i
-			suspicious_urls[i].url in exception_list
-			title := sprintf("Suspicious URL %v found in Repository: %v Branch: %v.", [suspicious_urls[i].url, repo_name, branch])
-			msg := sprintf("Suspicious URL %v found in Repository: %v Branch: %v. \nSummary of Scan Results: \nHarmless: %v\nMalicious: %v\nSuspicious: %v\nUndetected: %v\nTimeout: %v",[suspicious_urls[i].url, repo_name, branch, suspicious_urls[i].harmless, suspicious_urls[i].malicious, suspicious_urls[i].suspicious, suspicious_urls[i].undetected, suspicious_urls[i].timeout])
-			sugg := "Suggest securing the webhook endpoints from suspicious activities by enabling security measures and remove any unwanted URL references from source code repository and configurations."
-			error := ""
-			exception_cause := suspicious_urls[i].url
-			alertStatus := "exception"
 	}`,
 
 	322: `
 	package opsmx
 
 	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	# Define sensitive keywords to look for in the workflow
 	sensitive_keywords = ["API_KEY", "SECRET_KEY", "PASSWORD", "TOKEN"]
@@ -9046,16 +10979,15 @@ var scriptMap = map[int]string{
 	response = http.send(request)
 
 	# Check if the response status code is not 200
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}] {
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}] {
 		response.status_code != 200
 		msg := "Failed to fetch the workflow."
 		error := sprintf("Error %v: %v received from GitHub when trying to fetch the workflow.", [response.status_code, response.body.message])
 		sugg := "Ensure the provided GitHub token has the required permissions and the workflow name is correct."
-		alertStatus := "error"
 	}
 
 	# Check if any step contains hardcoded sensitive data
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}] {
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}] {
 		response.status_code == 200
 
 		# Decode the workflow content from base64 and parse as YAML
@@ -9067,44 +10999,36 @@ var scriptMap = map[int]string{
 		# Check the run field for hardcoded sensitive data
 		step.run
 		contains_sensitive_keyword(step.run)
-		not policy_name in exception_list
 
 		msg := sprintf("Hardcoded sensitive data found in step %s of job %s in workflow %s.", [step.name, job.name, input.metadata.ssd_secret.github.workflowName])
 		sugg := "Reference sensitive data using GitHub Secrets instead of hardcoding them in the workflow."
 		error := ""
-		alertStatus := "active"
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}] {
-		response.status_code == 200
+	# Check if any with field contains hardcoded sensitive data
+	#deny[{"alertMsg": msg, "suggestion": sugg, "error": error}] {
+	#	response.status_code == 200
 
 		# Decode the workflow content from base64 and parse as YAML
-		workflow_content := base64.decode(response.body.content)
-		workflow := yaml.unmarshal(workflow_content)
-		job := workflow.jobs[_]
-		step := job.steps[_]
+	#	workflow_content := base64.decode(response.body.content)
+	#	workflow := yaml.unmarshal(workflow_content)
+	#	job := workflow.jobs[_]
+	#	step := job.steps[_]
 
-		# Check the run field for hardcoded sensitive data
-		step.run
-		contains_sensitive_keyword(step.run)
-		policy_name in exception_list
+		# Check each with field for hardcoded sensitive data
+	#	with_fields := {key: value | some key; value := step.with[key]}
+	#	some key in keys(with_fields)
+	#	contains_sensitive_keyword(with_fields[key])
 
-		msg := sprintf("Hardcoded sensitive data found in step %s of job %s in workflow %s.", [step.name, job.name, input.metadata.ssd_secret.github.workflowName])
-		sugg := "Reference sensitive data using GitHub Secrets instead of hardcoding them in the workflow."
-		error := ""
-		alertStatus := "exception"
-	}`,
+	#	msg := sprintf("Hardcoded sensitive data found in with field of step %s of job %s in workflow %s.", [step.name, job.name, input.metadata.ssd_secret.github.workflowName])
+	#	sugg := "Reference sensitive data using GitHub Secrets instead of hardcoding them in the workflow."
+	#	error := ""
+	#}
+	`,
 
 	323: `
 	package opsmx
 	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	# Define a list of approved actions and their versions
 	approved_actions = {
@@ -9159,16 +11083,15 @@ var scriptMap = map[int]string{
 	response = http.send(request)
 
 	# Check if the response status code is not 200
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}] {
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}] {
 		response.status_code != 200
 		msg := "Failed to fetch the workflow."
 		error := sprintf("Error %v: %v received from GitHub when trying to fetch the workflow.", [response.status_code, response.body.message])
 		sugg := "Ensure the provided GitHub token has the required permissions and the workflow name is correct."
-		alertStatus := "error"
 	}
 
 	# Check if the actions used in the workflow are approved
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}] {
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}] {
 		response.status_code == 200
 
 		# Decode the workflow content from base64 and parse as YAML
@@ -9185,47 +11108,15 @@ var scriptMap = map[int]string{
 		
 		# Ensure the action is in the approved list
 		not approved_actions[action_name] == action_version
-		not policy_name in exception_list
+		
 		msg := sprintf("Action %v@%v is not from an approved source or version.", [action_name, action_version])
 		sugg := "Update the action to an approved version listed in the policy, or contact the repository owner to approve the current version."
 		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}] {
-		response.status_code == 200
-
-		# Decode the workflow content from base64 and parse as YAML
-		workflow_content := base64.decode(response.body.content)
-		workflow := yaml.unmarshal(workflow_content)
-		job := workflow.jobs[_]
-		step := job.steps[_]
-		
-		# Check if the step uses an action
-		step.uses
-		split_step := split(step.uses, "@")
-		action_name := split_step[0]
-		action_version := split_step[1]
-		
-		# Ensure the action is in the approved list
-		not approved_actions[action_name] == action_version
-		policy_name in exception_list
-		msg := sprintf("Action %v@%v is not from an approved source or version.", [action_name, action_version])
-		sugg := "Update the action to an approved version listed in the policy, or contact the repository owner to approve the current version."
-		error := ""
-		alertStatus := "exception"
 	}`,
 
 	324: `
 	package opsmx
 	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	# Define a list of trusted sources for dependencies
 	trusted_sources = [
@@ -9279,16 +11170,15 @@ var scriptMap = map[int]string{
 	response = http.send(request)
 
 	# Check if the response status code is not 200
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}] {
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}] {
 		response.status_code != 200
 		msg := "Failed to fetch the workflow."
 		error := sprintf("Error %v: %v received from GitHub when trying to fetch the workflow.", [response.status_code, response.body.message])
 		sugg := "Ensure the provided GitHub token has the required permissions and the workflow name is correct."
-		alertStatus := "error"
 	}
 
 	# Check if the dependencies are fetched from trusted sources
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}] {
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}] {
 		response.status_code == 200
 
 		# Decode the workflow content from base64 and parse as YAML
@@ -9304,34 +11194,10 @@ var scriptMap = map[int]string{
 
 		# Verify the source of the dependency
 		not is_trusted_source(dependency)
-		not policy_name in exception_list
+
 		msg := sprintf("Dependency fetched from untrusted source in step %s of job %s in workflow %s.", [step.name, job.name, input.metadata.ssd_secret.github.workflowName])
 		sugg := "Ensure all dependencies are fetched from trusted sources such as npm, PyPI, or RubyGems."
 		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}] {
-		response.status_code == 200
-
-		# Decode the workflow content from base64 and parse as YAML
-		workflow_content := base64.decode(response.body.content)
-		workflow := yaml.unmarshal(workflow_content)
-		job := workflow.jobs[_]
-		step := job.steps[_]
-
-		# Check if the step installs dependencies
-		step.run
-		some dependency in split(step.run, "\n")
-		contains(dependency, "install")
-
-		# Verify the source of the dependency
-		not is_trusted_source(dependency)
-		policy_name in exception_list
-		msg := sprintf("Dependency fetched from untrusted source in step %s of job %s in workflow %s.", [step.name, job.name, input.metadata.ssd_secret.github.workflowName])
-		sugg := "Ensure all dependencies are fetched from trusted sources such as npm, PyPI, or RubyGems."
-		error := ""
-		alertStatus := "exception"
 	}
 
 	# Helper function to check if a dependency is from a trusted source
@@ -9344,13 +11210,6 @@ var scriptMap = map[int]string{
 	package opsmx
 
 	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	# Define allowed branches and events
 	allowed_branches = ["main", "master", "develop"]
@@ -9400,16 +11259,15 @@ var scriptMap = map[int]string{
 	response = http.send(request)
 
 	# Check if the response status code is not 200
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}] {
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}] {
 		response.status_code != 200
 		msg := "Failed to fetch the workflow."
 		error := sprintf("Error %v: %v received from GitHub when trying to fetch the workflow.", [response.status_code, response.body.message])
 		sugg := "Ensure the provided GitHub token has the required permissions and the workflow name is correct."
-		alertStatus := "error"
 	}
 
 	# Check if workflows are triggered on allowed branches and events
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}] {
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}] {
 		response.status_code == 200
 
 		# Decode the workflow content from base64 and parse as YAML
@@ -9420,34 +11278,13 @@ var scriptMap = map[int]string{
 		# Check for disallowed branches in push triggers
 		some branch in on.push.branches
 		not branch in allowed_branches
-		not policy_name in exception_list
 		msg := sprintf("Workflow triggered on disallowed branch %v in push trigger in workflow %s.", [branch, input.metadata.ssd_secret.github.workflowName])
 		sugg := "Ensure that the workflow is only triggered on allowed branches: main, master, or develop."
 		error := ""
 		trigger := "branch"
-		alertStatus := "active"
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}] {
-		response.status_code == 200
-
-		# Decode the workflow content from base64 and parse as YAML
-		workflow_content := base64.decode(response.body.content)
-		workflow := yaml.unmarshal(workflow_content)
-		on := workflow.on
-
-		# Check for disallowed branches in push triggers
-		some branch in on.push.branches
-		not branch in allowed_branches
-		policy_name in exception_list
-		msg := sprintf("Workflow triggered on disallowed branch %v in push trigger in workflow %s.", [branch, input.metadata.ssd_secret.github.workflowName])
-		sugg := "Ensure that the workflow is only triggered on allowed branches: main, master, or develop."
-		error := ""
-		trigger := "branch"
-		alertStatus := "exception"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}] {
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}] {
 		response.status_code == 200
 
 		# Decode the workflow content from base64 and parse as YAML
@@ -9458,34 +11295,13 @@ var scriptMap = map[int]string{
 		# Check for disallowed branches in pull_request triggers
 		some branch in on.pull_request.branches
 		not branch in allowed_branches
-		not policy_name in exception_list
 		msg := sprintf("Workflow triggered on disallowed branch %v in pull_request trigger in workflow %s.", [branch, input.metadata.ssd_secret.github.workflowName])
 		sugg := "Ensure that the workflow is only triggered on allowed branches: main, master, or develop."
 		error := ""
 		trigger := "branch"
-		alertStatus := "active"
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}] {
-		response.status_code == 200
-
-		# Decode the workflow content from base64 and parse as YAML
-		workflow_content := base64.decode(response.body.content)
-		workflow := yaml.unmarshal(workflow_content)
-		on := workflow.on
-
-		# Check for disallowed branches in pull_request triggers
-		some branch in on.pull_request.branches
-		not branch in allowed_branches
-		policy_name in exception_list
-		msg := sprintf("Workflow triggered on disallowed branch %v in pull_request trigger in workflow %s.", [branch, input.metadata.ssd_secret.github.workflowName])
-		sugg := "Ensure that the workflow is only triggered on allowed branches: main, master, or develop."
-		error := ""
-		trigger := "branch"
-		alertStatus := "exception"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}] {
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}] {
 		response.status_code == 200
 
 		# Decode the workflow content from base64 and parse as YAML
@@ -9496,44 +11312,15 @@ var scriptMap = map[int]string{
 		# Check for disallowed events
 		some event in object.keys(on)
 		not event in allowed_events
-		not policy_name in exception_list
 		msg := sprintf("Workflow triggered on disallowed event %v in workflow %s.", [event, input.metadata.ssd_secret.github.workflowName])
 		sugg := "Ensure that the workflow is only triggered on allowed events: push or pull_request."
 		error := ""
 		trigger := "event"
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}] {
-		response.status_code == 200
-
-		# Decode the workflow content from base64 and parse as YAML
-		workflow_content := base64.decode(response.body.content)
-		workflow := yaml.unmarshal(workflow_content)
-		on := workflow.on
-
-		# Check for disallowed events
-		some event in object.keys(on)
-		not event in allowed_events
-		policy_name in exception_list
-		msg := sprintf("Workflow triggered on disallowed event %v in workflow %s.", [event, input.metadata.ssd_secret.github.workflowName])
-		sugg := "Ensure that the workflow is only triggered on allowed events: push or pull_request."
-		error := ""
-		trigger := "event"
-		alertStatus := "exception"
 	}`,
-
 	326: `
 	package opsmx
 
 	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	# Define allowed protocols
 	allowed_protocols = ["https://", "ssh://"]
@@ -9590,16 +11377,15 @@ var scriptMap = map[int]string{
 	response = http.send(request)
 
 	# Check if the response status code is not 200
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}] {
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}] {
 		response.status_code != 200
 		msg := "Failed to fetch the workflow."
 		error := sprintf("Error %v: %v received from GitHub when trying to fetch the workflow.", [response.status_code, response.body.message])
 		sugg := "Ensure the provided GitHub token has the required permissions and the workflow name is correct."
-		alertStatus := "error"
 	}
 
 	# Check if all network communications use secure protocols
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}] {
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}] {
 		response.status_code == 200
 
 		# Decode the workflow content from base64 and parse as YAML
@@ -9613,32 +11399,10 @@ var scriptMap = map[int]string{
 		some line in split(step.run, "\n")
 		url := find_network_calls(line)
 		not uses_secure_protocol(url)
-		not policy_name in exception_list
+
 		msg := sprintf("Insecure protocol used in step %s of job %s in workflow %s. URL: %v", [step.name, job.name, input.metadata.ssd_secret.github.workflowName, url])
 		sugg := "Use secure protocols (https or ssh) for all network communications."
 		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}] {
-		response.status_code == 200
-
-		# Decode the workflow content from base64 and parse as YAML
-		workflow_content := base64.decode(response.body.content)
-		workflow := yaml.unmarshal(workflow_content)
-		job := workflow.jobs[_]
-		step := job.steps[_]
-
-		# Check the run field for insecure protocols
-		step.run
-		some line in split(step.run, "\n")
-		url := find_network_calls(line)
-		not uses_secure_protocol(url)
-		policy_name in exception_list
-		msg := sprintf("Insecure protocol used in step %s of job %s in workflow %s. URL: %v", [step.name, job.name, input.metadata.ssd_secret.github.workflowName, url])
-		sugg := "Use secure protocols (https or ssh) for all network communications."
-		error := ""
-		alertStatus := "exception"
 	}
 
 	# Helper function to extract http URLs from a line of text
@@ -9689,13 +11453,6 @@ var scriptMap = map[int]string{
 
 	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
 	# Construct the request URL to list all workflows
 	list_workflows_url = sprintf("%s/repos/%s/%s/actions/workflows", [
 		input.metadata.ssd_secret.github.url,
@@ -9740,16 +11497,15 @@ var scriptMap = map[int]string{
 	response = http.send(request)
 
 	# Check if the response status code is not 200
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}] {
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}] {
 		response.status_code != 200
 		msg := "Failed to fetch the workflow."
 		error := sprintf("Error %v: %v received from GitHub when trying to fetch the workflow.", [response.status_code, response.body.message])
 		sugg := "Ensure the provided GitHub token has the required permissions and the workflow name is correct."
-		alertStatus := "error"
 	}
 
 	# Check if each job has a timeout configured
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}] {
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}] {
 		response.status_code == 200
 
 		# Decode the workflow content from base64 and parse as YAML
@@ -9761,34 +11517,13 @@ var scriptMap = map[int]string{
 		job := jobs[job_name]
 		not job["timeout-minutes"]
 
-		not policy_name in exception_list
 		msg := sprintf("Job %s in workflow %s does not have a timeout configured.", [job_name, input.metadata.ssd_secret.github.workflowName])
 		sugg := "Configure a timeout for the job in the workflow file."
 		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}] {
-		response.status_code == 200
-
-		# Decode the workflow content from base64 and parse as YAML
-		workflow_content := base64.decode(response.body.content)
-		workflow := yaml.unmarshal(workflow_content)
-		jobs := workflow.jobs
-
-		some job_name in jobs
-		job := jobs[job_name]
-		not job["timeout-minutes"]
-
-		policy_name in exception_list
-		msg := sprintf("Job %s in workflow %s does not have a timeout configured.", [job_name, input.metadata.ssd_secret.github.workflowName])
-		sugg := "Configure a timeout for the job in the workflow file."
-		error := ""
-		alertStatus := "exception"
 	}
 
 	# Check if each step has a timeout configured (if applicable)
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}] {
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}] {
 		response.status_code == 200
 
 		# Decode the workflow content from base64 and parse as YAML
@@ -9803,47 +11538,16 @@ var scriptMap = map[int]string{
 		some step_name in steps
 		step := steps[step_name]
 		not step["timeout-minutes"]
-		not policy_name in exception_list
+
 		msg := sprintf("Step %s in job %s of workflow %s does not have a timeout configured.", [step_name, job_name, input.metadata.ssd_secret.github.workflowName])
 		sugg := "Configure a timeout for the step in the workflow file."
 		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}] {
-		response.status_code == 200
-
-		# Decode the workflow content from base64 and parse as YAML
-		workflow_content := base64.decode(response.body.content)
-		workflow := yaml.unmarshal(workflow_content)
-		jobs := workflow.jobs
-
-		some job_name in jobs
-		job := jobs[job_name]
-		steps := job.steps
-
-		some step_name in steps
-		step := steps[step_name]
-		not step["timeout-minutes"]
-		policy_name in exception_list
-		msg := sprintf("Step %s in job %s of workflow %s does not have a timeout configured.", [step_name, job_name, input.metadata.ssd_secret.github.workflowName])
-		sugg := "Configure a timeout for the step in the workflow file."
-		error := ""
-		alertStatus := "exception"
 	}`,
 
 	328: `
 	package opsmx
-	import future.keywords.in
 
 	default allow = false
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	request_components = [input.metadata.ssd_secret.github.url, "repos", input.metadata.owner, input.metadata.repository,"actions/permissions/workflow"] 
 
@@ -9865,63 +11569,51 @@ var scriptMap = map[int]string{
 	response.status_code = 200
 	}
 
-	deny[{"alertMsg":msg, "suggestions": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 401
-		msg := "Unauthorized to check repository configuration due to Bad Credentials."
-		error := "401 Unauthorized."
-		sugg := "Kindly check the access token. It must have enough permissions to get repository configurations."
-		alertStatus := "error"
+	deny[{"alertMsg":msg, "suggestions": sugg, "error": error}]{
+	response.status_code == 401
+	msg := "Unauthorized to check repository configuration due to Bad Credentials."
+	error := "401 Unauthorized."
+	sugg := "Kindly check the access token. It must have enough permissions to get repository configurations."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 404
-		msg := "Repository not found while trying to fetch Repository Configuration."
-		sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository configuration."
-		error := "Repo name or Organisation is incorrect."
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	response.status_code == 404
+	msg := "Repository not found while trying to fetch Repository Configuration."
+	sugg := "Kindly check if the repository provided is correct and the access token has rights to read repository configuration."
+	error := "Repo name or Organisation is incorrect."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.status_code == 500
-		msg := "Internal Server Error."
-		sugg := ""
-		error := "GitHub is not reachable."
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	response.status_code == 500
+	msg := "Internal Server Error."
+	sugg := ""
+	error := "GitHub is not reachable."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		response.body.default_workflow_permissions == "write"
-		not policy_name in exception_list
-		msg := sprintf("Github actions workflow permissions are write permissions for %v/%v repository", [input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Adhere to the company policy by the Github actions workflow permission should be read for %v/%v repository.", [input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		response.body.default_workflow_permissions == "write"
-		policy_name in exception_list
-		msg := sprintf("Github actions workflow permissions are write permissions for %v/%v repository", [input.metadata.owner, input.metadata.repository])
-		sugg := sprintf("Adhere to the company policy by the Github actions workflow permission should be read for %v/%v repository.", [input.metadata.owner, input.metadata.repository])
-		error := ""
-		alertStatus := "exception"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	response.body.default_workflow_permissions == "write"
+	msg := sprintf("Github actions workflow permissions are write permissions for %v/%v repository", [input.metadata.owner, input.metadata.repository])
+	sugg := sprintf("Adhere to the company policy by the Github actions workflow permission should be read for %v/%v repository.", [input.metadata.owner, input.metadata.repository])
+	error := ""
 	}`,
 
 	329: `
 	package opsmx
-	import future.keywords.in
 
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 	default count_blocker_issues = -1
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_sonarqube.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_", image_sha, "_sonarqube.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name, "&scanOperation=sonarqubescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name ,"&scanOperation=sonarqubescan"] )
 
 	request = {
 			"method": "GET",
@@ -9932,54 +11624,38 @@ var scriptMap = map[int]string{
 	blocker_issues = response.body.blockerIssues
 	count_blocker_issues = count(blocker_issues)
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		count_blocker_issues == -1
-		msg = "List of Blocker Issues for Sonarqube Project could not be accessed."
-		sugg = "Kindly check if the Sonarqube token is configured and has permissions to read issues of the project."
-		error = "Failed while fetching blocker issues from Sonarqube."
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	count_blocker_issues == -1
+	msg = "List of Blocker Issues for Sonarqube Project could not be accessed."
+	sugg = "Kindly check if the Sonarqube token is configured and has permissions to read issues of the project."
+	error = "Failed while fetching blocker issues from Sonarqube."
 	}
 
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
-		count(blocker_issues) > 0
-		some idx
-		blocker_issues[idx].message in exception_list
-		title := sprintf("Sonarqube Scan: %v", [blocker_issues[idx].message])
-		msg = blocker_issues[idx].message
-		sugg = "Kindly refer to the suggested resolutions by Sonarqube. For more details about the error, please refer to the detailed scan results."
-		error = ""
-		exception_cause := blocker_issues[idx].message
-		alertStatus := "exception"
-	}
-
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
-		count(blocker_issues) > 0
-		some idx
-		not blocker_issues[idx].message in exception_list
-		title := sprintf("Sonarqube Scan: %v", [blocker_issues[idx].message])
-		msg = blocker_issues[idx].message
-		sugg = "Kindly refer to the suggested resolutions by Sonarqube. For more details about the error, please refer to the detailed scan results."
-		error = ""
-		exception_cause := blocker_issues[idx].message
-		alertStatus := "active"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
+	count(blocker_issues) > 0
+	some idx
+	msg = blocker_issues[idx].message
+	sugg = "Kindly refer to the suggested resolutions by Sonarqube. For more details about the error, please refer to the detailed scan results."
+	error = ""
 	}`,
 
 	330: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	default count_critical_issues = -1
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_sonarqube.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_", image_sha, "_sonarqube.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name, "&scanOperation=sonarqubescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name ,"&scanOperation=sonarqubescan"] )
 
 	request = {
 			"method": "GET",
@@ -9990,53 +11666,38 @@ var scriptMap = map[int]string{
 	critical_issues = response.body.criticalIssues
 	count_critical_issues = count(critical_issues)
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		count_critical_issues == -1
-		msg = "List of Critical Issues for Sonarqube Project could not be accessed."
-		sugg = "Kindly check if the Sonarqube token is configured and has permissions to read issues of the project."
-		error = "Failed while fetching critical issues from Sonarqube."
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	count_critical_issues == -1
+	msg = "List of Critical Issues for Sonarqube Project could not be accessed."
+	sugg = "Kindly check if the Sonarqube token is configured and has permissions to read issues of the project."
+	error = "Failed while fetching critical issues from Sonarqube."
 	}
 
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
-		count_critical_issues > 0
-		some idx
-		critical_issues[idx].message in exception_list
-		title := sprintf("Sonarqube Scan: %v", [blocker_issues[idx].message])
-		msg = critical_issues[idx].message
-		sugg = "Kindly refer to the suggested resolutions by Sonarqube. For more details about the error, please refer to the detailed scan results."
-		error = ""
-		exception_cause := critical_issues[idx].message
-		alertStatus := "exception"
-	}
-
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
-		count_critical_issues > 0
-		some idx
-		not critical_issues[idx].message in exception_list
-		title := sprintf("Sonarqube Scan: %v", [blocker_issues[idx].message])
-		msg = critical_issues[idx].message
-		sugg = "Kindly refer to the suggested resolutions by Sonarqube. For more details about the error, please refer to the detailed scan results."
-		error = ""
-		exception_cause := critical_issues[idx].message
-		alertStatus := "active"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
+	count_critical_issues > 0
+	some idx
+	msg = critical_issues[idx].message
+	sugg = "Kindly refer to the suggested resolutions by Sonarqube. For more details about the error, please refer to the detailed scan results."
+	error = ""
 	}`,
 
 	331: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	default facetvalues := []
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_sonarqube.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_", image_sha, "_sonarqube.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name, "&scanOperation=sonarqubescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name ,"&scanOperation=sonarqubescan"] )
 
 
 	request = {
@@ -10050,69 +11711,45 @@ var scriptMap = map[int]string{
 	critical_count := [facetvalues[i].count | facetvalues[i].val == "CRITICAL"]
 	blocker_count := [facetvalues[i].count | facetvalues[i].val == "BLOCKER"]
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		count(facetvalues) == 0
-		msg = "No facet values found for severities."
-		sugg = "Kindly check if the Sonarqube token is configured and has permissions to read issues of the project."
-		error = "Failed while fetching severity count from Sonarqube."
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	count(facetvalues) == 0
+	msg = "No facet values found for severities."
+	sugg = "Kindly check if the Sonarqube token is configured and has permissions to read issues of the project."
+	error = "Failed while fetching severity count from Sonarqube."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
-		count(facetvalues) > 0
-		critical_count[0] > 0
-		not policy_name in exception_list
-		msg = sprintf("Blocker or Critical issues found during SAST scan for repository %v/%v and branch %v. \nBlocker Issues: %v \nCritical Issues: %v", [input.metadata.owner, input.metadata.repository, input.metadata.branch, blocker_count[0], critical_count[0]])
-		sugg = "Kindly refer to the list of issues reported in SAST scan and their resolutions."
-		error = ""
-		alertStatus := "active"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
+	count(facetvalues) > 0
+	critical_count[0] > 0
+	msg = sprintf("Blocker or Critical issues found during SAST scan for repository %v/%v and branch %v. \nBlocker Issues: %v \nCritical Issues: %v", [input.metadata.owner, input.metadata.repository, input.metadata.branch, blocker_count[0], critical_count[0]])
+	sugg = "Kindly refer to the list of issues reported in SAST scan and their resolutions."
+	error = ""
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": policy_name, "alertStatus": alertStatus}]{
-		count(facetvalues) > 0
-		critical_count[0] > 0
-		policy_name in exception_list
-		msg = sprintf("Blocker or Critical issues found during SAST scan for repository %v/%v and branch %v. \nBlocker Issues: %v \nCritical Issues: %v", [input.metadata.owner, input.metadata.repository, input.metadata.branch, blocker_count[0], critical_count[0]])
-		sugg = "Kindly refer to the list of issues reported in SAST scan and their resolutions."
-		error = ""
-		alertStatus := "exception"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
-		count(facetvalues) > 0
-		blocker_count[0] > 0
-		not policy_name in exception_list
-		msg = sprintf("Blocker or Critical issues found during SAST scan for repository %v/%v and branch %v. \nBlocker Issues: %v \nCritical Issues: %v", [input.metadata.owner, input.metadata.repository, input.metadata.branch, blocker_count[0], critical_count[0]])
-		sugg = "Kindly refer to the list of issues reported in SAST scan and their resolutions."
-		error = ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": policy_name, "alertStatus": alertStatus}]{
-		count(facetvalues) > 0
-		blocker_count[0] > 0
-		policy_name in exception_list
-		msg = sprintf("Blocker or Critical issues found during SAST scan for repository %v/%v and branch %v. \nBlocker Issues: %v \nCritical Issues: %v", [input.metadata.owner, input.metadata.repository, input.metadata.branch, blocker_count[0], critical_count[0]])
-		sugg = "Kindly refer to the list of issues reported in SAST scan and their resolutions."
-		error = ""
-		alertStatus := "exception"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
+	count(facetvalues) > 0
+	blocker_count[0] > 0
+	msg = sprintf("Blocker or Critical issues found during SAST scan for repository %v/%v and branch %v. \nBlocker Issues: %v \nCritical Issues: %v", [input.metadata.owner, input.metadata.repository, input.metadata.branch, blocker_count[0], critical_count[0]])
+	sugg = "Kindly refer to the list of issues reported in SAST scan and their resolutions."
+	error = ""
 	}`,
 
 	332: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	default facetvalues := []
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_sonarqube.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_", image_sha, "_sonarqube.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name, "&scanOperation=sonarqubescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name ,"&scanOperation=sonarqubescan"] )
 
 	request = {
 			"method": "GET",
@@ -10124,49 +11761,37 @@ var scriptMap = map[int]string{
 
 	major_count := [facetvalues[i].count | facetvalues[i].val == "MAJOR"]
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		count(facetvalues) == 0
-		msg = "No facet values found for severities."
-		sugg = "Kindly check if the Sonarqube token is configured and has permissions to read issues of the project."
-		error = "Failed while fetching severity count from Sonarqube."
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	count(facetvalues) == 0
+	msg = "No facet values found for severities."
+	sugg = "Kindly check if the Sonarqube token is configured and has permissions to read issues of the project."
+	error = "Failed while fetching severity count from Sonarqube."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
-		count(facetvalues) > 0
-		major_count[0] > 0
-		not policy_name in exception_list
-		msg = sprintf("Major issues found during SAST scan for repository %v/%v and branch %v. \nMajor Issues: %v", [input.metadata.owner, input.metadata.repository, input.metadata.branch, major_count[0]])
-		sugg = "Kindly refer to the list of issues reported in SAST scan and their resolutions."
-		error = ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": policy_name, "alertStatus": alertStatus}]{
-		count(facetvalues) > 0
-		major_count[0] > 0
-		policy_name in exception_list
-		msg = sprintf("Major issues found during SAST scan for repository %v/%v and branch %v. \nMajor Issues: %v", [input.metadata.owner, input.metadata.repository, input.metadata.branch, major_count[0]])
-		sugg = "Kindly refer to the list of issues reported in SAST scan and their resolutions."
-		error = ""
-		alertStatus := "exception"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
+	count(facetvalues) > 0
+	major_count[0] > 0
+	msg = sprintf("Major issues found during SAST scan for repository %v/%v and branch %v. \nMajor Issues: %v", [input.metadata.owner, input.metadata.repository, input.metadata.branch, major_count[0]])
+	sugg = "Kindly refer to the list of issues reported in SAST scan and their resolutions."
+	error = ""
 	}`,
 
 	333: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	default facetvalues := []
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_sonarqube.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_", image_sha, "_sonarqube.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name, "&scanOperation=sonarqubescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name ,"&scanOperation=sonarqubescan"] )
 
 	request = {
 			"method": "GET",
@@ -10179,69 +11804,46 @@ var scriptMap = map[int]string{
 	info_count := [facetvalues[i].count | facetvalues[i].val == "INFO"]
 	minor_count := [facetvalues[i].count | facetvalues[i].val == "MINOR"]
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		count(facetvalues) == 0
-		msg = "No facet values found for severities."
-		sugg = "Kindly check if the Sonarqube token is configured and has permissions to read issues of the project."
-		error = "Failed while fetching severity count from Sonarqube."
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	count(facetvalues) == 0
+	msg = "No facet values found for severities."
+	sugg = "Kindly check if the Sonarqube token is configured and has permissions to read issues of the project."
+	error = "Failed while fetching severity count from Sonarqube."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
-		count(facetvalues) > 0
-		minor_count[0] > 0
-		not policy_name in exception_list
-		msg = sprintf("Minor issues found during SAST scan for repository %v/%v and branch %v. \nMinor Issues: %v \nInfo Count : %v", [input.metadata.owner, input.metadata.repository, input.metadata.branch, minor_count[0], info_count[0]])
-		sugg = "Kindly refer to the list of issues reported in SAST scan and their resolutions."
-		error = ""
-		alertStatus := "active"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
+	count(facetvalues) > 0
+	minor_count[0] > 0
+	msg = sprintf("Minor issues found during SAST scan for repository %v/%v and branch %v. \nMinor Issues: %v \nInfo Count : %v", [input.metadata.owner, input.metadata.repository, input.metadata.branch, minor_count[0], info_count[0]])
+	sugg = "Kindly refer to the list of issues reported in SAST scan and their resolutions."
+	error = ""
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": policy_name, "alertStatus": alertStatus}]{
-		count(facetvalues) > 0
-		minor_count[0] > 0
-		policy_name in exception_list
-		msg = sprintf("Minor issues found during SAST scan for repository %v/%v and branch %v. \nMinor Issues: %v \nInfo Count : %v", [input.metadata.owner, input.metadata.repository, input.metadata.branch, minor_count[0], info_count[0]])
-		sugg = "Kindly refer to the list of issues reported in SAST scan and their resolutions."
-		error = ""
-		alertStatus := "exception"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
-		count(facetvalues) > 0
-		info_count[0] > 0
-		not policy_name in exception_list
-		msg = sprintf("Minor issues found during SAST scan for repository %v/%v and branch %v. \nMinor Issues: %v \nInfo Count : %v", [input.metadata.owner, input.metadata.repository, input.metadata.branch, minor_count[0], info_count[0]])
-		sugg = "Kindly refer to the list of issues reported in SAST scan and their resolutions."
-		error = ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": policy_name, "alertStatus": alertStatus}]{
-		count(facetvalues) > 0
-		info_count[0] > 0
-		policy_name in exception_list
-		msg = sprintf("Minor issues found during SAST scan for repository %v/%v and branch %v. \nMinor Issues: %v \nInfo Count : %v", [input.metadata.owner, input.metadata.repository, input.metadata.branch, minor_count[0], info_count[0]])
-		sugg = "Kindly refer to the list of issues reported in SAST scan and their resolutions."
-		error = ""
-		alertStatus := "exception"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
+	count(facetvalues) > 0
+	info_count[0] > 0
+	msg = sprintf("Minor issues found during SAST scan for repository %v/%v and branch %v. \nMinor Issues: %v \nInfo Count : %v", [input.metadata.owner, input.metadata.repository, input.metadata.branch, minor_count[0], info_count[0]])
+	sugg = "Kindly refer to the list of issues reported in SAST scan and their resolutions."
+	error = ""
 	}`,
 
 	334: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	default count_critical_issues = -1
 	default count_issues = -1
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codescan_codacy.json&scanOperation=codacyscan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codescan_codacy.json&scanOperation=codacyscan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codescan_codacy.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_codescan_codacy.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=codacyscan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=codacyscan"])
 
 
 	request = {
@@ -10253,51 +11855,38 @@ var scriptMap = map[int]string{
 	issues = response.body.codacyAnalysis
 	count_issues = count(issues)
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		count_issues == -1
-		msg = "List of Issues for Codacy Project could not be accessed."
-		sugg = "Kindly check if the Codacy token is configured and has permissions to read issues of the project."
-		error = "Failed while fetching issues from Codacy."
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	count_issues == -1
+	msg = "List of Issues for Codacy Project could not be accessed."
+	sugg = "Kindly check if the Codacy token is configured and has permissions to read issues of the project."
+	error = "Failed while fetching issues from Codacy."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
-		count(issues) > 0
-		some idx
-		issues[idx].level == "Error"
-		not policy_name in exception_list
-		msg = issues[idx].ruleMessage
-		sugg = "Kindly refer to the suggested resolutions by Codacy. For more details about the error, please refer to the detailed scan results."
-		error = ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": policy_name, "alertStatus": alertStatus}]{
-		count(issues) > 0
-		some idx
-		issues[idx].level == "Error"
-		policy_name in exception_list
-		msg = issues[idx].ruleMessage
-		sugg = "Kindly refer to the suggested resolutions by Codacy. For more details about the error, please refer to the detailed scan results."
-		error = ""
-		alertStatus := "exception"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
+	count(issues) > 0
+	some idx
+	issues[idx].level == "Error"
+	msg = issues[idx].ruleMessage
+	sugg = "Kindly refer to the suggested resolutions by Codacy. For more details about the error, please refer to the detailed scan results."
+	error = ""
 	}`,
 
 	335: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	default count_issues = -1
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codescan_codacy.json&scanOperation=codacyscan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codescan_codacy.json&scanOperation=codacyscan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codescan_codacy.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_codescan_codacy.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=codacyscan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=codacyscan"])
 
 	request = {
 			"method": "GET",
@@ -10308,51 +11897,38 @@ var scriptMap = map[int]string{
 	issues = response.body.codacyAnalysis
 	count_issues = count(issues)
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		count_issues == -1
-		msg = "List of Issues for Codacy Project could not be accessed."
-		sugg = "Kindly check if the Codacy token is configured and has permissions to read issues of the project."
-		error = "Failed while fetching issues from Codacy."
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	count_issues == -1
+	msg = "List of Issues for Codacy Project could not be accessed."
+	sugg = "Kindly check if the Codacy token is configured and has permissions to read issues of the project."
+	error = "Failed while fetching issues from Codacy."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
-		count(issues) > 0
-		some idx
-		issues[idx].level == "Warning"
-		not policy_name in exception_list
-		msg = issues[idx].ruleMessage
-		sugg = "Kindly refer to the suggested resolutions by Codacy. For more details about the error, please refer to the detailed scan results."
-		error = ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": policy_name, "alertStatus": alertStatus}]{
-		count(issues) > 0
-		some idx
-		issues[idx].level == "Warning"
-		policy_name in exception_list
-		msg = issues[idx].ruleMessage
-		sugg = "Kindly refer to the suggested resolutions by Codacy. For more details about the error, please refer to the detailed scan results."
-		error = ""
-		alertStatus := "exception"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
+	count(issues) > 0
+	some idx
+	issues[idx].level == "Warning"
+	msg = issues[idx].ruleMessage
+	sugg = "Kindly refer to the suggested resolutions by Codacy. For more details about the error, please refer to the detailed scan results."
+	error = ""
 	}`,
 
 	336: `
 	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
 
 	default count_issues = -1
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codescan_codacy.json&scanOperation=codacyscan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codescan_codacy.json&scanOperation=codacyscan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codescan_codacy.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_codescan_codacy.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=codacyscan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=codacyscan"])
 
 	request = {
 			"method": "GET",
@@ -10363,266 +11939,20 @@ var scriptMap = map[int]string{
 	issues = response.body.codacyAnalysis
 	count_issues = count(issues)
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		count_issues == -1
-		msg = "List of Issues for Codacy Project could not be accessed."
-		sugg = "Kindly check if the Codacy token is configured and has permissions to read issues of the project."
-		error = "Failed while fetching issues from Codacy."
-		alertStatus := "error"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error}]{
+	count_issues == -1
+	msg = "List of Issues for Codacy Project could not be accessed."
+	sugg = "Kindly check if the Codacy token is configured and has permissions to read issues of the project."
+	error = "Failed while fetching issues from Codacy."
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
-		count(issues) > 0
-		some idx
-		issues[idx].level == "Info"
-		not policy_name in exception_list
-		msg = issues[idx].ruleMessage
-		sugg = "Kindly refer to the suggested resolutions by Codacy. For more details about the error, please refer to the detailed scan results."
-		error = ""
-		alertStatus := "active"
-	}
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": policy_name, "alertStatus": alertStatus}]{
-		count(issues) > 0
-		some idx
-		issues[idx].level == "Info"
-		policy_name in exception_list
-		msg = issues[idx].ruleMessage
-		sugg = "Kindly refer to the suggested resolutions by Codacy. For more details about the error, please refer to the detailed scan results."
-		error = ""
-		alertStatus := "exception"
-	}`,
-
-	337: `
-	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-	default issues = []
-	default count_issues = -1
-
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", input.metadata.service, "_", input.metadata.deploymentId, "_zapScan.json&scanOperation=zapDastScan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", input.metadata.service, "_", input.metadata.deploymentId, "_zapScan.json&scanOperation=zapDastScan"] )
-
-
-	request = {
-			"method": "GET",
-			"url": complete_url
-	}
-
-	response = http.send(request)
-	issues = [response.body.zapAlerts[i] | response.body.zapAlerts[i].risk == "High"]
-	count_issues = count(issues)
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		count_issues == -1
-		msg = "List of High Severity Issues for OWASP ZAP Scan could not be accessed."
-		sugg = "Kindly check if the OWASP ZAP is configured properly and SSD has access to the application endpoint."
-		error = "Failed while fetching issues from OWASP ZAP."
-		alertStatus := "error"
-	}
-
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
-		count_issues > 0
-		some idx
-		issues[idx].name in exception_list
-		title := sprintf("OWASP ZAP Scan: %v", [issues[idx].name])
-		msg = issues[idx].description
-		sugg = issues[idx].solution
-		error = ""
-		exception_cause := issues[idx].name
-		alertStatus := "exception"
-	}
-
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
-		count_issues > 0
-		some idx
-		not issues[idx].name in exception_list
-		title := sprintf("OWASP ZAP Scan: %v", [issues[idx].name])
-		msg = issues[idx].description
-		sugg = issues[idx].solution
-		error = ""
-		alertStatus := "active"
-	}`,
-
-	338: `
-	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-	default issues = []
-	default count_issues = -1
-
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", input.metadata.service, "_", input.metadata.deploymentId, "_zapScan.json&scanOperation=zapDastScan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", input.metadata.service, "_", input.metadata.deploymentId, "_zapScan.json&scanOperation=zapDastScan"] )
-
-
-	request = {
-			"method": "GET",
-			"url": complete_url
-	}
-
-	response = http.send(request)
-	issues = [response.body.zapAlerts[i] | response.body.zapAlerts[i].risk == "Medium"]
-	count_issues = count(issues)
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		count_issues == -1
-		msg = "List of High Severity Issues for OWASP ZAP Scan could not be accessed."
-		sugg = "Kindly check if the OWASP ZAP is configured properly and SSD has access to the application endpoint."
-		error = "Failed while fetching issues from OWASP ZAP."
-		alertStatus := "error"
-	}
-
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
-		count_issues > 0
-		some idx
-		issues[idx].name in exception_list
-		title := sprintf("OWASP ZAP Scan: %v", [issues[idx].name])
-		msg = issues[idx].description
-		sugg = issues[idx].solution
-		error = ""
-		exception_cause := issues[idx].name
-		alertStatus := "exception"
-	}
-
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
-		count_issues > 0
-		some idx
-		not issues[idx].name in exception_list
-		title := sprintf("OWASP ZAP Scan: %v", [issues[idx].name])
-		msg = issues[idx].description
-		sugg = issues[idx].solution
-		error = ""
-		alertStatus := "active"
-	}`,
-
-	339: `
-	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-	default issues = []
-	default count_issues = -1
-
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", input.metadata.service, "_", input.metadata.deploymentId, "_zapScan.json&scanOperation=zapDastScan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", input.metadata.service, "_", input.metadata.deploymentId, "_zapScan.json&scanOperation=zapDastScan"] )
-
-
-	request = {
-			"method": "GET",
-			"url": complete_url
-	}
-
-	response = http.send(request)
-	issues = [response.body.zapAlerts[i] | response.body.zapAlerts[i].risk == "Low"]
-	count_issues = count(issues)
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		count_issues == -1
-		msg = "List of High Severity Issues for OWASP ZAP Scan could not be accessed."
-		sugg = "Kindly check if the OWASP ZAP is configured properly and SSD has access to the application endpoint."
-		error = "Failed while fetching issues from OWASP ZAP."
-		alertStatus := "error"
-	}
-
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
-		count_issues > 0
-		some idx
-		issues[idx].name in exception_list
-		title := sprintf("OWASP ZAP Scan: %v", [issues[idx].name])
-		msg = issues[idx].description
-		sugg = issues[idx].solution
-		error = ""
-		exception_cause := issues[idx].name
-		alertStatus := "exception"
-	}
-
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
-		count_issues > 0
-		some idx
-		not issues[idx].name in exception_list
-		title := sprintf("OWASP ZAP Scan: %v", [issues[idx].name])
-		msg = issues[idx].description
-		sugg = issues[idx].solution
-		error = ""
-		alertStatus := "active"
-	}`,
-
-	340: `
-	package opsmx
-	import future.keywords.in
-
-	default exception_list = []
-	default exception_count = 0
-
-	policy_name = input.metadata.policyName
-	policy_category = replace(input.metadata.policyCategory, " ", "_")
-	exception_list = input.metadata.exception[policy_category]
-
-	default issues = []
-	default count_issues = -1
-
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", input.metadata.service, "_", input.metadata.deploymentId, "_zapScan.json&scanOperation=zapDastScan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", input.metadata.service, "_", input.metadata.deploymentId, "_zapScan.json&scanOperation=zapDastScan"] )
-
-
-	request = {
-			"method": "GET",
-			"url": complete_url
-	}
-
-	response = http.send(request)
-	issues = [response.body.zapAlerts[i] | response.body.zapAlerts[i].risk == "Informational"]
-	count_issues = count(issues)
-
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		count_issues == -1
-		msg = "List of High Severity Issues for OWASP ZAP Scan could not be accessed."
-		sugg = "Kindly check if the OWASP ZAP is configured properly and SSD has access to the application endpoint."
-		error = "Failed while fetching issues from OWASP ZAP."
-		alertStatus := "error"
-	}
-
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
-		count_issues > 0
-		some idx
-		issues[idx].name in exception_list
-		title := sprintf("OWASP ZAP Scan: %v", [issues[idx].name])
-		msg = issues[idx].description
-		sugg = issues[idx].solution
-		error = ""
-		exception_cause := issues[idx].name
-		alertStatus := "exception"
-	}
-
-	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
-		count_issues > 0
-		some idx
-		not issues[idx].name in exception_list
-		title := sprintf("OWASP ZAP Scan: %v", [issues[idx].name])
-		msg = issues[idx].description
-		sugg = issues[idx].solution
-		error = ""
-		alertStatus := "active"
+	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url}]{
+	count(issues) > 0
+	some idx
+	issues[idx].level == "Info"
+	msg = issues[idx].ruleMessage
+	sugg = "Kindly refer to the suggested resolutions by Codacy. For more details about the error, please refer to the detailed scan results."
+	error = ""
 	}`,
 }
 
@@ -10830,7 +12160,7 @@ var policyDefinition = []string{
 		 "stage":"source",
 		 "description":"This assesses if the project enforces running tests before merging pull requests, currently applicable only to GitHub-hosted repositories, excluding other source hosting platforms.",
 		 "scheduled_policy":false,
-		 "scriptId":"13",
+		 "scriptId":"14",
 		 "variables":"",
 		 "conditionName":"Open SSF CI Tests Policy",
 		 "suggestion":""
@@ -10845,7 +12175,7 @@ var policyDefinition = []string{
 		 "stage":"source",
 		 "description":"This evaluates if the project has achieved an OpenSSF Best Practices Badge to indicate adherence to security-focused best practices, using the Git repo URL and OpenSSF Badge API",
 		 "scheduled_policy":false,
-		 "scriptId":"13",
+		 "scriptId":"15",
 		 "variables":"",
 		 "conditionName":"Open SSF CII-Best Practices Policy",
 		 "suggestion":""
@@ -10860,7 +12190,7 @@ var policyDefinition = []string{
 		 "stage":"source",
 		 "description":"This check determines whether the project requires human code review before pull requests are merged.",
 		 "scheduled_policy":false,
-		 "scriptId":"13",
+		 "scriptId":"16",
 		 "variables":"",
 		 "conditionName":"Open SSF Code Review Policy",
 		 "suggestion":""
@@ -10875,7 +12205,7 @@ var policyDefinition = []string{
 		 "stage":"source",
 		 "description":"This check assesses if the project has recent contributors from various organizations, applicable only to GitHub-hosted repositories, without support for other source hosting platforms",
 		 "scheduled_policy":false,
-		 "scriptId":"13",
+		 "scriptId":"17",
 		 "variables":"",
 		 "conditionName":"Open SSF Contributors Policy",
 		 "suggestion":""
@@ -10890,7 +12220,7 @@ var policyDefinition = []string{
 		 "stage":"source",
 		 "description":"This identifies risky code patterns in the project GitHub Action workflows, such as untrusted code checkouts, logging sensitive information, or using potentially unsafe inputs in scripts",
 		 "scheduled_policy":false,
-		 "scriptId":"13",
+		 "scriptId":"18",
 		 "variables":"",
 		 "conditionName":"Open SSF Dangerous Workflow Policy",
 		 "suggestion":""
@@ -10905,7 +12235,7 @@ var policyDefinition = []string{
 		 "stage":"source",
 		 "description":"This evaluates if the project utilizes a dependency update tool like Dependabot, Renovate bot, Sonatype Lift, or PyUp to automate updating outdated dependencies and enhance security",
 		 "scheduled_policy":false,
-		 "scriptId":"13",
+		 "scriptId":"19",
 		 "variables":"",
 		 "conditionName":"Open SSF Dependency Update Tool Policy",
 		 "suggestion":""
@@ -10920,7 +12250,7 @@ var policyDefinition = []string{
 		 "stage":"source",
 		 "description":"This assesses if the project employs fuzzing, considering various criteria including repository inclusion, fuzzing tool presence, language-specific functions, and integration files.",
 		 "scheduled_policy":false,
-		 "scriptId":"13",
+		 "scriptId":"20",
 		 "variables":"",
 		 "conditionName":"Open SSF Fuzzing Policy",
 		 "suggestion":""
@@ -10935,7 +12265,7 @@ var policyDefinition = []string{
 		 "stage":"source",
 		 "description":"This examines if the project has a published license by using hosting APIs or searching for a license file using standard naming conventions",
 		 "scheduled_policy":false,
-		 "scriptId":"13",
+		 "scriptId":"21",
 		 "variables":"",
 		 "conditionName":"Open SSF License Policy",
 		 "suggestion":""
@@ -10950,7 +12280,7 @@ var policyDefinition = []string{
 		 "stage":"source",
 		 "description":"This check evaluates project maintenance status based on commit frequency, issue activity, and archival status",
 		 "scheduled_policy":false,
-		 "scriptId":"13",
+		 "scriptId":"22",
 		 "variables":"",
 		 "conditionName":"Open SSF Maintained Policy",
 		 "suggestion":""
@@ -10965,7 +12295,7 @@ var policyDefinition = []string{
 		 "stage":"source",
 		 "description":"This verifies if a project locks its dependencies to specific versions by their hashes, applicable only to GitHub repositories.",
 		 "scheduled_policy":false,
-		 "scriptId":"13",
+		 "scriptId":"23",
 		 "variables":"",
 		 "conditionName":"Open SSF Pinned Dependencies Policy",
 		 "suggestion":""
@@ -10980,7 +12310,7 @@ var policyDefinition = []string{
 		 "stage":"source",
 		 "description":"This assesses if the project is released as a package.",
 		 "scheduled_policy":false,
-		 "scriptId":"13",
+		 "scriptId":"24",
 		 "variables":"",
 		 "conditionName":"Open SSF Packaging Policy",
 		 "suggestion":""
@@ -10995,7 +12325,7 @@ var policyDefinition = []string{
 		 "stage":"source",
 		 "description":"This check assesses if a GitHub-hosted project employs Static Application Security Testing.",
 		 "scheduled_policy":false,
-		 "scriptId":"13",
+		 "scriptId":"25",
 		 "variables":"",
 		 "conditionName":"Open SSF SAST Policy",
 		 "suggestion":""
@@ -11010,7 +12340,7 @@ var policyDefinition = []string{
 		 "stage":"source",
 		 "description":"This check tries to determine if the project has published a security policy. It works by looking for a file named SECURITY.md in a few well-known directories.",
 		 "scheduled_policy":false,
-		 "scriptId":"13",
+		 "scriptId":"26",
 		 "variables":"",
 		 "conditionName":"Open SSF Security Policy",
 		 "suggestion":""
@@ -11025,7 +12355,7 @@ var policyDefinition = []string{
 		 "stage":"source",
 		 "description":"This determines if the project cryptographically signs release artefacts.",
 		 "scheduled_policy":false,
-		 "scriptId":"13",
+		 "scriptId":"27",
 		 "variables":"",
 		 "conditionName":"Open SSF Signed Releases Policy",
 		 "suggestion":""
@@ -11040,7 +12370,7 @@ var policyDefinition = []string{
 		 "stage":"source",
 		 "description":"This Determines Whether the project automated workflow tokens follow the principle of least privilege.",
 		 "scheduled_policy":false,
-		 "scriptId":"13",
+		 "scriptId":"28",
 		 "variables":"",
 		 "conditionName":"Open SSF Token Permissions Policy",
 		 "suggestion":""
@@ -11055,7 +12385,7 @@ var policyDefinition = []string{
 		 "stage":"source",
 		 "description":"The Project Has Open, Unfixed Vulnerabilities in its Own codebase.",
 		 "scheduled_policy":false,
-		 "scriptId":"13",
+		 "scriptId":"29",
 		 "variables":"",
 		 "conditionName":"Open SSF Vulnerabilities Policy",
 		 "suggestion":""
@@ -11070,7 +12400,7 @@ var policyDefinition = []string{
 		 "stage":"source",
 		 "description":"This check determines whether the webhook defined in the repository has a token configured to authenticate the origins of requests.",
 		 "scheduled_policy":false,
-		 "scriptId":"13",
+		 "scriptId":"30",
 		 "variables":"",
 		 "conditionName":"Open SSF Webhooks Policy",
 		 "suggestion":""
@@ -11085,7 +12415,7 @@ var policyDefinition = []string{
 		 "stage":"source",
 		 "description":"This check determines whether the project has generated executable artifacts in the source repository.",
 		 "scheduled_policy":false,
-		 "scriptId":"13",
+		 "scriptId":"31",
 		 "variables":"",
 		 "conditionName":"Open SSF Binary Artifacts Policy",
 		 "suggestion":""
@@ -11790,7 +13120,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The API server pod specification file controls various parameters that set the behavior of the API server. You should set its file ownership to maintain the integrity of the file. The file should be owned by root:root.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"78",
 		 "variables":"",
 		 "conditionName":"CIS-1.1.2 Ensure that the API server pod specification file ownership is set to root:root",
 		 "suggestion":""
@@ -11805,7 +13135,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The controller manager pod specification file controls various parameters that set the behavior of the Controller Manager on the master node. You should restrict its file permissions to maintain the integrity of the file. The file should be writable by only the administrators on the system.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"79",
 		 "variables":"",
 		 "conditionName":"CIS-1.1.3 Ensure that the controller manager pod specification file permissions are set to 600 or more restrictive",
 		 "suggestion":""
@@ -11820,7 +13150,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The controller manager pod specification file controls various parameters that set the behavior of various components of the master node. You should set its file ownership to maintain the integrity of the file. The file should be owned by root:root.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"80",
 		 "variables":"",
 		 "conditionName":"CIS-1.1.4 Ensure that the controller manager pod specification file ownership is set to root:root",
 		 "suggestion":""
@@ -11835,7 +13165,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The scheduler pod specification file controls various parameters that set the behavior of the Scheduler service in the master node. You should restrict its file permissions to maintain the integrity of the file. The file should be writable by only the administrators on the system.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"81",
 		 "variables":"",
 		 "conditionName":"CIS-1.1.5 Ensure that the scheduler pod specification file permissions are set to 600 or more restrictive",
 		 "suggestion":""
@@ -11850,7 +13180,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The scheduler pod specification file controls various parameters that set the behavior of the kube-scheduler service in the master node. You should set its file ownership to maintain the integrity of the file. The file should be owned by root:root.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"82",
 		 "variables":"",
 		 "conditionName":"CIS-1.1.6 Ensure that the scheduler pod specification file ownership is set to root:root",
 		 "suggestion":""
@@ -11865,7 +13195,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The etcd pod specification file /etc/kubernetes/manifests/etcd.yaml controls various parameters that set the behavior of the etcd service in the master node. etcd is a highly-available key-value store which Kubernetes uses for persistent storage of all of its REST API object. You should restrict its file permissions to maintain the integrity of the file. The file should be writable by only the administrators on the system.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"83",
 		 "variables":"",
 		 "conditionName":"CIS-1.1.7 Ensure that the etcd pod specification file permissions are set to 600 or more restrictive",
 		 "suggestion":""
@@ -11880,7 +13210,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The etcd pod specification file /etc/kubernetes/manifests/etcd.yaml controls various parameters that set the behavior of the etcd service in the master node. etcd is a highly-available key-value store which Kubernetes uses for persistent storage of all of its REST API object. You should set its file ownership to maintain the integrity of the file. The file should be owned by root:root.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"84",
 		 "variables":"",
 		 "conditionName":"CIS-1.1.8 Ensure that the etcd pod specification file ownership is set to root:root",
 		 "suggestion":""
@@ -11895,7 +13225,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Container Network Interface provides various networking options for overlay networking. You should consult their documentation and restrict their respective file permissions to maintain the integrity of those files. Those files should be writable by only the administrators on the system.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"85",
 		 "variables":"",
 		 "conditionName":"CIS-1.1.9 Ensure that the Container Network Interface file permissions are set to 600 or more restrictive",
 		 "suggestion":""
@@ -11910,7 +13240,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Container Network Interface provides various networking options for overlay networking. You should consult their documentation and restrict their respective file permissions to maintain the integrity of those files. Those files should be owned by root:root.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"86",
 		 "variables":"",
 		 "conditionName":"CIS-1.1.10 Ensure that the Container Network Interface file ownership is set to root:root",
 		 "suggestion":""
@@ -11925,7 +13255,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"etcd is a highly-available key-value store used by Kubernetes deployments for persistent storage of all of its REST API objects. This data directory should be protected from any unauthorized reads or writes. It should not be readable or writable by any group members or the world.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"87",
 		 "variables":"",
 		 "conditionName":"CIS-1.1.11 Ensure that the etcd data directory permissions are set to 700 or more restrictive",
 		 "suggestion":""
@@ -11940,7 +13270,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"etcd is a highly-available key-value store used by Kubernetes deployments for persistent storage of all of its REST API objects. This data directory should be protected from any unauthorized reads or writes. It should be owned by etcd:etcd.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"88",
 		 "variables":"",
 		 "conditionName":"CIS-1.1.12 Ensure that the etcd data directory ownership is set to etcd:etcd",
 		 "suggestion":""
@@ -11955,7 +13285,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The admin.conf is the administrator kubeconfig file defining various settings for the administration of the cluster. This file contains private key and respective certificate allowed to fully manage the cluster. You should restrict its file permissions to maintain the integrity and confidentiality of the file. The file should be readable and writable by only the administrators on the system.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"89",
 		 "variables":"",
 		 "conditionName":"CIS-1.1.13 Ensure that the admin.conf file permissions are set to 600",
 		 "suggestion":""
@@ -11970,7 +13300,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The admin.conf file contains the admin credentials for the cluster. You should set its file ownership to maintain the integrity and confidentiality of the file. The file should be owned by root:root.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"90",
 		 "variables":"",
 		 "conditionName":"CIS-1.1.14 Ensure that the admin.conf file ownership is set to root:root",
 		 "suggestion":""
@@ -11985,7 +13315,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The scheduler.conf file is the kubeconfig file for the Scheduler. You should restrict its file permissions to maintain the integrity of the file. The file should be writable by only the administrators on the system.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"91",
 		 "variables":"",
 		 "conditionName":"CIS-1.1.15 Ensure that the scheduler.conf file permissions are set to 600 or more restrictive",
 		 "suggestion":""
@@ -12000,7 +13330,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The scheduler.conf file is the kubeconfig file for the Scheduler. You should set its file ownership to maintain the integrity of the file. The file should be owned by root:root.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"92",
 		 "variables":"",
 		 "conditionName":"CIS-1.1.16 Ensure that the scheduler.conf file ownership is set to root:root",
 		 "suggestion":""
@@ -12015,7 +13345,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The controller-manager.conf file is the kubeconfig file for the Controller Manager. You should restrict its file permissions to maintain the integrity of the file. The file should be writable by only the administrators on the system.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"93",
 		 "variables":"",
 		 "conditionName":"CIS-1.1.17 Ensure that the controller-manager.conf file permissions are set to 600 or more restrictive",
 		 "suggestion":""
@@ -12030,7 +13360,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The controller-manager.conf file is the kubeconfig file for the Controller Manager. You should set its file ownership to maintain the integrity of the file. The file should be owned by root:root.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"94",
 		 "variables":"",
 		 "conditionName":"CIS-1.1.18 Ensure that the controller-manager.conf file ownership is set to root:root",
 		 "suggestion":""
@@ -12045,7 +13375,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Kubernetes makes use of a number of certificates as part of its operation. You should set the ownership of the directory containing the PKI information and all files in that directory to maintain their integrity. The directory and files should be owned by root:root.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"95",
 		 "variables":"",
 		 "conditionName":"CIS-1.1.19 Ensure that the Kubernetes PKI directory and file ownership is set to root:root",
 		 "suggestion":""
@@ -12060,7 +13390,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Kubernetes makes use of a number of certificate files as part of the operation of its components. The permissions on these files should be set to 600 or more restrictive to protect their integrity.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"96",
 		 "variables":"",
 		 "conditionName":"CIS-1.1.20 Ensure that the Kubernetes PKI certificate file permissions are set to 600 or more restrictive",
 		 "suggestion":""
@@ -12075,7 +13405,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Kubernetes makes use of a number of key files as part of the operation of its components. The permissions on these files should be set to 600 to protect their integrity and confidentiality.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"97",
 		 "variables":"",
 		 "conditionName":"CIS-1.1.21 Ensure that the Kubernetes PKI key file permissions are set to 600",
 		 "suggestion":""
@@ -12090,7 +13420,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"When enabled, requests that are not rejected by other configured authentication methods are treated as anonymous requests. These requests are then served by the API server. You should rely on authentication to authorize access and disallow anonymous requests. If you are using RBAC authorization, it is generally considered reasonable to allow anonymous access to the API Server for health checks and discovery purposes, and hence this recommendation is not scored. However, you should consider whether anonymous discovery is an acceptable risk for your purposes.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"98",
 		 "variables":"",
 		 "conditionName":"CIS-1.2.1 Ensure that the API Server --anonymous-auth argument is set to false",
 		 "suggestion":""
@@ -12105,7 +13435,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The token-based authentication utilizes static tokens to authenticate requests to the apiserver. The tokens are stored in clear-text in a file on the apiserver, and cannot be revoked or rotated without restarting the apiserver. Hence, do not use static token-based authentication.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"99",
 		 "variables":"",
 		 "conditionName":"CIS-1.2.2 Ensure that the API Server --token-auth-file parameter is not set",
 		 "suggestion":""
@@ -12120,7 +13450,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"This admission controller rejects all net-new usage of the Service field externalIPs. This feature is very powerful ",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"100",
 		 "variables":"",
 		 "conditionName":"CIS-1.2.3 Ensure that the API Server --DenyServiceExternalIPs is not set",
 		 "suggestion":""
@@ -12135,7 +13465,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The apiserver, by default, does not authenticate itself to the kubelets HTTPS endpoints. The requests from the apiserver are treated anonymously. You should set up certificate-based kubelet authentication to ensure that the apiserver authenticates itself to kubelets when submitting requests.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"101",
 		 "variables":"",
 		 "conditionName":"CIS-1.2.4 Ensure that the API Server --kubelet-client-certificate and --kubelet-client-key arguments are set as appropriate",
 		 "suggestion":""
@@ -12150,7 +13480,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The connections from the apiserver to the kubelet are used for fetching logs for pods, attaching ",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"102",
 		 "variables":"",
 		 "conditionName":"CIS-1.2.5 Ensure that the API Server --kubelet-certificate-authority argument is set as appropriate",
 		 "suggestion":""
@@ -12165,7 +13495,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The API Server, can be configured to allow all requests. This mode should not be used on any production cluster.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"103",
 		 "variables":"",
 		 "conditionName":"CIS-1.2.6 Ensure that the API Server --authorization-mode argument is not set to AlwaysAllow",
 		 "suggestion":""
@@ -12180,7 +13510,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The Node authorization mode only allows kubelets to read Secret, ConfigMap, PersistentVolume, and PersistentVolumeClaim objects associated with their nodes.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"104",
 		 "variables":"",
 		 "conditionName":"CIS-1.2.7 Ensure that the API Server --authorization-mode argument includes Node",
 		 "suggestion":""
@@ -12195,7 +13525,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Role Based Access Control ",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"105",
 		 "variables":"",
 		 "conditionName":"CIS-1.2.8 Ensure that the API Server --authorization-mode argument includes RBAC",
 		 "suggestion":""
@@ -12210,7 +13540,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Using EventRateLimit admission control enforces a limit on the number of events that the API Server will accept in a given time slice. A misbehaving workload could overwhelm and DoS the API Server, making it unavailable. This particularly applies to a multi-tenant cluster, where there might be a small percentage of misbehaving tenants which could have a significant impact on the performance of the cluster overall. Hence, it is recommended to limit the rate of events that the API server will accept. Note: This is an Alpha feature in the Kubernetes 1.15 release.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"106",
 		 "variables":"",
 		 "conditionName":"",
 		 "suggestion":""
@@ -12225,7 +13555,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Setting admission control plugin AlwaysAdmit allows all requests and do not filter any requests. The AlwaysAdmit admission controller was deprecated in Kubernetes v1.13. Its behavior was equivalent to turning off all admission controllers.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"107",
 		 "variables":"",
 		 "conditionName":"CIS-1.2.10 Ensure that the admission control plugin AlwaysAdmit is not set",
 		 "suggestion":""
@@ -12240,7 +13570,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Setting admission control policy to AlwaysPullImages forces every new pod to pull the required images every time. In a multi-tenant cluster users can be assured that their private images can only be used by those who have the credentials to pull them. Without this admission control policy, once an image has been pulled to a node, any pod from any user can use it simply by knowing the images name, without any authorization check against the image ownership. When this plug-in is enabled, images are always pulled prior to starting containers, which means valid credentials are required.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"108",
 		 "variables":"",
 		 "conditionName":"CIS-1.2.11 Ensure that the admission control plugin AlwaysPullImages is set",
 		 "suggestion":""
@@ -12255,7 +13585,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"SecurityContextDeny can be used to provide a layer of security for clusters which do not have PodSecurityPolicies enabled.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"109",
 		 "variables":"",
 		 "conditionName":"CIS-1.2.12 Ensure that the admission control plugin SecurityContextDeny is set if PodSecurityPolicy is not used",
 		 "suggestion":""
@@ -12270,7 +13600,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"When you create a pod, if you do not specify a service account, it is automatically assigned the default service account in the same namespace. You should create your own service account and let the API server manage its security tokens.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"110",
 		 "variables":"",
 		 "conditionName":"CIS-1.2.13 Ensure that the admission control plugin ServiceAccount is set",
 		 "suggestion":""
@@ -12285,7 +13615,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Setting admission control policy to NamespaceLifecycle ensures that objects cannot be created in non-existent namespaces, and that namespaces undergoing termination are not used for creating the new objects. This is recommended to enforce the integrity of the namespace termination process and also for the availability of the newer objects.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"111",
 		 "variables":"",
 		 "conditionName":"CIS-1.2.14 Ensure that the admission control plugin NamespaceLifecycle is set",
 		 "suggestion":""
@@ -12300,7 +13630,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Using the NodeRestriction plug-in ensures that the kubelet is restricted to the Node and Pod objects that it could modify as defined. Such kubelets will only be allowed to modify their own Node API object, and only modify Pod API objects that are bound to their node.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"112",
 		 "variables":"",
 		 "conditionName":"CIS-1.2.15 Ensure that the admission control plugin NodeRestriction is set",
 		 "suggestion":""
@@ -12315,7 +13645,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The secure port is used to serve https with authentication and authorization. If you disable it, no https traffic is served and all traffic is served unencrypted.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"113",
 		 "variables":"",
 		 "conditionName":"CIS-1.2.16 Ensure that the API Server --secure-port argument is not set to 0",
 		 "suggestion":""
@@ -12330,7 +13660,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Profiling allows for the identification of specific performance bottlenecks. It generates a significant amount of program data that could potentially be exploited to uncover system and program details. If you are not experiencing any bottlenecks and do not need the profiler for troubleshooting purposes, it is recommended to turn it off to reduce the potential attack surface.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"114",
 		 "variables":"",
 		 "conditionName":"CIS-1.2.17 Ensure that the API Server --profiling argument is set to false",
 		 "suggestion":""
@@ -12345,7 +13675,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Auditing the Kubernetes API Server provides a security-relevant chronological set of records documenting the sequence of activities that have affected system by individual users, administrators or other components of the system. Even though currently, Kubernetes provides only basic audit capabilities, it should be enabled. You can enable it by setting an appropriate audit log path.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"115",
 		 "variables":"",
 		 "conditionName":"CIS-1.2.18 Ensure that the API Server --audit-log-path argument is set",
 		 "suggestion":""
@@ -12360,7 +13690,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Retaining logs for at least 30 days ensures that you can go back in time and investigate or correlate any events. Set your audit log retention period to 30 days or as per your business requirements.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"116",
 		 "variables":"",
 		 "conditionName":"CIS-1.2.19 Ensure that the API Server --audit-log-maxage argument is set to 30 or as appropriate",
 		 "suggestion":""
@@ -12375,7 +13705,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Kubernetes automatically rotates the log files. Retaining old log files ensures that you would have sufficient log data available for carrying out any investigation or correlation. For example, if you have set file size of 100 MB and the number of old log files to keep as 10, you would approximate have 1 GB of log data that you could potentially use for your analysis.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"117",
 		 "variables":"",
 		 "conditionName":"CIS-1.2.20 Ensure that the API Server --audit-log-maxbackup argument is set to 10 or as appropriate",
 		 "suggestion":""
@@ -12390,7 +13720,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Kubernetes automatically rotates the log files. Retaining old log files ensures that you would have sufficient log data available for carrying out any investigation or correlation. If you have set file size of 100 MB and the number of old log files to keep as 10, you would approximate have 1 GB of log data that you could potentially use for your analysis.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"118",
 		 "variables":"",
 		 "conditionName":"CIS-1.2.21 Ensure that the API Server --audit-log-maxsize argument is set to 100 or as appropriate",
 		 "suggestion":""
@@ -12405,7 +13735,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Setting global request timeout allows extending the API server request timeout limit to a duration appropriate to the users connection speed. By default, it is set to 60 seconds which might be problematic on slower connections making cluster resources inaccessible once the data volume for requests exceeds what can be transmitted in 60 seconds. But, setting this timeout limit to be too large can exhaust the API server resources making it prone to Denial-of-Service attack. Hence, it is recommended to set this limit as appropriate and change the default limit of 60 seconds only if needed.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"119",
 		 "variables":"",
 		 "conditionName":"CIS-1.2.22 Ensure that the API Server --request-timeout argument is set as appropriate",
 		 "suggestion":""
@@ -12420,7 +13750,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"If --service-account-lookup is not enabled, the apiserver only verifies that the authentication token is valid, and does not validate that the service account token mentioned in the request is actually present in etcd. This allows using a service account token even after the corresponding service account is deleted. This is an example of time of check to time of use security issue.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"120",
 		 "variables":"",
 		 "conditionName":"CIS-1.2.23 Ensure that the API Server --service-account-lookup argument is set to true",
 		 "suggestion":""
@@ -12435,7 +13765,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"By default, if no --service-account-key-file is specified to the apiserver, it uses the private key from the TLS serving certificate to verify service account tokens. To ensure that the keys for service account tokens could be rotated as needed, a separate public/private key pair should be used for signing service account tokens. Hence, the public key should be specified to the apiserver with --service-account-key-file.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"121",
 		 "variables":"",
 		 "conditionName":"CIS-1.2.24 Ensure that the API Server --service-account-key-file argument is set as appropriate",
 		 "suggestion":""
@@ -12450,7 +13780,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"etcd is a highly-available key value store used by Kubernetes deployments for persistent storage of all of its REST API objects. These objects are sensitive in nature and should be protected by client authentication. This requires the API server to identify itself to the etcd server using a client certificate and key.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"122",
 		 "variables":"",
 		 "conditionName":"CIS-1.2.25 Ensure that the API Server --etcd-certfile and --etcd-keyfile arguments are set as appropriate",
 		 "suggestion":""
@@ -12465,7 +13795,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"API server communication contains sensitive parameters that should remain encrypted in transit. Configure the API server to serve only HTTPS traffic.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"123",
 		 "variables":"",
 		 "conditionName":"CIS-1.2.26 Ensure that the API Server --tls-cert-file and --tls-private-key-file arguments are set as appropriate",
 		 "suggestion":""
@@ -12480,7 +13810,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"API server communication contains sensitive parameters that should remain encrypted in transit. Configure the API server to serve only HTTPS traffic. If --client-ca-file argument is set, any request presenting a client certificate signed by one of the authorities in the client-ca-file is authenticated with an identity corresponding to the CommonName of the client certificate.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"124",
 		 "variables":"",
 		 "conditionName":"CIS-1.2.27 Ensure that the API Server --client-ca-file argument is set as appropriate",
 		 "suggestion":""
@@ -12495,7 +13825,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"etcd is a highly-available key value store used by Kubernetes deployments for persistent storage of all of its REST API objects. These objects are sensitive in nature and should be protected by client authentication. This requires the API server to identify itself to the etcd server using a SSL Certificate Authority file.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"125",
 		 "variables":"",
 		 "conditionName":"CIS-1.2.28 Ensure that the API Server --etcd-cafile argument is set as appropriate",
 		 "suggestion":""
@@ -12510,7 +13840,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"etcd is a highly available key-value store used by Kubernetes deployments for persistent storage of all of its REST API objects. These objects are sensitive in nature and should be encrypted at rest to avoid any disclosures.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"126",
 		 "variables":"",
 		 "conditionName":"CIS-1.2.29 Ensure that the API Server --encryption-provider-config argument is set as appropriate",
 		 "suggestion":""
@@ -12525,7 +13855,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Where etcd encryption is used, it is important to ensure that the appropriate set of encryption providers is used. Currently, the aescbc, kms and secretbox are likely to be appropriate options.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"127",
 		 "variables":"",
 		 "conditionName":"CIS-1.2.30 Ensure that encryption providers are appropriately configured",
 		 "suggestion":""
@@ -12540,7 +13870,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"TLS ciphers have had a number of known vulnerabilities and weaknesses, which can reduce the protection provided by them. By default Kubernetes supports a number of TLS ciphersuites including some that have security concerns, weakening the protection provided.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"128",
 		 "variables":"",
 		 "conditionName":"CIS-1.2.31 Ensure that the API Server only makes use of Strong Cryptographic Ciphers",
 		 "suggestion":""
@@ -12555,7 +13885,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Garbage collection is important to ensure sufficient resource availability and avoiding degraded performance and availability. In the worst case, the system might crash or just be unusable for a long period of time. The current setting for garbage collection is 12,500 terminated pods which might be too high for your system to sustain. Based on your system resources and tests, choose an appropriate threshold value to activate garbage collection.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"129",
 		 "variables":"",
 		 "conditionName":"CIS-1.3.1 Ensure that the Controller Manager --terminated-pod-gc-threshold argument is set as appropriate",
 		 "suggestion":""
@@ -12570,7 +13900,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Profiling allows for the identification of specific performance bottlenecks. It generates a significant amount of program data that could potentially be exploited to uncover system and program details. If you are not experiencing any bottlenecks and do not need the profiler for troubleshooting purposes, it is recommended to turn it off to reduce the potential attack surface.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"130",
 		 "variables":"",
 		 "conditionName":"CIS-1.3.2 Ensure that the Controller Manager --profiling argument is set to false",
 		 "suggestion":""
@@ -12585,7 +13915,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The controller manager creates a service account per controller in the kube-system namespace, generates a credential for it, and builds a dedicated API client with that service account credential for each controller loop to use. Setting the --use-service-account-credentials to true runs each control loop within the controller manager using a separate service account credential. When used in combination with RBAC, this ensures that the control loops run with the minimum permissions required to perform their intended tasks.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"131",
 		 "variables":"",
 		 "conditionName":"CIS-1.3.3 Ensure that the Controller Manager --use-service-account-credentials argument is set to true",
 		 "suggestion":""
@@ -12600,7 +13930,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"To ensure that keys for service account tokens can be rotated as needed, a separate public/private key pair should be used for signing service account tokens. The private key should be specified to the controller manager with --service-account-private-key-file as appropriate.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"132",
 		 "variables":"",
 		 "conditionName":"CIS-1.3.4 Ensure that the Controller Manager --service-account-private-key-file argument is set as appropriate",
 		 "suggestion":""
@@ -12615,7 +13945,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Processes running within pods that need to contact the API server must verify the API servers serving certificate. Failing to do so could be a subject to man-in-the-middle attacks. Providing the root certificate for the API servers serving certificate to the controller manager with the --root-ca-file argument allows the controller manager to inject the trusted bundle into pods so that they can verify TLS connections to the API server.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"133",
 		 "variables":"",
 		 "conditionName":"CIS-1.3.5 Ensure that the Controller Manager --root-ca-file argument is set as appropriate",
 		 "suggestion":""
@@ -12630,7 +13960,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"RotateKubeletServerCertificate causes the kubelet to both request a serving certificate after bootstrapping its client credentials and rotate the certificate as its existing credentials expire. This automated periodic rotation ensures that the there are no downtimes due to expired certificates and thus addressing availability in the CIA security triad. Note: This recommendation only applies if you let kubelets get their certificates from the API server. In case your kubelet certificates come from an outside authority/tool ",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"134",
 		 "variables":"",
 		 "conditionName":"CIS-1.3.6 Ensure that the Controller Manager RotateKubeletServerCertificate argument is set to true",
 		 "suggestion":""
@@ -12645,7 +13975,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The Controller Manager API service which runs on port 10252/TCP by default is used for health and metrics information and is available without authentication or encryption. As such it should only be bound to a localhost interface, to minimize the clusters attack surface.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"135",
 		 "variables":"",
 		 "conditionName":"CIS-1.3.7 Ensure that the Controller Manager --bind-address argument is set to 127.0.0.1",
 		 "suggestion":""
@@ -12660,7 +13990,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Profiling allows for the identification of specific performance bottlenecks. It generates a significant amount of program data that could potentially be exploited to uncover system and program details. If you are not experiencing any bottlenecks and do not need the profiler for troubleshooting purposes, it is recommended to turn it off to reduce the potential attack surface.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"136",
 		 "variables":"",
 		 "conditionName":"CIS-1.4.1 Ensure that the Scheduler --profiling argument is set to false",
 		 "suggestion":""
@@ -12675,7 +14005,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The Scheduler API service which runs on port 10251/TCP by default is used for health and metrics information and is available without authentication or encryption. As such it should only be bound to a localhost interface, to minimize the clusters attack surface.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"137",
 		 "variables":"",
 		 "conditionName":"CIS-1.4.2 Ensure that the Scheduler --bind-address argument is set to 127.0.0.1",
 		 "suggestion":""
@@ -12690,7 +14020,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"etcd is a highly-available key value store used by Kubernetes deployments for persistent storage of all of its REST API objects. These objects are sensitive in nature and should be encrypted in transit.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"138",
 		 "variables":"",
 		 "conditionName":"CIS-2.1 Ensure that the --cert-file and --key-file arguments are set as appropriate",
 		 "suggestion":""
@@ -12705,7 +14035,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"etcd is a highly-available key value store used by Kubernetes deployments for persistent storage of all of its REST API objects. These objects are sensitive in nature and should not be available to unauthenticated clients. You should enable the client authentication via valid certificates to secure the access to the etcd service.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"139",
 		 "variables":"",
 		 "conditionName":"CIS-2.2 Ensure that the --client-cert-auth argument is set to true",
 		 "suggestion":""
@@ -12720,7 +14050,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"etcd is a highly-available key value store used by Kubernetes deployments for persistent storage of all of its REST API objects. These objects are sensitive in nature and should not be available to unauthenticated clients. You should enable the client authentication via valid certificates to secure the access to the etcd service.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"140",
 		 "variables":"",
 		 "conditionName":"CIS-2.3 Ensure that the --auto-tls argument is not set to true",
 		 "suggestion":""
@@ -12735,7 +14065,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"etcd is a highly-available key value store used by Kubernetes deployments for persistent storage of all of its REST API objects. These objects are sensitive in nature and should be encrypted in transit and also amongst peers in the etcd clusters.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"141",
 		 "variables":"",
 		 "conditionName":"CIS-2.4 Ensure that the --peer-cert-file and --peer-key-file arguments are set as appropriate",
 		 "suggestion":""
@@ -12750,7 +14080,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"etcd is a highly-available key value store used by Kubernetes deployments for persistent storage of all of its REST API objects. These objects are sensitive in nature and should be accessible only by authenticated etcd peers in the etcd cluster.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"142",
 		 "variables":"",
 		 "conditionName":"CIS-2.5 Ensure that the --peer-client-cert-auth argument is set to true",
 		 "suggestion":""
@@ -12765,7 +14095,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"etcd is a highly-available key value store used by Kubernetes deployments for persistent storage of all of its REST API objects. These objects are sensitive in nature and should be accessible only by authenticated etcd peers in the etcd cluster. Hence, do not use self-signed certificates for authentication.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"143",
 		 "variables":"",
 		 "conditionName":"CIS-2.6 Ensure that the --peer-auto-tls argument is not set to true",
 		 "suggestion":""
@@ -12780,7 +14110,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"etcd is a highly available key-value store used by Kubernetes deployments for persistent storage of all of its REST API objects. Its access should be restricted to specifically designated clients and peers only. Authentication to etcd is based on whether the certificate presented was issued by a trusted certificate authority. There is no checking of certificate attributes such as common name or subject alternative name. As such, if any attackers were able to gain access to any certificate issued by the trusted certificate authority, they would be able to gain full access to the etcd database.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"144",
 		 "variables":"",
 		 "conditionName":"CIS-2.7 Ensure that a unique Certificate Authority is used for etcd",
 		 "suggestion":""
@@ -12795,7 +14125,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Kubernetes can audit the details of requests made to the API server. The --audit-policy-file flag must be set for this logging to be enabled.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"145",
 		 "variables":"",
 		 "conditionName":"CIS-3.2.1 Ensure that a minimal audit policy is created",
 		 "suggestion":""
@@ -12810,7 +14140,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Security audit logs should cover access and modification of key resources in the cluster, to enable them to form an effective part of a security environment.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"146",
 		 "variables":"",
 		 "conditionName":"CIS-3.2.2 Ensure that the audit policy covers key security concerns",
 		 "suggestion":""
@@ -12825,7 +14155,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The kubelet service file controls various parameters that set the behavior of the kubelet service in the worker node. You should restrict its file permissions to maintain the integrity of the file. The file should be writable by only the administrators on the system.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"147",
 		 "variables":"",
 		 "conditionName":"CIS-4.1.1 Ensure that the kubelet service file permissions are set to 600 or more restrictive",
 		 "suggestion":""
@@ -12840,7 +14170,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The kubelet service file controls various parameters that set the behavior of the kubelet service in the worker node. You should set its file ownership to maintain the integrity of the file. The file should be owned by root:root.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"148",
 		 "variables":"",
 		 "conditionName":"CIS-4.1.2 Ensure that the kubelet service file ownership is set to root:root",
 		 "suggestion":""
@@ -12855,7 +14185,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The kube-proxy kubeconfig file controls various parameters of the kube-proxy service in the worker node. You should restrict its file permissions to maintain the integrity of the file. The file should be writable by only the administrators on the system. It is possible to run kube-proxy with the kubeconfig parameters configured as a Kubernetes ConfigMap instead of a file. In this case, there is no proxy kubeconfig file.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"149",
 		 "variables":"",
 		 "conditionName":"CIS-4.1.3 If proxy kubeconfig file exists ensure permissions are set to 600 or more restrictive",
 		 "suggestion":""
@@ -12870,7 +14200,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The kubeconfig file for kube-proxy controls various parameters for the kube-proxy service in the worker node. You should set its file ownership to maintain the integrity of the file. The file should be owned by root:root.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"150",
 		 "variables":"",
 		 "conditionName":"CIS-4.1.4 If proxy kubeconfig file exists ensure ownership is set to root:root",
 		 "suggestion":""
@@ -12885,7 +14215,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The kubelet.conf file is the kubeconfig file for the node, and controls various parameters that set the behavior and identity of the worker node. You should restrict its file permissions to maintain the integrity of the file. The file should be writable by only the administrators on the system.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"151",
 		 "variables":"",
 		 "conditionName":"CIS-4.1.5 Ensure that the --kubeconfig kubelet.conf file permissions are set to 600 or more restrictive",
 		 "suggestion":""
@@ -12900,7 +14230,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The kubelet.conf file is the kubeconfig file for the node, and controls various parameters that set the behavior and identity of the worker node. You should set its file ownership to maintain the integrity of the file. The file should be owned by root:root.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"152",
 		 "variables":"",
 		 "conditionName":"CIS-4.1.6 Ensure that the --kubeconfig kubelet.conf file ownership is set to root:root",
 		 "suggestion":""
@@ -12915,7 +14245,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The certificate authorities file controls the authorities used to validate API requests. You should restrict its file permissions to maintain the integrity of the file. The file should be writable by only the administrators on the system.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"153",
 		 "variables":"",
 		 "conditionName":"CIS-4.1.7 Ensure that the certificate authorities file permissions are set to 600 or more restrictive",
 		 "suggestion":""
@@ -12930,7 +14260,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The certificate authorities file controls the authorities used to validate API requests. You should set its file ownership to maintain the integrity of the file. The file should be owned by root:root.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"154",
 		 "variables":"",
 		 "conditionName":"CIS-4.1.8 Ensure that the client certificate authorities file ownership is set to root:root",
 		 "suggestion":""
@@ -12945,7 +14275,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The kubelet reads various parameters, including security settings, from a config file specified by the --config argument. If this file is specified you should restrict its file permissions to maintain the integrity of the file. The file should be writable by only the administrators on the system.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"155",
 		 "variables":"",
 		 "conditionName":"CIS-4.1.9 If the kubelet config.yaml configuration file is being used validate permissions set to 600 or more restrictive",
 		 "suggestion":""
@@ -12960,7 +14290,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The kubelet reads various parameters, including security settings, from a config file specified by the --config argument. If this file is specified you should restrict its file permissions to maintain the integrity of the file. The file should be owned by root:root.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"156",
 		 "variables":"",
 		 "conditionName":"CIS-4.1.10 If the kubelet config.yaml configuration file is being used validate file ownership is set to root:root",
 		 "suggestion":""
@@ -12975,7 +14305,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"When enabled, requests that are not rejected by other configured authentication methods are treated as anonymous requests. These requests are then served by the Kubelet server. You should rely on authentication to authorize access and disallow anonymous requests.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"157",
 		 "variables":"",
 		 "conditionName":"CIS-4.2.1 Ensure that the --anonymous-auth argument is set to false",
 		 "suggestion":""
@@ -12990,7 +14320,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Kubelets, by default, allow all authenticated requests (even anonymous ones) without needing explicit authorization checks from the apiserver. You should restrict this behavior and only allow explicitly authorized requests.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"158",
 		 "variables":"",
 		 "conditionName":"CIS-4.2.2 Ensure that the --authorization-mode argument is not set to AlwaysAllow",
 		 "suggestion":""
@@ -13005,7 +14335,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The connections from the apiserver to the kubelet are used for fetching logs for pods, attaching (through kubectl) to running pods, and using the kubelet\u2019s port-forwarding functionality. These connections terminate at the kubelet\u2019s HTTPS endpoint. By default, the apiserver does not verify the kubelet\u2019s serving certificate, which makes the connection subject to man-in-the-middle attacks, and unsafe to run over untrusted and/or public networks. Enabling Kubelet certificate authentication ensures that the apiserver could authenticate the Kubelet before submitting any requests.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"159",
 		 "variables":"",
 		 "conditionName":"CIS-4.2.3 Ensure that the --client-ca-file argument is set as appropriate",
 		 "suggestion":""
@@ -13020,7 +14350,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The Kubelet process provides a read-only API in addition to the main Kubelet API. Unauthenticated access is provided to this read-only API which could possibly retrieve potentially sensitive information about the cluster.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"160",
 		 "variables":"",
 		 "conditionName":"CIS-4.2.4 Verify that the --read-only-port argument is set to 0",
 		 "suggestion":""
@@ -13035,7 +14365,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Setting idle timeouts ensures that you are protected against Denial-of-Service attacks, inactive connections and running out of ephemeral ports. Note: By default, --streaming-connection-idle-timeout is set to 4 hours which might be too high for your environment. Setting this as appropriate would additionally ensure that such streaming connections are timed out after serving legitimate use cases.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"161",
 		 "variables":"",
 		 "conditionName":"CIS-4.2.5 Ensure that the --streaming-connection-idle-timeout argument is not set to 0",
 		 "suggestion":""
@@ -13050,7 +14380,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Kernel parameters are usually tuned and hardened by the system administrators before putting the systems into production. These parameters protect the kernel and the system. Your kubelet kernel defaults that rely on such parameters should be appropriately set to match the desired secured system state. Ignoring this could potentially lead to running pods with undesired kernel behavior.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"162",
 		 "variables":"",
 		 "conditionName":"CIS-4.2.6 Ensure that the --protect-kernel-defaults argument is set to true",
 		 "suggestion":""
@@ -13065,7 +14395,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Kubelets can automatically manage the required changes to iptables based on how you choose your networking options for the pods. It is recommended to let kubelets manage the changes to iptables. This ensures that the iptables configuration remains in sync with pods networking configuration. Manually configuring iptables with dynamic pod network configuration changes might hamper the communication between pods/containers and to the outside world. You might have iptables rules too restrictive or too open.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"163",
 		 "variables":"",
 		 "conditionName":"CIS-4.2.7 Ensure that the --make-iptables-util-chains argument is set to true",
 		 "suggestion":""
@@ -13080,7 +14410,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Overriding hostnames could potentially break TLS setup between the kubelet and the apiserver. Additionally, with overridden hostnames, it becomes increasingly difficult to associate logs with a particular node and process them for security analytics. Hence, you should setup your kubelet nodes with resolvable FQDNs and avoid overriding the hostnames with IPs.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"164",
 		 "variables":"",
 		 "conditionName":"CIS-4.2.8 Ensure that the --hostname-override argument is not set",
 		 "suggestion":""
@@ -13095,7 +14425,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"It is important to capture all events and not restrict event creation. Events are an important source of security information and analytics that ensure that your environment is consistently monitored using the event data.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"165",
 		 "variables":"",
 		 "conditionName":"CIS-4.2.9 Ensure that the --event-qps argument is set to 0 or a level which ensures appropriate event capture",
 		 "suggestion":""
@@ -13110,7 +14440,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The connections from the apiserver to the kubelet are used for fetching logs for pods, attaching (through kubectl) to running pods, and using the kubelet\u2019s port-forwarding functionality. These connections terminate at the kubelet\u2019s HTTPS endpoint. By default, the apiserver does not verify the kubelet\u2019s serving certificate, which makes the connection subject to man-in-the-middle attacks, and unsafe to run over untrusted and/or public networks.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"166",
 		 "variables":"",
 		 "conditionName":"CIS-4.2.10 Ensure that the --tls-cert-file and --tls-private-key-file arguments are set as appropriate",
 		 "suggestion":""
@@ -13125,7 +14455,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The --rotate-certificates setting causes the kubelet to rotate its client certificates by creating new CSRs as its existing credentials expire. This automated periodic rotation ensures that the there is no downtime due to expired certificates and thus addressing availability in the CIA security triad. Note: This recommendation only applies if you let kubelets get their certificates from the API server. In case your kubelet certificates come from an outside authority/tool ",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"167",
 		 "variables":"",
 		 "conditionName":"CIS-4.2.11 Ensure that the --rotate-certificates argument is not set to false",
 		 "suggestion":""
@@ -13140,7 +14470,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"RotateKubeletServerCertificate causes the kubelet to both request a serving certificate after bootstrapping its client credentials and rotate the certificate as its existing credentials expire. This automated periodic rotation ensures that the there are no downtimes due to expired certificates and thus addressing availability in the CIA security triad. Note: This recommendation only applies if you let kubelets get their certificates from the API server. In case your kubelet certificates come from an outside authority/tool ",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"168",
 		 "variables":"",
 		 "conditionName":"CIS-4.2.12 Verify that the RotateKubeletServerCertificate argument is set to true",
 		 "suggestion":""
@@ -13155,7 +14485,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"TLS ciphers have had a number of known vulnerabilities and weaknesses, which can reduce the protection provided by them. By default Kubernetes supports a number of TLS ciphersuites including some that have security concerns, weakening the protection provided.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"169",
 		 "variables":"",
 		 "conditionName":"CIS-4.2.13 Ensure that the Kubelet only makes use of Strong Cryptographic Ciphers",
 		 "suggestion":""
@@ -13170,7 +14500,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Kubernetes provides a set of default roles where RBAC is used. Some of these roles such as cluster-admin provide wide-ranging privileges which should only be applied where absolutely necessary. Roles such as cluster-admin allow super-user access to perform any action on any resource. When used in a ClusterRoleBinding, it gives full control over every resource in the cluster and in all namespaces. When used in a RoleBinding, it gives full control over every resource in the rolebindings namespace, including the namespace itself.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"170",
 		 "variables":"",
 		 "conditionName":"CIS-5.1.1 Ensure that the cluster-admin role is only used where required",
 		 "suggestion":""
@@ -13185,7 +14515,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Inappropriate access to secrets stored within the Kubernetes cluster can allow for an attacker to gain additional access to the Kubernetes cluster or external resources whose credentials are stored as secrets.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"171",
 		 "variables":"",
 		 "conditionName":"CIS-5.1.2 Minimize access to secrets",
 		 "suggestion":""
@@ -13200,7 +14530,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The principle of least privilege recommends that users are provided only the access required for their role and nothing more. The use of wildcard rights grants is likely to provide excessive rights to the Kubernetes API.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"172",
 		 "variables":"",
 		 "conditionName":"CIS-5.1.3 Minimize wildcard use in Roles and ClusterRoles",
 		 "suggestion":""
@@ -13215,7 +14545,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The ability to create pods in a cluster opens up possibilities for privilege escalation and should be restricted, where possible.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"173",
 		 "variables":"",
 		 "conditionName":"CIS-5.1.4 Minimize access to create pods",
 		 "suggestion":""
@@ -13230,7 +14560,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Kubernetes provides a default service account which is used by cluster workloads where no specific service account is assigned to the pod. Where access to the Kubernetes API from a pod is required, a specific service account should be created for that pod, and rights granted to that service account. The default service account should be configured such that it does not provide a service account token and does not have any explicit rights assignments.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"174",
 		 "variables":"",
 		 "conditionName":"CIS-5.1.5 Ensure that default service accounts are not actively used",
 		 "suggestion":""
@@ -13245,7 +14575,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Mounting service account tokens inside pods can provide an avenue for privilege escalation attacks where an attacker is able to compromise a single pod in the cluster. Avoiding mounting these tokens removes this attack avenue.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"175",
 		 "variables":"",
 		 "conditionName":"CIS-5.1.6 Ensure that Service Account Tokens are only mounted where necessary",
 		 "suggestion":""
@@ -13260,7 +14590,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The impersonate privilege allows a subject to impersonate other users gaining their rights to the cluster. The bind privilege allows the subject to add a binding to a cluster role or role which escalates their effective permissions in the cluster. The escalate privilege allows a subject to modify cluster roles to which they are bound, increasing their rights to that level. Each of these permissions has the potential to allow for privilege escalation to cluster-admin level.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"176",
 		 "variables":"",
 		 "conditionName":"CIS-5.1.8 Limit use of the Bind, Impersonate and Escalate permissions in the Kubernetes cluster",
 		 "suggestion":""
@@ -13275,7 +14605,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Without an active policy control mechanism, it is not possible to limit the use of containers with access to underlying cluster nodes, via mechanisms like privileged containers, or the use of hostPath volume mounts.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"177",
 		 "variables":"",
 		 "conditionName":"CIS-5.2.1 Ensure that the cluster has at least one active policy control mechanism in place",
 		 "suggestion":""
@@ -13290,7 +14620,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Privileged containers have access to all Linux Kernel capabilities and devices. A container running with full privileges can do almost everything that the host can do. This flag exists to allow special use-cases, like manipulating the network stack and accessing devices. There should be at least one admission control policy defined which does not permit privileged containers. If you need to run privileged containers, this should be defined in a separate policy and you should carefully check to ensure that only limited service accounts and users are given permission to use that policy.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"178",
 		 "variables":"",
 		 "conditionName":"CIS-5.2.2 Minimize the admission of privileged containers",
 		 "suggestion":""
@@ -13305,7 +14635,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"A container running in the hosts PID namespace can inspect processes running outside the container. If the container also has access to ptrace capabilities this can be used to escalate privileges outside of the container. There should be at least one admission control policy defined which does not permit containers to share the host PID namespace. If you need to run containers which require hostPID, this should be defined in a separate policy and you should carefully check to ensure that only limited service accounts and users are given permission to use that policy.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"179",
 		 "variables":"",
 		 "conditionName":"CIS-5.2.3 Minimize the admission of containers wishing to share the host process ID namespace",
 		 "suggestion":""
@@ -13320,7 +14650,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"A container running in the hosts IPC namespace can use IPC to interact with processes outside the container. There should be at least one admission control policy defined which does not permit containers to share the host IPC namespace. If you need to run containers which require hostIPC, this should be definited in a separate policy and you should carefully check to ensure that only limited service accounts and users are given permission to use that policy.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"180",
 		 "variables":"",
 		 "conditionName":"CIS-5.2.4 Minimize the admission of containers wishing to share the host IPC namespace",
 		 "suggestion":""
@@ -13335,7 +14665,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"A container running in the hosts network namespace could access the local loopback device, and could access network traffic to and from other pods. There should be at least one admission control policy defined which does not permit containers to share the host network namespace. If you need to run containers which require access to the hosts network namesapces, this should be defined in a separate policy and you should carefully check to ensure that only limited service accounts and users are given permission to use that policy.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"181",
 		 "variables":"",
 		 "conditionName":"CIS-5.2.5 Minimize the admission of containers wishing to share the host network namespace",
 		 "suggestion":""
@@ -13350,7 +14680,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"A container running with the allowPrivilegeEscalation flag set to true may have processes that can gain more privileges than their parent. There should be at least one admission control policy defined which does not permit containers to allow privilege escalation. The option exists ",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"182",
 		 "variables":"",
 		 "conditionName":"CIS-5.2.6 Minimize the admission of containers with allowPrivilegeEscalation",
 		 "suggestion":""
@@ -13365,7 +14695,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Containers may run as any Linux user. Containers which run as the root user, whilst constrained by Container Runtime security features still have a escalated likelihood of container breakout. Ideally, all containers should run as a defined non-UID 0 user. There should be at least one admission control policy defined which does not permit root containers. If you need to run root containers, this should be defined in a separate policy and you should carefully check to ensure that only limited service accounts and users are given permission to use that policy.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"183",
 		 "variables":"",
 		 "conditionName":"CIS-5.2.7 Minimize the admission of root containers",
 		 "suggestion":""
@@ -13380,7 +14710,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Containers run with a default set of capabilities as assigned by the Container Runtime. By default this can include potentially dangerous capabilities. With Docker as the container runtime the NET_RAW capability is enabled which may be misused by malicious containers. Ideally, all containers should drop this capability. There should be at least one admission control policy defined which does not permit containers with the NET_RAW capability. If you need to run containers with this capability, this should be defined in a separate policy and you should carefully check to ensure that only limited service accounts and users are given permission to use that policy.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"184",
 		 "variables":"",
 		 "conditionName":"CIS-5.2.8 Minimize the admission of containers with the NET_RAW capability",
 		 "suggestion":""
@@ -13395,7 +14725,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Containers run with a default set of capabilities as assigned by the Container Runtime. Capabilities outside this set can be added to containers which could expose them to risks of container breakout attacks. There should be at least one policy defined which prevents containers with capabilities beyond the default set from launching. If you need to run containers with additional capabilities, this should be defined in a separate policy and you should carefully check to ensure that only limited service accounts and users are given permission to use that policy.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"185",
 		 "variables":"",
 		 "conditionName":"CIS-5.2.9 Minimize the admission of containers with added capabilities",
 		 "suggestion":""
@@ -13410,7 +14740,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Containers run with a default set of capabilities as assigned by the Container Runtime. Capabilities are parts of the rights generally granted on a Linux system to the root user. In many cases applications running in containers do not require any capabilities to operate, so from the perspective of the principal of least privilege use of capabilities should be minimized.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"186",
 		 "variables":"",
 		 "conditionName":"CIS-5.2.10 Minimize the admission of containers with capabilities assigned",
 		 "suggestion":""
@@ -13425,7 +14755,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"A Windows container making use of the hostProcess flag can interact with the underlying Windows cluster node. As per the Kubernetes documentation, this provides \"privileged access\" to the Windows node.\n\n Where Windows containers are used inside a Kubernetes cluster, there should be at least one admission control policy which does not permit hostProcess Windows containers.\n\n If you need to run Windows containers which require hostProcess, this should be defined in a separate policy and you should carefully check to ensure that only limited service accounts and users are given permission to use that policy.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"187",
 		 "variables":"",
 		 "conditionName":"CIS-5.2.11 Minimize the admission of Windows HostProcess Containers",
 		 "suggestion":""
@@ -13440,7 +14770,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"A container which mounts a hostPath volume as part of its specification will have access to the filesystem of the underlying cluster node. The use of hostPath volumes may allow containers access to privileged areas of the node filesystem. There should be at least one admission control policy defined which does not permit containers to mount hostPath volumes. If you need to run containers which require hostPath volumes, this should be defined in a separate policy and you should carefully check to ensure that only limited service accounts and users are given permission to use that policy.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"188",
 		 "variables":"",
 		 "conditionName":"CIS-5.2.12 Minimize the admission of HostPath volumes",
 		 "suggestion":""
@@ -13455,7 +14785,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Host ports connect containers directly to the hosts network. This can bypass controls such as network policy. There should be at least one admission control policy defined which does not permit containers which require the use of HostPorts. If you need to run containers which require HostPorts, this should be defined in a separate policy and you should carefully check to ensure that only limited service accounts and users are given permission to use that policy.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"189",
 		 "variables":"",
 		 "conditionName":"CIS-5.2.13 Minimize the admission of containers which use HostPorts",
 		 "suggestion":""
@@ -13470,7 +14800,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Kubernetes network policies are enforced by the CNI plugin in use. As such it is important to ensure that the CNI plugin supports both Ingress and Egress network policies.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"190",
 		 "variables":"",
 		 "conditionName":"CIS-5.3.1 Ensure that the CNI in use supports Network Policies",
 		 "suggestion":""
@@ -13485,7 +14815,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Running different applications on the same Kubernetes cluster creates a risk of one compromised application attacking a neighboring application. Network segmentation is important to ensure that containers can communicate only with those they are supposed to. A network policy is a specification of how selections of pods are allowed to communicate with each other and other network endpoints. Network Policies are namespace scoped. When a network policy is introduced to a given namespace, all traffic not allowed by the policy is denied. However, if there are no network policies in a namespace all traffic will be allowed into and out of the pods in that namespace.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"191",
 		 "variables":"",
 		 "conditionName":"CIS-5.3.2 Ensure that all Namespaces have Network Policies defined",
 		 "suggestion":""
@@ -13500,7 +14830,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"It is reasonably common for application code to log out its environment (particularly in the event of an error). This will include any secret values passed in as environment variables, so secrets can easily be exposed to any user or entity who has access to the logs.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"192",
 		 "variables":"",
 		 "conditionName":"CIS-5.4.1 Prefer using secrets as files over secrets as environment variables",
 		 "suggestion":""
@@ -13515,7 +14845,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Kubernetes supports secrets as first-class objects, but care needs to be taken to ensure that access to secrets is carefully limited. Using an external secrets provider can ease the management of access to secrets, especially where secrets are used across both Kubernetes and non-Kubernetes environments.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"193",
 		 "variables":"",
 		 "conditionName":"CIS-5.4.2 Consider external secret storage",
 		 "suggestion":""
@@ -13530,7 +14860,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Limiting the scope of user permissions can reduce the impact of mistakes or malicious activities. A Kubernetes namespace allows you to partition created resources into logically named groups. Resources created in one namespace can be hidden from other namespaces. By default, each resource created by a user in Kubernetes cluster runs in a default namespace, called default. You can create additional namespaces and attach resources and users to them. You can use Kubernetes Authorization plugins to create policies that segregate access to namespace resources between different users.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"194",
 		 "variables":"",
 		 "conditionName":"CIS-5.7.1 Create administrative boundaries between resources using namespaces",
 		 "suggestion":""
@@ -13545,7 +14875,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Seccomp (secure computing mode) is used to restrict the set of system calls applications can make, allowing cluster administrators greater control over the security of workloads running in the cluster. Kubernetes disables seccomp profiles by default for historical reasons. You should enable it to ensure that the workloads have restricted actions available within the container.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"195",
 		 "variables":"",
 		 "conditionName":"CIS-5.7.2 Ensure that the seccomp profile is set to docker/default in your pod definitions",
 		 "suggestion":""
@@ -13560,7 +14890,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"A security context defines the operating system security settings (uid, gid, capabilities, SELinux role, etc..) applied to a container. When designing your containers and pods, make sure that you configure the security context for your pods, containers, and volumes. A security context is a property defined in the deployment yaml. It controls the security parameters that will be assigned to the pod/container/volume. There are two levels of security context: pod level security context, and container level security context.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"196",
 		 "variables":"",
 		 "conditionName":"CIS-5.7.3 Apply Security Context to Your Pods and Containers",
 		 "suggestion":""
@@ -13575,7 +14905,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Resources in a Kubernetes cluster should be segregated by namespace, to allow for security controls to be applied at that level and to make it easier to manage resources.",
 		 "scheduled_policy":false,
-		 "scriptId":"77",
+		 "scriptId":"197",
 		 "variables":"",
 		 "conditionName":"CIS-5.7.4 The default namespace should not be used",
 		 "suggestion":""
@@ -13605,7 +14935,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Attackers may attempt to destroy data and resources in the cluster. This includes deleting deployments, configurations, storage, and compute resources.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"199",
 		 "variables":"",
 		 "conditionName":"C-0007 - MITRE - Data Destruction",
 		 "suggestion":""
@@ -13620,7 +14950,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Developers store secrets in the Kubernetes configuration files, such as environment variables in the pod configuration. Such behavior is commonly seen in clusters that are monitored by Azure Security Center. Attackers who have access to those configurations, by querying the API server or by accessing those files on the developers endpoint, can steal the stored secrets and use them.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"200",
 		 "variables":"",
 		 "conditionName":"C-0012 - MITRE - Applications credentials in configuration files",
 		 "suggestion":""
@@ -13635,7 +14965,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The Kubernetes dashboard is a web-based UI that is used for monitoring and managing the Kubernetes cluster. The dashboard allows users to perform actions in the cluster using its service account with the permissions that are determined by the binding or cluster-binding for this service account. Attackers who gain access to a container in the cluster, can use its network access to the dashboard pod. Consequently, attackers may retrieve information about the various resources in the cluster using the dashboards identity.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"201",
 		 "variables":"",
 		 "conditionName":"C-0014 - MITRE - Access Kubernetes dashboard",
 		 "suggestion":""
@@ -13650,7 +14980,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Secrets can be consumed by reference in the pod configuration. Attackers who have permissions to retrieve the secrets from the API server can access sensitive information that might include credentials to various services.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"202",
 		 "variables":"",
 		 "conditionName":"C-0015 - MITRE - List Kubernetes secrets",
 		 "suggestion":""
@@ -13665,7 +14995,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"When the cluster is deployed in the cloud, in some cases attackers can leverage their access to a container in the cluster to gain cloud credentials. For example, in AKS each node contains service principal credential.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"203",
 		 "variables":"",
 		 "conditionName":"C-0020 - MITRE - Mount service principal",
 		 "suggestion":""
@@ -13680,7 +15010,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Exposing a sensitive interface to the internet poses a security risk. Some popular frameworks were not intended to be exposed to the internet, and therefore dont require authentication by default. Thus, exposing them to the internet allows unauthenticated access to a sensitive interface which might enable running code or deploying containers in the cluster by a malicious actor. Examples of such interfaces that were seen exploited include Apache NiFi, Kubeflow, Argo Workflows, Weave Scope, and the Kubernetes dashboard.Note, this control is configurable. See below the details.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"204",
 		 "variables":"",
 		 "conditionName":"C-0021 - MITRE - Exposed sensitive interfaces",
 		 "suggestion":""
@@ -13695,7 +15025,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Kubernetes Job is a controller that creates one or more pods and ensures that a specified number of them successfully terminate. Kubernetes Job can be used to run containers that perform finite tasks for batch jobs. Kubernetes CronJob is used to schedule Jobs. Attackers may use Kubernetes CronJob for scheduling execution of malicious code that would run as a container in the cluster.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"205",
 		 "variables":"",
 		 "conditionName":"C-0026 - MITRE - Kubernetes CronJob",
 		 "suggestion":""
@@ -13710,7 +15040,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Kubernetes events can be very useful for identifying changes that occur in the cluster. Therefore, attackers may want to delete these events by using kubectl delete events–all in an attempt to avoid detection of their activity in the cluster.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"206",
 		 "variables":"",
 		 "conditionName":"C-0031 - MITRE - Delete Kubernetes events ",
 		 "suggestion":""
@@ -13725,7 +15055,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Role-based access control is a key security feature in Kubernetes. RBAC can restrict the allowed actions of the various identities in the cluster. Cluster-admin is a built-in high privileged role in Kubernetes. Attackers who have permissions to create bindings and cluster-bindings in the cluster can create a binding to the cluster-admin ClusterRole or to other high privileges roles.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"207",
 		 "variables":"",
 		 "conditionName":"C-0035 - MITRE - Cluster-admin binding ",
 		 "suggestion":""
@@ -13740,7 +15070,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Attackers can use validating webhooks to intercept and discover all the resources in the cluster. This control lists all the validating webhook configurations that must be verified.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"208",
 		 "variables":"",
 		 "conditionName":"C-0036 - MITRE - Validate Validating admission controller",
 		 "suggestion":""
@@ -13755,7 +15085,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"CoreDNS is a modular Domain Name System (DNS) server written in Go, hosted by Cloud Native Computing Foundation (CNCF). CoreDNS is the main DNS service that is being used in Kubernetes. The configuration of CoreDNS can be modified by a file named corefile. In Kubernetes, this file is stored in a ConfigMap object, located at the kube-system namespace. If attackers have permissions to modify the ConfigMap, for example by using the container\u2019s service account, they can change the behavior of the cluster\u2019s DNS, poison it, and take the network identity of other services.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"209",
 		 "variables":"",
 		 "conditionName":"C-0037 - MITRE - CoreDNS poisoning ",
 		 "suggestion":""
@@ -13770,7 +15100,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Attackers may use mutating webhooks to intercept and modify all the resources in the cluster. This control lists all mutating webhook configurations that must be verified.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"210",
 		 "variables":"",
 		 "conditionName":"C-0039 - MITRE - Validate Mutating admission controller ",
 		 "suggestion":""
@@ -13785,7 +15115,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"SSH server that is running inside a container may be used by attackers. If attackers gain valid credentials to a container, whether by brute force attempts or by other methods such as phishing, they can use it to get remote access to the container by SSH.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"211",
 		 "variables":"",
 		 "conditionName":"C-0042 - MITRE - SSH server running inside container ",
 		 "suggestion":""
@@ -13800,7 +15130,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"hostPath volume mounts a directory or a file from the host to the container. Attackers who have permissions to create a new container in the cluster may create one with a writable hostPath volume and gain persistence on the underlying host. For example, the latter can be achieved by creating a cron job on the host.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"212",
 		 "variables":"",
 		 "conditionName":"C-0045 - MITRE - Writable hostPath mount ",
 		 "suggestion":""
@@ -13815,7 +15145,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Mounting host directory to the container can be used by attackers to get access to the underlying host. This control identifies all the pods using hostPath mount.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"213",
 		 "variables":"",
 		 "conditionName":"C-0048 - MITRE - HostPath mount ",
 		 "suggestion":""
@@ -13830,7 +15160,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Cloud providers provide instance metadata service for retrieving information about the virtual machine, such as network configuration, disks, and SSH public keys. This service is accessible to the VMs via a non-routable IP address that can be accessed from within the VM only. Attackers who gain access to a container, may query the metadata API service for getting information about the underlying node.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"214",
 		 "variables":"",
 		 "conditionName":"C-0052 - MITRE - Instance Metadata API ",
 		 "suggestion":""
@@ -13845,7 +15175,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Service account (SA) represents an application identity in Kubernetes. By default, an SA is mounted to every created pod in the cluster. Using the SA, containers in the pod can send requests to the Kubernetes API server. Attackers who get access to a pod can access the SA token (located in /var/run/secrets/kubernetes.io/serviceaccount/token) and perform actions in the cluster, according to the SA permissions. If RBAC is not enabled, the SA has unlimited permissions in the cluster. If RBAC is enabled, its permissions are determined by the RoleBindings\\\\ClusterRoleBindings that are associated with it.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"215",
 		 "variables":"",
 		 "conditionName":"C-0053 - MITRE - Access container service account ",
 		 "suggestion":""
@@ -13860,7 +15190,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Kubernetes networking behavior allows traffic between pods in the cluster as a default behavior. Attackers who gain access to a single container may use it for network reachability to another container in the cluster.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"216",
 		 "variables":"",
 		 "conditionName":"C-0054 - MITRE - Cluster internal networking ",
 		 "suggestion":""
@@ -13875,7 +15205,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"A privileged container is a container that has all the capabilities of the host machine, which lifts all the limitations regular containers have. Practically, this means that privileged containers can do almost every action that can be performed directly on the host. Attackers who gain access to a privileged container or have permissions to create a new privileged container ",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"217",
 		 "variables":"",
 		 "conditionName":"C-0057 - MITRE - Privileged container ",
 		 "suggestion":""
@@ -13890,7 +15220,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"A user may be able to create a container with subPath or subPathExpr volume mounts to access files & directories anywhere on the host filesystem. Following Kubernetes versions are affected: v1.22.0 - v1.22.1, v1.21.0 - v1.21.4, v1.20.0 - v1.20.10, version v1.19.14 and lower. This control checks the vulnerable versions and the actual usage of the subPath feature in all Pods in the cluster.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"218",
 		 "variables":"",
 		 "conditionName":"C-0058 - MITRE - CVE-2021-25741 - Using symlink for arbitrary host file system access",
 		 "suggestion":""
@@ -13905,7 +15235,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"A user may be able to create a container with subPath or subPathExpr volume mounts to access files & directories anywhere on the host filesystem. Following Kubernetes versions are affected: v1.22.0 - v1.22.1, v1.21.0 - v1.21.4, v1.20.0 - v1.20.10, version v1.19.14 and lower. This control checks the vulnerable versions and the actual usage of the subPath feature in all Pods in the cluster.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"219",
 		 "variables":"",
 		 "conditionName":"C-0059 - MITRE - CVE-2021-25742-nginx-ingress-snippet-annotation-vulnerability",
 		 "suggestion":""
@@ -13920,7 +15250,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"etcd is a consistent and highly-available key value store used as Kubernetes backing store for all cluster data. All object data in Kubernetes, like secrets, are stored there. This is the reason why it is important to protect the contents of etcd and use its data encryption feature.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"220",
 		 "variables":"",
 		 "conditionName":"C-0066 - MITRE - Secret/etcd encryption enabled",
 		 "suggestion":""
@@ -13935,7 +15265,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Audit logging is an important security feature in Kubernetes, it enables the operator to track requests to the cluster. It is important to use it so the operator has a record of events happened in Kubernetes.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"221",
 		 "variables":"",
 		 "conditionName":"C-0067 - MITRE - Audit logs enabled",
 		 "suggestion":""
@@ -13950,7 +15280,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Pod Security Policies enable fine-grained authorization of pod creation and updates and it extends authorization beyond RBAC. It is an important to use PSP to control the creation of sensitive pods in your cluster.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"222",
 		 "variables":"",
 		 "conditionName":"C-0068 - MITRE - PSP enabled",
 		 "suggestion":""
@@ -13965,7 +15295,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"By default, requests to the kubelets HTTPS endpoint that are not rejected by other configured authentication methods are treated as anonymous requests, and given a username of system:anonymous and a group of system:unauthenticated.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"223",
 		 "variables":"",
 		 "conditionName":"C-0069 - MITRE - Disable anonymous access to Kubelet service",
 		 "suggestion":""
@@ -13980,7 +15310,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Kubelets are the node level orchestrator in Kubernetes control plane. They are publishing service port 10250 where they accept commands from API server. Operator must make sure that only API server is allowed to submit commands to Kubelet. This is done through client certificate verification, must configure Kubelet with client CA file to use for this purpose.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"224",
 		 "variables":"",
 		 "conditionName":"C-0070 - MITRE - Enforce Kubelet client TLS authentication",
 		 "suggestion":""
@@ -13995,7 +15325,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Attackers who have permissions, can run malicious commands in containers in the cluster using exec command. In this method, attackers can use legitimate images, such as an OS image as a backdoor container, and run their malicious code remotely by using kubectl exec.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"225",
 		 "variables":"",
 		 "conditionName":"C-0002 - NSA - Exec into container",
 		 "suggestion":""
@@ -14010,7 +15340,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"The control plane is the core of Kubernetes and gives users the ability to view containers, schedule new Pods, read Secrets, and execute commands in the cluster. Therefore, it should be protected. It is recommended to avoid control plane exposure to the Internet or to an untrusted network. The API server runs on ports 6443 and 8080. We recommend to block them in the firewall. Note also that port 8080, when accessed through the local machine, does not require TLS encryption, and the requests bypass authentication and authorization modules.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"226",
 		 "variables":"",
 		 "conditionName":"C-0005 - NSA - API server insecure port is enabled",
 		 "suggestion":""
@@ -14025,7 +15355,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"CPU and memory resources should have a limit set for every container or a namespace to prevent resource exhaustion. This control identifies all the pods without resource limit definitions by checking their yaml definition file as well as their namespace LimitRange objects. It is also recommended to use ResourceQuota object to restrict overall namespace resources, but this is not verified by this control.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"227",
 		 "variables":"",
 		 "conditionName":"C-0009 - NSA - Resource limits",
 		 "suggestion":""
@@ -14040,7 +15370,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Developers store secrets in the Kubernetes configuration files, such as environment variables in the pod configuration. Such behavior is commonly seen in clusters that are monitored by Azure Security Center. Attackers who have access to those configurations, by querying the API server or by accessing those files on the developers endpoint, can steal the stored secrets and use them.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"228",
 		 "variables":"",
 		 "conditionName":"C-0012 - NSA - Applications credentials in configuration files",
 		 "suggestion":""
@@ -14055,7 +15385,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Container engines allow containers to run applications as a non-root user with non-root group membership. Typically, this non-default setting is configured when the container image is built. . Alternatively, Kubernetes can load containers into a Pod with SecurityContext:runAsUser specifying a non-zero user. While the runAsUser directive effectively forces non-root execution at deployment, NSA and CISA encourage developers to build container applications to execute as a non-root user. Having non-root execution integrated at build time provides better assurance that applications will function correctly without root privileges.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"229",
 		 "variables":"",
 		 "conditionName":"C-0013 - NSA - Non-root containers",
 		 "suggestion":""
@@ -14070,7 +15400,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Attackers may gain access to a container and uplift its privilege to enable excessive capabilities.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"230",
 		 "variables":"",
 		 "conditionName":"C-0016 - NSA - Allow privilege escalation",
 		 "suggestion":""
@@ -14085,7 +15415,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"By default, containers are permitted mostly unrestricted execution within their own context. An attacker who has access to a container, can create files and download scripts as he wishes, and modify the underlying application running on the container.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"231",
 		 "variables":"",
 		 "conditionName":"C-0017 - NSA - Immutable container filesystem",
 		 "suggestion":""
@@ -14100,7 +15430,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Network policies control traffic flow between Pods, namespaces, and external IP addresses. By default, no network policies are applied to Pods or namespaces, resulting in unrestricted ingress and egress traffic within the Pod network. Pods become isolated through a network policy that applies to the Pod or the Pods namespace. Once a Pod is selected in a network policy, it rejects any connections that are not specifically allowed by any applicable policy object.Administrators should use a default policy selecting all Pods to deny all ingress and egress traffic and ensure any unselected Pods are isolated. Additional policies could then relax these restrictions for permissible connections.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"232",
 		 "variables":"",
 		 "conditionName":"C-0030 - NSA - Ingress and Egress blocked",
 		 "suggestion":""
@@ -14115,7 +15445,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Check all service accounts on which automount is not disabled. Check all workloads on which they and their service account dont disable automount.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"233",
 		 "variables":"",
 		 "conditionName":"C-0034 - NSA - Automatic mapping of service account",
 		 "suggestion":""
@@ -14130,7 +15460,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Role-based access control (RBAC) is a key security feature in Kubernetes. RBAC can restrict the allowed actions of the various identities in the cluster. Cluster-admin is a built-in high privileged role in Kubernetes. Attackers who have permissions to create bindings and cluster-bindings in the cluster can create a binding to the cluster-admin ClusterRole or to other high privileges roles.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"234",
 		 "variables":"",
 		 "conditionName":"C-0035 - NSA - Cluster-admin binding",
 		 "suggestion":""
@@ -14145,7 +15475,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Containers should be isolated from the host machine as much as possible. The hostPID and hostIPC fields in deployment yaml may allow cross-container influence and may expose the host itself to potentially malicious or destructive actions. This control identifies all pods using hostPID or hostIPC privileges.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"235",
 		 "variables":"",
 		 "conditionName":"C-0038 - NSA - Host PID/IPC privileges",
 		 "suggestion":""
@@ -14160,7 +15490,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Potential attackers may gain access to a pod and inherit access to the entire host network. For example, in AWS case, they will have access to the entire VPC. This control identifies all the pods with host network access enabled.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"236",
 		 "variables":"",
 		 "conditionName":"C-0041 - NSA - HostNetwork access",
 		 "suggestion":""
@@ -14175,7 +15505,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Workloads that contain a container with hostport. The problem that arises is that if the scale of your workload is larger than the number of nodes in your Kubernetes cluster, the deployment fails. And any two workloads that specify the same HostPort cannot be deployed to the same node. In addition, if the host where your pods are running becomes unavailable, Kubernetes reschedules the pods to different nodes. Thus, if the IP address for your workload changes, external clients of your application will lose access to the pod. The same thing happens when you restart your pods — Kubernetes reschedules them to a different node if available.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"237",
 		 "variables":"",
 		 "conditionName":"C-0044 - NSA - Container hostPort",
 		 "suggestion":""
@@ -14190,7 +15520,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Giving insecure and unnecessary capabilities for a container can increase the impact of a container compromise.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"238",
 		 "variables":"",
 		 "conditionName":"C-0046 - NSA - Insecure capabilities",
 		 "suggestion":""
@@ -14205,7 +15535,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Kubernetes networking behavior allows traffic between pods in the cluster as a default behavior. Attackers who gain access to a single container may use it for network reachability to another container in the cluster.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"239",
 		 "variables":"",
 		 "conditionName":"C-0054 - NSA - Cluster internal networking",
 		 "suggestion":""
@@ -14220,7 +15550,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"In order to reduce the attack surface, it is recommend, when it is possible, to harden your application using security services such as SELinux, AppArmor, and seccomp. Starting from Kubernetes version 22, SELinux is enabled by default.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"240",
 		 "variables":"",
 		 "conditionName":"C-0055 - NSA - Linux hardening",
 		 "suggestion":""
@@ -14235,7 +15565,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"A privileged container is a container that has all the capabilities of the host machine, which lifts all the limitations regular containers have. Practically, this means that privileged containers can do almost every action that can be performed directly on the host. Attackers who gain access to a privileged container or have permissions to create a new privileged container ",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"241",
 		 "variables":"",
 		 "conditionName":"C-0057 - NSA - Privileged container",
 		 "suggestion":""
@@ -14250,7 +15580,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"A user may be able to create a container with subPath or subPathExpr volume mounts to access files & directories anywhere on the host filesystem. Following Kubernetes versions are affected: v1.22.0 - v1.22.1, v1.21.0 - v1.21.4, v1.20.0 - v1.20.10, version v1.19.14 and lower. This control checks the vulnerable versions and the actual usage of the subPath feature in all Pods in the cluster.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"242",
 		 "variables":"",
 		 "conditionName":"C-0058 - NSA - CVE-2021-25741 - Using symlink for arbitrary host file system access",
 		 "suggestion":""
@@ -14265,7 +15595,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Security issue in ingress-nginx where a user that can create or update ingress objects can use the custom snippets feature to obtain all secrets in the cluster.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"243",
 		 "variables":"",
 		 "conditionName":"C-0059 - NSA - CVE-2021-25742-nginx-ingress-snippet-annotation-vulnerability",
 		 "suggestion":""
@@ -14280,7 +15610,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"etcd is a consistent and highly-available key value store used as Kubernetes backing store for all cluster data. All object data in Kubernetes, like secrets, are stored there. This is the reason why it is important to protect the contents of etcd and use its data encryption feature.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"244",
 		 "variables":"",
 		 "conditionName":"C-0066 - NSA - Secret/etcd encryption enabled",
 		 "suggestion":""
@@ -14295,7 +15625,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Audit logging is an important security feature in Kubernetes, it enables the operator to track requests to the cluster. It is important to use it so the operator has a record of events happened in Kubernetes.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"245",
 		 "variables":"",
 		 "conditionName":"C-0067 - NSA - Audit logs enabled",
 		 "suggestion":""
@@ -14310,7 +15640,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Pod Security Policies enable fine-grained authorization of pod creation and updates and it extends authorization beyond RBAC. It is an important to use PSP to control the creation of sensitive pods in your cluster.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"246",
 		 "variables":"",
 		 "conditionName":"C-0068 - NSA - PSP enabled ",
 		 "suggestion":""
@@ -14325,7 +15655,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"By default, requests to the kubelets HTTPS endpoint that are not rejected by other configured authentication methods are treated as anonymous requests, and given a username of system:anonymous and a group of system:unauthenticated.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"247",
 		 "variables":"",
 		 "conditionName":"C-0069 - NSA - Disable anonymous access to Kubelet service ",
 		 "suggestion":""
@@ -14340,7 +15670,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Kubelets are the node level orchestrator in Kubernetes control plane. They are publishing service port 10250 where they accept commands from API server. Operator must make sure that only API server is allowed to submit commands to Kubelet. This is done through client certificate verification, must configure Kubelet with client CA file to use for this purpose.",
 		 "scheduled_policy":false,
-		 "scriptId":"198",
+		 "scriptId":"248",
 		 "variables":"",
 		 "conditionName":"C-0070 - NSA - Enforce Kubelet client TLS authentication ",
 		 "suggestion":""
@@ -14370,7 +15700,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Overall CIS Complaince Score found between 50-70.",
 		 "scheduled_policy":false,
-		 "scriptId":"249",
+		 "scriptId":"250",
 		 "variables":"",
 		 "conditionName":"CIS - Compliance Score - Range: 50-70",
 		 "suggestion":""
@@ -14385,7 +15715,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Overall CIS Complaince Score found between 30-50.",
 		 "scheduled_policy":false,
-		 "scriptId":"249",
+		 "scriptId":"251",
 		 "variables":"",
 		 "conditionName":"CIS - Compliance Score - Range: 30-50",
 		 "suggestion":""
@@ -14400,7 +15730,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Overall CIS Complaince Score found below 30.",
 		 "scheduled_policy":false,
-		 "scriptId":"249",
+		 "scriptId":"252",
 		 "variables":"",
 		 "conditionName":"CIS - Compliance Score - Range: 0-30",
 		 "suggestion":""
@@ -14430,7 +15760,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Overall MITRE Complaince Score found between 50-70.",
 		 "scheduled_policy":false,
-		 "scriptId":"253",
+		 "scriptId":"254",
 		 "variables":"",
 		 "conditionName":"MITRE - Compliance Score - Range: 50-70",
 		 "suggestion":""
@@ -14445,7 +15775,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Overall MITRE Complaince Score found between 30-50.",
 		 "scheduled_policy":false,
-		 "scriptId":"253",
+		 "scriptId":"255",
 		 "variables":"",
 		 "conditionName":"MITRE - Compliance Score - Range: 30-50",
 		 "suggestion":""
@@ -14460,7 +15790,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Overall MITRE Complaince Score found below 30.",
 		 "scheduled_policy":false,
-		 "scriptId":"253",
+		 "scriptId":"256",
 		 "variables":"",
 		 "conditionName":"MITRE - Compliance Score - Range: 0-30",
 		 "suggestion":""
@@ -14490,7 +15820,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Overall NSA Complaince Score found between 50-70.",
 		 "scheduled_policy":false,
-		 "scriptId":"257",
+		 "scriptId":"258",
 		 "variables":"",
 		 "conditionName":"NSA - Compliance Score - Range: 50-70",
 		 "suggestion":""
@@ -14505,7 +15835,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Overall NSA Complaince Score found between 30-50.",
 		 "scheduled_policy":false,
-		 "scriptId":"257",
+		 "scriptId":"259",
 		 "variables":"",
 		 "conditionName":"NSA - Compliance Score - Range: 30-50",
 		 "suggestion":""
@@ -14520,7 +15850,7 @@ var policyDefinition = []string{
 		 "stage":"deploy",
 		 "description":"Overall NSA Complaince Score found below 30.",
 		 "scheduled_policy":false,
-		 "scriptId":"257",
+		 "scriptId":"260",
 		 "variables":"",
 		 "conditionName":"NSA - Compliance Score - Range: 0-30",
 		 "suggestion":""
@@ -14545,7 +15875,7 @@ var policyDefinition = []string{
 	{
 		 "policyId":"262",
 		 "orgId":"1",
-		 "policyName":"Deploy to Production should be preceeded by Judgements",
+		 "policyName":"Deploy to Production should be preceeded by Judgements Spinnaker",
 		 "category":"Deployment Config",
 		 "stage":"deploy",
 		 "description":"Deployments to sensitive environments should have a manual review and judgement stage in pipeline requiring someone to approve deployment.",
@@ -15001,6 +16331,36 @@ var policyDefinition = []string{
 		 "description":"Webhooks should use SSL/TLS.",
 		 "scheduled_policy":false,
 		 "scriptId":"292",
+		 "variables":"",
+		 "conditionName":"",
+		 "suggestion":""
+	}
+	`,
+	`
+	{
+		 "policyId":"293",
+		 "orgId":"1",
+		 "policyName":"Deploy to Production should be preceeded by Judgements Argo",
+		 "category":"Deployment Config",
+		 "stage":"deploy",
+		 "description":"Deployments to sensitive environments should have a manual review and judgement stage in pipeline requiring someone to approve deployment.",
+		 "scheduled_policy":false,
+		 "scriptId":"293",
+		 "variables":"",
+		 "conditionName":"",
+		 "suggestion":""
+	}
+	`,
+	`
+	{
+		 "policyId":"294",
+		 "orgId":"1",
+		 "policyName":"Deploy to Production should be preceeded by Judgements Jenkins",
+		 "category":"Deployment Config",
+		 "stage":"deploy",
+		 "description":"Deployments to sensitive environments should have a manual review and judgement stage in pipeline requiring someone to approve deployment.",
+		 "scheduled_policy":false,
+		 "scriptId":"294",
 		 "variables":"",
 		 "conditionName":"",
 		 "suggestion":""
@@ -15636,66 +16996,6 @@ var policyDefinition = []string{
 		 "suggestion":""
 	}
 	`,
-	`
-	{
-		 "policyId":"337",
-		 "orgId":"1",
-		 "policyName":"OWASP ZAP DAST Scan High Risk Policy",
-		 "category":"DAST",
-		 "stage":"postdeploy",
-		 "description":"Reports High risk issues found during DAST Scans in OWASP ZAP.",
-		 "scheduled_policy":false,
-		 "scriptId":"337",
-		 "variables":"",
-		 "conditionName":"",
-		 "suggestion":""
-	}
-	`,
-	`
-	{
-		 "policyId":"338",
-		 "orgId":"1",
-		 "policyName":"OWASP ZAP DAST Scan Medium Risk Policy",
-		 "category":"DAST",
-		 "stage":"postdeploy",
-		 "description":"Reports Medium risk issues found during DAST Scans in OWASP ZAP.",
-		 "scheduled_policy":false,
-		 "scriptId":"338",
-		 "variables":"",
-		 "conditionName":"",
-		 "suggestion":""
-	}
-	`,
-	`
-	{
-		 "policyId":"339",
-		 "orgId":"1",
-		 "policyName":"OWASP ZAP DAST Scan Low Risk Policy",
-		 "category":"DAST",
-		 "stage":"postdeploy",
-		 "description":"Reports Low risk issues found during DAST Scans in OWASP ZAP.",
-		 "scheduled_policy":false,
-		 "scriptId":"339",
-		 "variables":"",
-		 "conditionName":"",
-		 "suggestion":""
-	}
-	`,
-	`
-	{
-		 "policyId":"340",
-		 "orgId":"1",
-		 "policyName":"OWASP ZAP DAST Scan Informational Risk Policy",
-		 "category":"DAST",
-		 "stage":"postdeploy",
-		 "description":"Reports Informational risk issues found during DAST Scans in OWASP ZAP.",
-		 "scheduled_policy":false,
-		 "scriptId":"340",
-		 "variables":"",
-		 "conditionName":"",
-		 "suggestion":""
-	}
-	`,
 }
 
 var policyEnforcement = []string{
@@ -15777,7 +17077,6 @@ var policyEnforcement = []string{
       "action": "Alert",
       "conditionValue": "LOW",
       "status": true,
-	  "forceApply":true,
 	  "datasourceTool": "graphql",
       "tags": [
          "17",
@@ -15790,7 +17089,6 @@ var policyEnforcement = []string{
       "action": "Alert",
       "conditionValue": "CRITICAL",
       "status": true,
-	  "forceApply":true,
 	  "datasourceTool": "graphql",
       "tags": [
 		"17",
@@ -15803,7 +17101,6 @@ var policyEnforcement = []string{
       "action": "Alert",
       "conditionValue": "MEDIUM",
       "status": true,
-	  "forceApply":true,
 	  "datasourceTool": "graphql",
       "tags": [
 		"17",
@@ -16138,7 +17435,7 @@ var policyEnforcement = []string{
 	"tags": [
 	   "2"
 	]
-  }`,
+}`,
 	`{
 	"policyId": "38",
 	"severity": "Critical",
@@ -16148,7 +17445,7 @@ var policyEnforcement = []string{
 	"tags": [
 	   "2"
 	]
-  }`,
+}`,
 	`{
 	"policyId": "38",
 	"severity": "Critical",
@@ -16158,7 +17455,7 @@ var policyEnforcement = []string{
 	"tags": [
 	   "2"
 	]
-  }`,
+}`,
 	`{
       "policyId": "39",
       "severity": "Critical",
@@ -16178,7 +17475,7 @@ var policyEnforcement = []string{
 	"tags": [
 	   "2"
 	]
-  }`,
+}`,
 	`{
 	"policyId": "39",
 	"severity": "Critical",
@@ -16188,7 +17485,7 @@ var policyEnforcement = []string{
 	"tags": [
 	   "2"
 	]
-  }`,
+}`,
 	`{
 	"policyId": "39",
 	"severity": "Critical",
@@ -16198,7 +17495,7 @@ var policyEnforcement = []string{
 	"tags": [
 	   "2"
 	]
-  }`,
+}`,
 	`{
       "policyId": "40",
       "severity": "Medium",
@@ -16274,7 +17571,7 @@ var policyEnforcement = []string{
       "policyId": "46",
       "severity": "Medium",
       "action": "Prevent",
-      "status": false,
+      "status": true,
 	  "datasourceTool": "kubernetes",
       "tags": [
          "5",
@@ -16287,7 +17584,7 @@ var policyEnforcement = []string{
       "policyId": "47",
       "severity": "Medium",
       "action": "Prevent",
-      "status": false,
+      "status": true,
 	  "datasourceTool": "kubernetes",
       "tags": [
 		"5",
@@ -16324,7 +17621,7 @@ var policyEnforcement = []string{
       "policyId": "50",
       "severity": "Low",
       "action": "Prevent",
-      "status": false,
+      "status": true,
 	  "datasourceTool": "kubernetes",
       "tags": [
 		"5",
@@ -16358,7 +17655,7 @@ var policyEnforcement = []string{
 		"8",
 		"17"
 	]
-  }`,
+}`,
 	`{
       "policyId": "52",
       "severity": "Low",
@@ -16375,7 +17672,7 @@ var policyEnforcement = []string{
       "policyId": "53",
       "severity": "Critical",
       "action": "Prevent",
-      "status": false,
+      "status": true,
 	  "datasourceTool": "kubernetes",
       "tags": [
          "6"
@@ -16385,7 +17682,7 @@ var policyEnforcement = []string{
       "policyId": "54",
       "severity": "Critical",
       "action": "Prevent",
-      "status": false,
+      "status": true,
 	  "datasourceTool": "kubernetes",
       "tags": [
          "6"
@@ -16395,7 +17692,7 @@ var policyEnforcement = []string{
       "policyId": "55",
       "severity": "Critical",
       "action": "Prevent",
-      "status": false,
+      "status": true,
 	  "datasourceTool": "kubernetes",
       "tags": [
          "6"
@@ -16405,7 +17702,7 @@ var policyEnforcement = []string{
       "policyId": "56",
       "severity": "Critical",
       "action": "Prevent",
-      "status": false,
+      "status": true,
 	  "datasourceTool": "kubernetes",
       "tags": [
          "6"
@@ -16415,7 +17712,7 @@ var policyEnforcement = []string{
       "policyId": "57",
       "severity": "Critical",
       "action": "Prevent",
-      "status": false,
+      "status": true,
 	  "datasourceTool": "kubernetes",
       "tags": [
          "6"
@@ -16425,7 +17722,7 @@ var policyEnforcement = []string{
       "policyId": "58",
       "severity": "Critical",
       "action": "Prevent",
-      "status": false,
+      "status": true,
 	  "datasourceTool": "kubernetes",
       "tags": [
          "6"
@@ -16435,7 +17732,7 @@ var policyEnforcement = []string{
       "policyId": "59",
       "severity": "Critical",
       "action": "Prevent",
-      "status": false,
+      "status": true,
 	  "datasourceTool": "kubernetes",
       "tags": [
          "6"
@@ -16445,7 +17742,7 @@ var policyEnforcement = []string{
       "policyId": "60",
       "severity": "Critical",
       "action": "Prevent",
-      "status": false,
+      "status": true,
 	  "datasourceTool": "kubernetes",
       "tags": [
          "6"
@@ -16455,7 +17752,7 @@ var policyEnforcement = []string{
       "policyId": "61",
       "severity": "Critical",
       "action": "Prevent",
-      "status": false,
+      "status": true,
 	  "datasourceTool": "kubernetes",
       "tags": [
          "6"
@@ -16465,7 +17762,7 @@ var policyEnforcement = []string{
       "policyId": "62",
       "severity": "Critical",
       "action": "Prevent",
-      "status": false,
+      "status": true,
 	  "datasourceTool": "kubernetes",
       "tags": [
          "6"
@@ -16475,7 +17772,7 @@ var policyEnforcement = []string{
       "policyId": "63",
       "severity": "Critical",
       "action": "Prevent",
-      "status": false,
+      "status": true,
 	  "datasourceTool": "kubernetes",
       "tags": [
          "6"
@@ -16485,7 +17782,7 @@ var policyEnforcement = []string{
       "policyId": "64",
       "severity": "Critical",
       "action": "Prevent",
-      "status": false,
+      "status": true,
 	  "datasourceTool": "kubernetes",
       "tags": [
          "6"
@@ -16495,7 +17792,7 @@ var policyEnforcement = []string{
       "policyId": "65",
       "severity": "Critical",
       "action": "Prevent",
-      "status": false,
+      "status": true,
 	  "datasourceTool": "kubernetes",
       "tags": [
          "6"
@@ -16635,7 +17932,6 @@ var policyEnforcement = []string{
       "severity": "High",
       "action": "Alert",
       "status": true,
-	  "forceApply":true,
 	  "datasourceTool": "graphql",
       "tags": [
          "17",
@@ -18715,7 +20011,7 @@ var policyEnforcement = []string{
 	   "18",
 	   "2"
 	]
-  }`,
+}`,
 	`{
 	"policyId": "271",
 	"severity": "Medium",
@@ -18726,7 +20022,7 @@ var policyEnforcement = []string{
 	   "18",
 	   "2"
 	]
-  }`,
+}`,
 	`{
 	"policyId": "271",
 	"severity": "Medium",
@@ -18737,7 +20033,7 @@ var policyEnforcement = []string{
 	   "18",
 	   "2"
 	]
-  }`,
+}`,
 	`{
       "policyId": "272",
       "severity": "Low",
@@ -18770,7 +20066,7 @@ var policyEnforcement = []string{
 	   "18",
 	   "22"
 	]
-  }`,
+}`,
 	`{
 	"policyId": "273",
 	"severity": "Critical",
@@ -18781,7 +20077,7 @@ var policyEnforcement = []string{
 	   "18",
 	   "22"
 	]
-  }`,
+}`,
 	`{
 	"policyId": "273",
 	"severity": "Critical",
@@ -18792,7 +20088,7 @@ var policyEnforcement = []string{
 	   "18",
 	   "22"
 	]
-  }`,
+}`,
 	`{
       "policyId": "274",
       "severity": "High",
@@ -18881,7 +20177,7 @@ var policyEnforcement = []string{
       "policyId": "282",
       "severity": "High",
       "action": "Alert",
-      "status": false,
+      "status": true,
 	  "datasourceTool": "helm",
       "tags": [
          "21",
@@ -18892,7 +20188,7 @@ var policyEnforcement = []string{
       "policyId": "283",
       "severity": "Critical",
       "action": "Alert",
-      "status": false,
+      "status": true,
 	  "datasourceTool": "helm",
       "tags": [
          "21",
@@ -18903,7 +20199,7 @@ var policyEnforcement = []string{
       "policyId": "284",
       "severity": "Medium",
       "action": "Alert",
-      "status": false,
+      "status": true,
 	  "datasourceTool": "helm",
       "tags": [
          "21",
@@ -19002,7 +20298,7 @@ var policyEnforcement = []string{
       ]
   }`,
 	`{
-      "policyId": "262",
+      "policyId": "293",
       "severity": "Medium",
       "action": "Alert",
       "status": true,
@@ -19013,7 +20309,7 @@ var policyEnforcement = []string{
       ]
    }`,
 	`{
-      "policyId": "262",
+      "policyId": "294",
       "severity": "Medium",
       "action": "Alert",
       "status": true,
@@ -19033,7 +20329,7 @@ var policyEnforcement = []string{
            "24",
 		   "1"
       ]
-  }`,
+	}`,
 	`{
 		"policyId": "296",
 		"severity": "Medium",
@@ -19044,7 +20340,7 @@ var policyEnforcement = []string{
 		   "24",
 		   "1"
 		]
-  }`,
+	 }`,
 	`{
 		"policyId": "297",
 		"severity": "High",
@@ -19055,7 +20351,7 @@ var policyEnforcement = []string{
 		   "24",
 		   "1"
 		]
-  }`,
+	 }`,
 	`{
 		"policyId": "298",
 		"severity": "Medium",
@@ -19066,7 +20362,7 @@ var policyEnforcement = []string{
 		   "24",
 		   "1"
 		]
-  }`,
+	 }`,
 	`{
 		"policyId": "299",
 		"severity": "Medium",
@@ -19077,7 +20373,7 @@ var policyEnforcement = []string{
 		   "24",
 		   "1"
 		]
-  }`,
+	 }`,
 	`{
 		"policyId": "300",
 		"severity": "Medium",
@@ -19481,55 +20777,11 @@ var policyEnforcement = []string{
 		"action": "Alert",
 		"conditionValue": "4.0",
 		"status": false,
-		"datasourceTool": "codacy",
+		"datasourceTool": "sonarqube",
 		"tags": [
 		  "12",
 		  "11",
 		  "10"
-		]
-	}`,
-	`{
-		"policyId": "337",
-		"severity": "High",
-		"action": "Alert",
-		"conditionValue": "4.0",
-		"status": true,
-		"datasourceTool": "zap",
-		"tags": [
-		  "30"
-		]
-	}`,
-	`{
-		"policyId": "338",
-		"severity": "Medium",
-		"action": "Alert",
-		"conditionValue": "4.0",
-		"status": true,
-		"datasourceTool": "zap",
-		"tags": [
-		  "30"
-		]
-	}`,
-	`{
-		"policyId": "339",
-		"severity": "Low",
-		"action": "Alert",
-		"conditionValue": "4.0",
-		"status": true,
-		"datasourceTool": "zap",
-		"tags": [
-		  "30"
-		]
-	}`,
-	`{
-		"policyId": "340",
-		"severity": "Low",
-		"action": "Alert",
-		"conditionValue": "4.0",
-		"status": true,
-		"datasourceTool": "zap",
-		"tags": [
-		  "30"
 		]
 	}`,
 }
@@ -19798,15 +21050,6 @@ var tagPolicy = []string{
 		"id": "29",
 		"tagName": "policyCategory",
 		"tagValue": "Github Actions",
-		"tagDescription": "",
-		"createdBy": "system"
-	}
-	`,
-	`
-	{
-		"id": "30",
-		"tagName": "policyCategory",
-		"tagValue": "DAST",
 		"tagDescription": "",
 		"createdBy": "system"
 	}
