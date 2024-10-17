@@ -571,7 +571,7 @@ var scriptMap = map[int]string{
 		input.metadata.source_code_path == ""
 	}
 
-	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
 		input.metadata.source_code_path != ""
 	}
 
@@ -641,7 +641,7 @@ var scriptMap = map[int]string{
 		input.metadata.source_code_path == ""
 	}
 
-	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
 		input.metadata.source_code_path != ""
 	}
 
@@ -711,7 +711,7 @@ var scriptMap = map[int]string{
 		input.metadata.source_code_path == ""
 	}
 
-	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
 		input.metadata.source_code_path != ""
 	}
 
@@ -781,7 +781,7 @@ var scriptMap = map[int]string{
 		input.metadata.source_code_path == ""
 	}
 
-	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
 		input.metadata.source_code_path != ""
 	}
 
@@ -851,7 +851,7 @@ var scriptMap = map[int]string{
 		input.metadata.source_code_path == ""
 	}
 
-	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
 		input.metadata.source_code_path != ""
 	}
 
@@ -921,7 +921,7 @@ var scriptMap = map[int]string{
 		input.metadata.source_code_path == ""
 	}
 
-	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
 		input.metadata.source_code_path != ""
 	}
 
@@ -991,7 +991,7 @@ var scriptMap = map[int]string{
 		input.metadata.source_code_path == ""
 	}
 
-	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
 		input.metadata.source_code_path != ""
 	}
 
@@ -1061,7 +1061,7 @@ var scriptMap = map[int]string{
 		input.metadata.source_code_path == ""
 	}
 
-	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
 		input.metadata.source_code_path != ""
 	}
 
@@ -1131,7 +1131,7 @@ var scriptMap = map[int]string{
 		input.metadata.source_code_path == ""
 	}
 
-	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
 		input.metadata.source_code_path != ""
 	}
 
@@ -1201,7 +1201,7 @@ var scriptMap = map[int]string{
 		input.metadata.source_code_path == ""
 	}
 
-	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
 		input.metadata.source_code_path != ""
 	}
 
@@ -1271,7 +1271,7 @@ var scriptMap = map[int]string{
 		input.metadata.source_code_path == ""
 	}
 
-	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
 		input.metadata.source_code_path != ""
 	}
 
@@ -1341,7 +1341,7 @@ var scriptMap = map[int]string{
 		input.metadata.source_code_path == ""
 	}
 
-	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
 		input.metadata.source_code_path != ""
 	}
 
@@ -1411,7 +1411,7 @@ var scriptMap = map[int]string{
 		input.metadata.source_code_path == ""
 	}
 
-	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
 		input.metadata.source_code_path != ""
 	}
 
@@ -1481,7 +1481,7 @@ var scriptMap = map[int]string{
 		input.metadata.source_code_path == ""
 	}
 
-	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
 		input.metadata.source_code_path != ""
 	}
 
@@ -1551,7 +1551,7 @@ var scriptMap = map[int]string{
 		input.metadata.source_code_path == ""
 	}
 
-	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
 		input.metadata.source_code_path != ""
 	}
 
@@ -1621,7 +1621,7 @@ var scriptMap = map[int]string{
 		input.metadata.source_code_path == ""
 	}
 
-	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
 		input.metadata.source_code_path != ""
 	}
 
@@ -1691,7 +1691,7 @@ var scriptMap = map[int]string{
 		input.metadata.source_code_path == ""
 	}
 
-	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
 		input.metadata.source_code_path != ""
 	}
 
@@ -1761,7 +1761,7 @@ var scriptMap = map[int]string{
 		input.metadata.source_code_path == ""
 	}
 
-	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
 		input.metadata.source_code_path != ""
 	}
 
@@ -1831,7 +1831,7 @@ var scriptMap = map[int]string{
 		input.metadata.source_code_path == ""
 	}
 
-	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
 		input.metadata.source_code_path != ""
 	}
 
@@ -2414,7 +2414,7 @@ var scriptMap = map[int]string{
 		input.metadata.source_code_path == ""
 	}
 
-	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
 		input.metadata.source_code_path != ""
 	}
 
@@ -3018,11 +3018,11 @@ var scriptMap = map[int]string{
 
     image_sha = replace(input.metadata.image_sha, ":", "-")
 
-	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", severity, "_", input.metadata.build_id, "_semgrep.json"]) {
+	file_name = concat("", ["findings_", input.metadata.owner, "_", input.metadata.repository, "_", severity, "_", input.metadata.build_id, "_semgrep.json"]) {
 		input.metadata.source_code_path == ""
 	}
 
-	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", severity, "_", input.metadata.build_id, "_", image_sha, "_semgrep.json"]) {
+	file_name = concat("", ["findings_", input.metadata.owner, "_", input.metadata.repository, "_", severity, "_", input.metadata.build_id, "_", image_sha, "_semgrep.json"]) {
 		input.metadata.source_code_path != ""
 	}
 
@@ -3054,11 +3054,11 @@ var scriptMap = map[int]string{
 
 	image_sha = replace(input.metadata.image_sha, ":", "-")
 
-	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", severity, "_", input.metadata.build_id, "_semgrep.json"]) {
+	file_name = concat("", ["findings_", input.metadata.owner, "_", input.metadata.repository, "_", severity, "_", input.metadata.build_id, "_semgrep.json"]) {
 		input.metadata.source_code_path == ""
 	}
 
-	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", severity, "_", input.metadata.build_id, "_", image_sha, "_semgrep.json"]) {
+	file_name = concat("", ["findings_", input.metadata.owner, "_", input.metadata.repository, "_", severity, "_", input.metadata.build_id, "_", image_sha, "_semgrep.json"]) {
 		input.metadata.source_code_path != ""
 	}
 
@@ -3326,11 +3326,11 @@ var scriptMap = map[int]string{
 
     image_sha = replace(input.metadata.image_sha, ":", "-")
 
-	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", severity, "_", input.metadata.build_id, "_semgrep.json"]) {
+	file_name = concat("", ["findings_", input.metadata.owner, "_", input.metadata.repository, "_", severity, "_", input.metadata.build_id, "_semgrep.json"]) {
 		input.metadata.source_code_path == ""
 	}
 
-	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", severity, "_", input.metadata.build_id, "_", image_sha, "_semgrep.json"]) {
+	file_name = concat("", ["findings_", input.metadata.owner, "_", input.metadata.repository, "_", severity, "_", input.metadata.build_id, "_", image_sha, "_semgrep.json"]) {
 		input.metadata.source_code_path != ""
 	}
 
