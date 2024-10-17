@@ -13,6 +13,7 @@ const (
 	June2024Version
 	June2024Version2
 	July2024Version
+	NetradyneVersion
 	August2024Version
 	August2024Version2
 	September2024Version
@@ -23,6 +24,7 @@ var SchemasString = map[SchemaOrder]string{
 	June2024Version:      schemas.June2024Schema,
 	June2024Version2:     schemas.June2024Version2,
 	July2024Version:      schemas.July2024Schema,
+	NetradyneVersion:     schemas.NetradyneSchema,
 	August2024Version:    schemas.August2024Schema,
 	August2024Version2:   schemas.August2024Version2,
 	September2024Version: schemas.September2024Schema,
@@ -33,6 +35,7 @@ var schemaOrderMap = map[string]SchemaOrder{
 	"June2024":      June2024Version,
 	"June2024V2":    June2024Version2,
 	"July2024":      July2024Version,
+	"Netradyne":     NetradyneVersion,
 	"August2024":    August2024Version,
 	"August2024V2":  August2024Version2,
 	"September2024": September2024Version,
@@ -43,6 +46,7 @@ var expDgraphSchemaMap = map[int]bool{
 	June2024Version.Int():      true,
 	June2024Version2.Int():     false,
 	July2024Version.Int():      true,
+	NetradyneVersion.Int():     false,
 	August2024Version.Int():    true,
 	August2024Version2.Int():   false,
 	September2024Version.Int(): false,
