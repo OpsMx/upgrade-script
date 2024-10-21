@@ -783,6 +783,26 @@ func (v *DeleteArtifactScanDataForInprogressResponse) GetDeleteArtifactScanData(
 	return v.DeleteArtifactScanData
 }
 
+// DeleteArtifactScanDataNotHaveArtifactDeleteArtifactScanDataDeleteArtifactScanDataPayload includes the requested fields of the GraphQL type DeleteArtifactScanDataPayload.
+type DeleteArtifactScanDataNotHaveArtifactDeleteArtifactScanDataDeleteArtifactScanDataPayload struct {
+	NumUids *int `json:"numUids"`
+}
+
+// GetNumUids returns DeleteArtifactScanDataNotHaveArtifactDeleteArtifactScanDataDeleteArtifactScanDataPayload.NumUids, and is useful for accessing the field via an interface.
+func (v *DeleteArtifactScanDataNotHaveArtifactDeleteArtifactScanDataDeleteArtifactScanDataPayload) GetNumUids() *int {
+	return v.NumUids
+}
+
+// DeleteArtifactScanDataNotHaveArtifactResponse is returned by DeleteArtifactScanDataNotHaveArtifact on success.
+type DeleteArtifactScanDataNotHaveArtifactResponse struct {
+	DeleteArtifactScanData *DeleteArtifactScanDataNotHaveArtifactDeleteArtifactScanDataDeleteArtifactScanDataPayload `json:"deleteArtifactScanData"`
+}
+
+// GetDeleteArtifactScanData returns DeleteArtifactScanDataNotHaveArtifactResponse.DeleteArtifactScanData, and is useful for accessing the field via an interface.
+func (v *DeleteArtifactScanDataNotHaveArtifactResponse) GetDeleteArtifactScanData() *DeleteArtifactScanDataNotHaveArtifactDeleteArtifactScanDataDeleteArtifactScanDataPayload {
+	return v.DeleteArtifactScanData
+}
+
 // DeploymentStage is an enum denoting the stage of the deployment. .
 type DeploymentStage string
 
@@ -2982,6 +3002,37 @@ func DeleteArtifactScanDataForInprogress(
 	var err_ error
 
 	var data_ DeleteArtifactScanDataForInprogressResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by DeleteArtifactScanDataNotHaveArtifact.
+const DeleteArtifactScanDataNotHaveArtifact_Operation = `
+mutation DeleteArtifactScanDataNotHaveArtifact {
+	deleteArtifactScanData(filter: {not:{has:artifactDetails}}) {
+		numUids
+	}
+}
+`
+
+func DeleteArtifactScanDataNotHaveArtifact(
+	ctx_ context.Context,
+	client_ graphql.Client,
+) (*DeleteArtifactScanDataNotHaveArtifactResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "DeleteArtifactScanDataNotHaveArtifact",
+		Query:  DeleteArtifactScanDataNotHaveArtifact_Operation,
+	}
+	var err_ error
+
+	var data_ DeleteArtifactScanDataNotHaveArtifactResponse
 	resp_ := &graphql.Response{Data: &data_}
 
 	err_ = client_.MakeRequest(
