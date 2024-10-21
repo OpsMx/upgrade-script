@@ -78,7 +78,7 @@ func StartUpgrade() error {
 	for i := range totalUpgradeSteps(schemaVersion) {
 
 		logger.Sl.Infof("STEP %d of upgrading schema", i)
-		logger.Sl.Info("Attempting to upgrade to schema ", upgradeSchemaBasedOnStep(schemaVersion, i).String())
+		logger.Sl.Info("Attempting to upgrade to schema ", upgradeSchemaBasedOnStep(schemaVersion, i).NameOfSchema())
 
 		var isLastStep bool
 		if i == totalUpgradeSteps(schemaVersion)-1 {
