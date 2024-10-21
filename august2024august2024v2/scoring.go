@@ -298,7 +298,7 @@ func setArtifactRisk(ctx context.Context, prodDgraphClient graphql.Client, stage
 		}
 	}
 
-	logger.Sl.Debugf("updating these values in db stage: %s score: %d risk_status: %s", stage, score, riskStatus)
+	logger.Sl.Debugf("updating these values in db stage: %s score: %d risk_status: %s", stage, score, &riskStatus)
 
 	switch stage {
 	case SOURCE:

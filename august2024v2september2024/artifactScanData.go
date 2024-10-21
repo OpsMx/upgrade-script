@@ -14,6 +14,11 @@ func ingestArtifactNameTag(gqlClient graphql.Client) error {
 
 	ctx := context.Background()
 
+	_, err := DeleteArtifactScanDataForInprogress(ctx, gqlClient)
+	if err != nil {
+		return fmt.Errorf("error in DeleteArtifactScanDataForInprogress: %s", err.Error())
+	}
+
 	resp, err := QueryArtifactNameAndTag(ctx, gqlClient)
 	if err != nil {
 		return fmt.Errorf("error in QueryArtifactNameAndTag while fetching records of artifact scan data: %s", err.Error())

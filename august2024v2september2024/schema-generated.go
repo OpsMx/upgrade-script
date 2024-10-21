@@ -763,6 +763,26 @@ func (v *ComponentRef) GetVulnerabilities() []*VulnerabilityRef { return v.Vulne
 // GetArtifacts returns ComponentRef.Artifacts, and is useful for accessing the field via an interface.
 func (v *ComponentRef) GetArtifacts() []*ArtifactScanDataRef { return v.Artifacts }
 
+// DeleteArtifactScanDataForInprogressDeleteArtifactScanDataDeleteArtifactScanDataPayload includes the requested fields of the GraphQL type DeleteArtifactScanDataPayload.
+type DeleteArtifactScanDataForInprogressDeleteArtifactScanDataDeleteArtifactScanDataPayload struct {
+	NumUids *int `json:"numUids"`
+}
+
+// GetNumUids returns DeleteArtifactScanDataForInprogressDeleteArtifactScanDataDeleteArtifactScanDataPayload.NumUids, and is useful for accessing the field via an interface.
+func (v *DeleteArtifactScanDataForInprogressDeleteArtifactScanDataDeleteArtifactScanDataPayload) GetNumUids() *int {
+	return v.NumUids
+}
+
+// DeleteArtifactScanDataForInprogressResponse is returned by DeleteArtifactScanDataForInprogress on success.
+type DeleteArtifactScanDataForInprogressResponse struct {
+	DeleteArtifactScanData *DeleteArtifactScanDataForInprogressDeleteArtifactScanDataDeleteArtifactScanDataPayload `json:"deleteArtifactScanData"`
+}
+
+// GetDeleteArtifactScanData returns DeleteArtifactScanDataForInprogressResponse.DeleteArtifactScanData, and is useful for accessing the field via an interface.
+func (v *DeleteArtifactScanDataForInprogressResponse) GetDeleteArtifactScanData() *DeleteArtifactScanDataForInprogressDeleteArtifactScanDataDeleteArtifactScanDataPayload {
+	return v.DeleteArtifactScanData
+}
+
 // DeploymentStage is an enum denoting the stage of the deployment. .
 type DeploymentStage string
 
@@ -2931,6 +2951,37 @@ func AggregateSecurityIssue(
 	var err_ error
 
 	var data_ AggregateSecurityIssueResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by DeleteArtifactScanDataForInprogress.
+const DeleteArtifactScanDataForInprogress_Operation = `
+mutation DeleteArtifactScanDataForInprogress {
+	deleteArtifactScanData(filter: {vulnScanState:{eq:"inprogress"}}) {
+		numUids
+	}
+}
+`
+
+func DeleteArtifactScanDataForInprogress(
+	ctx_ context.Context,
+	client_ graphql.Client,
+) (*DeleteArtifactScanDataForInprogressResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "DeleteArtifactScanDataForInprogress",
+		Query:  DeleteArtifactScanDataForInprogress_Operation,
+	}
+	var err_ error
+
+	var data_ DeleteArtifactScanDataForInprogressResponse
 	resp_ := &graphql.Response{Data: &data_}
 
 	err_ = client_.MakeRequest(

@@ -298,3 +298,9 @@ query AggregateSecurityIssue {
         count
     }
 }
+
+mutation DeleteArtifactScanDataForInprogress {
+    deleteArtifactScanData(filter: { vulnScanState: { eq: "inprogress" } }) {
+        numUids
+    }
+}
