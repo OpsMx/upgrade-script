@@ -105,3 +105,22 @@ mutation UpdateArtifactScanData($artifactScanDataId: String!) {
         }
     }
 }
+
+mutation DeleteArtifactScanData($id: String) {
+    deleteArtifactScanData(filter: { id: { eq: $id } }) {
+        msg
+        numUids
+    }
+}
+
+mutation DeleteArtifactScanDataForInprogress {
+    deleteArtifactScanData(filter: { vulnScanState: { eq: "inprogress" } }) {
+        numUids
+    }
+}
+
+mutation DeleteArtifactScanDataNotHaveArtifact {
+    deleteArtifactScanData(filter: { not: { has: artifactDetails } }) {
+        numUids
+    }
+}

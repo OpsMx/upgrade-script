@@ -119,9 +119,9 @@ func beginProcessOfUpgrade(upgradeTo SchemaOrder, isSecondDgraphRequired, isLast
 
 			expGraphqlClient := graphqlfunc.NewClient(Conf.ExpGraphQLAddr, Conf.ExpDgraphToken)
 
-			return june2024june2024v2.UpgradeToJune2024V2(Conf.ExpGraphQLAddr, Conf.ExpDgraphToken, expGraphqlClient)
+			return june2024june2024v2.UpgradeToJune2024V2(Conf.ExpGraphQLAddr, Conf.ExpDgraphToken, Conf.RemoteDgraphRestoreUrl, expGraphqlClient)
 		}
-		return june2024june2024v2.UpgradeToJune2024V2(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, prodGraphqlClient)
+		return june2024june2024v2.UpgradeToJune2024V2(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, "", prodGraphqlClient)
 
 	case July2024Version:
 		if err := allChecksForExpDgraph(July2024Version); err != nil {
@@ -150,9 +150,9 @@ func beginProcessOfUpgrade(upgradeTo SchemaOrder, isSecondDgraphRequired, isLast
 
 			expGraphqlClient := graphqlfunc.NewClient(Conf.ExpGraphQLAddr, Conf.ExpDgraphToken)
 
-			return august2024august2024v2.UpgradeToAugust2024v2(Conf.ExpGraphQLAddr, Conf.ExpDgraphToken, expGraphqlClient)
+			return august2024august2024v2.UpgradeToAugust2024v2(Conf.ExpGraphQLAddr, Conf.ExpDgraphToken, Conf.RemoteDgraphRestoreUrl, expGraphqlClient)
 		}
-		return august2024august2024v2.UpgradeToAugust2024v2(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, prodGraphqlClient)
+		return august2024august2024v2.UpgradeToAugust2024v2(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, "", prodGraphqlClient)
 
 	case September2024Version:
 		if isSecondDgraphRequired && !isLastStep {
@@ -163,10 +163,10 @@ func beginProcessOfUpgrade(upgradeTo SchemaOrder, isSecondDgraphRequired, isLast
 
 			expGraphqlClient := graphqlfunc.NewClient(Conf.ExpGraphQLAddr, Conf.ExpDgraphToken)
 
-			return august2024v2september2024.UpgradeToSeptember2024(Conf.ExpGraphQLAddr, Conf.ExpDgraphToken, expGraphqlClient)
+			return august2024v2september2024.UpgradeToSeptember2024(Conf.ExpGraphQLAddr, Conf.ExpDgraphToken, Conf.RemoteDgraphRestoreUrl, expGraphqlClient)
 
 		}
-		return august2024v2september2024.UpgradeToSeptember2024(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, prodGraphqlClient)
+		return august2024v2september2024.UpgradeToSeptember2024(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, "", prodGraphqlClient)
 
 	}
 

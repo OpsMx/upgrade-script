@@ -9,6 +9,72 @@ import (
 	"github.com/Khan/genqlient/graphql"
 )
 
+// DeleteArtifactScanDataDeleteArtifactScanDataDeleteArtifactScanDataPayload includes the requested fields of the GraphQL type DeleteArtifactScanDataPayload.
+type DeleteArtifactScanDataDeleteArtifactScanDataDeleteArtifactScanDataPayload struct {
+	Msg     string `json:"msg"`
+	NumUids *int   `json:"numUids"`
+}
+
+// GetMsg returns DeleteArtifactScanDataDeleteArtifactScanDataDeleteArtifactScanDataPayload.Msg, and is useful for accessing the field via an interface.
+func (v *DeleteArtifactScanDataDeleteArtifactScanDataDeleteArtifactScanDataPayload) GetMsg() string {
+	return v.Msg
+}
+
+// GetNumUids returns DeleteArtifactScanDataDeleteArtifactScanDataDeleteArtifactScanDataPayload.NumUids, and is useful for accessing the field via an interface.
+func (v *DeleteArtifactScanDataDeleteArtifactScanDataDeleteArtifactScanDataPayload) GetNumUids() *int {
+	return v.NumUids
+}
+
+// DeleteArtifactScanDataForInprogressDeleteArtifactScanDataDeleteArtifactScanDataPayload includes the requested fields of the GraphQL type DeleteArtifactScanDataPayload.
+type DeleteArtifactScanDataForInprogressDeleteArtifactScanDataDeleteArtifactScanDataPayload struct {
+	NumUids *int `json:"numUids"`
+}
+
+// GetNumUids returns DeleteArtifactScanDataForInprogressDeleteArtifactScanDataDeleteArtifactScanDataPayload.NumUids, and is useful for accessing the field via an interface.
+func (v *DeleteArtifactScanDataForInprogressDeleteArtifactScanDataDeleteArtifactScanDataPayload) GetNumUids() *int {
+	return v.NumUids
+}
+
+// DeleteArtifactScanDataForInprogressResponse is returned by DeleteArtifactScanDataForInprogress on success.
+type DeleteArtifactScanDataForInprogressResponse struct {
+	DeleteArtifactScanData *DeleteArtifactScanDataForInprogressDeleteArtifactScanDataDeleteArtifactScanDataPayload `json:"deleteArtifactScanData"`
+}
+
+// GetDeleteArtifactScanData returns DeleteArtifactScanDataForInprogressResponse.DeleteArtifactScanData, and is useful for accessing the field via an interface.
+func (v *DeleteArtifactScanDataForInprogressResponse) GetDeleteArtifactScanData() *DeleteArtifactScanDataForInprogressDeleteArtifactScanDataDeleteArtifactScanDataPayload {
+	return v.DeleteArtifactScanData
+}
+
+// DeleteArtifactScanDataNotHaveArtifactDeleteArtifactScanDataDeleteArtifactScanDataPayload includes the requested fields of the GraphQL type DeleteArtifactScanDataPayload.
+type DeleteArtifactScanDataNotHaveArtifactDeleteArtifactScanDataDeleteArtifactScanDataPayload struct {
+	NumUids *int `json:"numUids"`
+}
+
+// GetNumUids returns DeleteArtifactScanDataNotHaveArtifactDeleteArtifactScanDataDeleteArtifactScanDataPayload.NumUids, and is useful for accessing the field via an interface.
+func (v *DeleteArtifactScanDataNotHaveArtifactDeleteArtifactScanDataDeleteArtifactScanDataPayload) GetNumUids() *int {
+	return v.NumUids
+}
+
+// DeleteArtifactScanDataNotHaveArtifactResponse is returned by DeleteArtifactScanDataNotHaveArtifact on success.
+type DeleteArtifactScanDataNotHaveArtifactResponse struct {
+	DeleteArtifactScanData *DeleteArtifactScanDataNotHaveArtifactDeleteArtifactScanDataDeleteArtifactScanDataPayload `json:"deleteArtifactScanData"`
+}
+
+// GetDeleteArtifactScanData returns DeleteArtifactScanDataNotHaveArtifactResponse.DeleteArtifactScanData, and is useful for accessing the field via an interface.
+func (v *DeleteArtifactScanDataNotHaveArtifactResponse) GetDeleteArtifactScanData() *DeleteArtifactScanDataNotHaveArtifactDeleteArtifactScanDataDeleteArtifactScanDataPayload {
+	return v.DeleteArtifactScanData
+}
+
+// DeleteArtifactScanDataResponse is returned by DeleteArtifactScanData on success.
+type DeleteArtifactScanDataResponse struct {
+	DeleteArtifactScanData *DeleteArtifactScanDataDeleteArtifactScanDataDeleteArtifactScanDataPayload `json:"deleteArtifactScanData"`
+}
+
+// GetDeleteArtifactScanData returns DeleteArtifactScanDataResponse.DeleteArtifactScanData, and is useful for accessing the field via an interface.
+func (v *DeleteArtifactScanDataResponse) GetDeleteArtifactScanData() *DeleteArtifactScanDataDeleteArtifactScanDataDeleteArtifactScanDataPayload {
+	return v.DeleteArtifactScanData
+}
+
 // GetArtifactRiskGetArtifactRisk includes the requested fields of the GraphQL type ArtifactRisk.
 type GetArtifactRiskGetArtifactRisk struct {
 	SourceCodeAlertsScore *int       `json:"sourceCodeAlertsScore"`
@@ -434,6 +500,14 @@ func (v *UpdateArtifactScanDataUpdateArtifactScanDataUpdateArtifactScanDataPaylo
 	return v.Id
 }
 
+// __DeleteArtifactScanDataInput is used internally by genqlient
+type __DeleteArtifactScanDataInput struct {
+	Id string `json:"id"`
+}
+
+// GetId returns __DeleteArtifactScanDataInput.Id, and is useful for accessing the field via an interface.
+func (v *__DeleteArtifactScanDataInput) GetId() string { return v.Id }
+
 // __GetArtifactRiskInput is used internally by genqlient
 type __GetArtifactRiskInput struct {
 	Id *string `json:"id"`
@@ -494,6 +568,104 @@ func (v *__UpdateArtifactScanDataRiskScoreAndStatusInput) GetArtifactAlertsScore
 // GetDeploymentAlertsScore returns __UpdateArtifactScanDataRiskScoreAndStatusInput.DeploymentAlertsScore, and is useful for accessing the field via an interface.
 func (v *__UpdateArtifactScanDataRiskScoreAndStatusInput) GetDeploymentAlertsScore() *int {
 	return v.DeploymentAlertsScore
+}
+
+// The query or mutation executed by DeleteArtifactScanData.
+const DeleteArtifactScanData_Operation = `
+mutation DeleteArtifactScanData ($id: String) {
+	deleteArtifactScanData(filter: {id:{eq:$id}}) {
+		msg
+		numUids
+	}
+}
+`
+
+func DeleteArtifactScanData(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	id string,
+) (*DeleteArtifactScanDataResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "DeleteArtifactScanData",
+		Query:  DeleteArtifactScanData_Operation,
+		Variables: &__DeleteArtifactScanDataInput{
+			Id: id,
+		},
+	}
+	var err_ error
+
+	var data_ DeleteArtifactScanDataResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by DeleteArtifactScanDataForInprogress.
+const DeleteArtifactScanDataForInprogress_Operation = `
+mutation DeleteArtifactScanDataForInprogress {
+	deleteArtifactScanData(filter: {vulnScanState:{eq:"inprogress"}}) {
+		numUids
+	}
+}
+`
+
+func DeleteArtifactScanDataForInprogress(
+	ctx_ context.Context,
+	client_ graphql.Client,
+) (*DeleteArtifactScanDataForInprogressResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "DeleteArtifactScanDataForInprogress",
+		Query:  DeleteArtifactScanDataForInprogress_Operation,
+	}
+	var err_ error
+
+	var data_ DeleteArtifactScanDataForInprogressResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by DeleteArtifactScanDataNotHaveArtifact.
+const DeleteArtifactScanDataNotHaveArtifact_Operation = `
+mutation DeleteArtifactScanDataNotHaveArtifact {
+	deleteArtifactScanData(filter: {not:{has:artifactDetails}}) {
+		numUids
+	}
+}
+`
+
+func DeleteArtifactScanDataNotHaveArtifact(
+	ctx_ context.Context,
+	client_ graphql.Client,
+) (*DeleteArtifactScanDataNotHaveArtifactResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "DeleteArtifactScanDataNotHaveArtifact",
+		Query:  DeleteArtifactScanDataNotHaveArtifact_Operation,
+	}
+	var err_ error
+
+	var data_ DeleteArtifactScanDataNotHaveArtifactResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
 }
 
 // The query or mutation executed by GetArtifactRisk.
