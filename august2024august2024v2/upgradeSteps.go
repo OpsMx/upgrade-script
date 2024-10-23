@@ -9,7 +9,7 @@ import (
 	"github.com/Khan/genqlient/graphql"
 )
 
-func UpgradeToAugust2024v2(prodGraphUrl, prodToken string, prodDgraphClient graphql.Client) error {
+func UpgradeToAugust2024v2(prodGraphUrl, prodToken, restoreServiceUrl string, prodDgraphClient graphql.Client) error {
 
 	logger.Logger.Info("--------------Starting Artifact Score Calculation------------------")
 
@@ -19,6 +19,12 @@ func UpgradeToAugust2024v2(prodGraphUrl, prodToken string, prodDgraphClient grap
 
 	if err := calculateScoring(prodDgraphClient); err != nil {
 		return fmt.Errorf("UpgradeToAugust2024v2: calculateScoring: %s", err.Error())
+	}
+
+	if restoreServiceUrl != "" {
+		if err := graphqlfunc.BackupAndRestoreDgraph(prodGraphUrl, restoreServiceUrl); err != nil {
+			return fmt.Errorf("UpgradeToAugust2024v2: BackupAndRestoreDgraph: %s", err.Error())
+		}
 	}
 
 	logger.Logger.Info("--------------Completed UpgradeToAugust2024v2------------------")

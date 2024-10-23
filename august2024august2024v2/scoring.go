@@ -14,6 +14,16 @@ func calculateScoring(prodDgraphClient graphql.Client) error {
 
 	ctx := context.Background()
 
+	_, err := DeleteArtifactScanDataForInprogress(ctx, prodDgraphClient)
+	if err != nil {
+		return fmt.Errorf("error in DeleteArtifactScanDataForInprogress: %s", err.Error())
+	}
+
+	_, err = DeleteArtifactScanDataNotHaveArtifact(ctx, prodDgraphClient)
+	if err != nil {
+		return fmt.Errorf("error in DeleteArtifactScanDataNotHaveArtifact: %s", err.Error())
+	}
+
 	prodArtifactScanDataIds, err := GetArtifactScanDataId(ctx, prodDgraphClient)
 	if err != nil {
 		return fmt.Errorf("error: could'nt query prod artifact scan data id: %s", err.Error())
@@ -53,7 +63,10 @@ func calculateScoring(prodDgraphClient graphql.Client) error {
 		}
 
 		if len(artifactRunHistories.QueryArtifactScanData) == 0 {
-			logger.Sl.Debugf("Skipping iteration of scandata id: %s as runhistory record not found", eachArtifactScanData.Id)
+			logger.Sl.Debugf("Deleting iteration of scandata id: %s as runhistory record not found", eachArtifactScanData.Id)
+			if _, err := DeleteArtifactScanData(context.Background(), prodDgraphClient, eachArtifactScanData.Id); err != nil {
+				return fmt.Errorf("error: DeleteArtifactScanData: artifact scan data id: %s err: %s", eachArtifactScanData.Id, err.Error())
+			}
 			continue
 		}
 

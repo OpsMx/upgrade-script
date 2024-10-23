@@ -9,7 +9,7 @@ import (
 	"github.com/Khan/genqlient/graphql"
 )
 
-func UpgradeToSeptember2024(prodGraphUrl, prodToken string, prodDgraphClient graphql.Client) error {
+func UpgradeToSeptember2024(prodGraphUrl, prodToken, restoreServiceUrl string, prodDgraphClient graphql.Client) error {
 
 	logger.Logger.Info("--------------Starting UpgradeToSeptember2024------------------")
 
@@ -43,6 +43,12 @@ func UpgradeToSeptember2024(prodGraphUrl, prodToken string, prodDgraphClient gra
 
 	if err := setSummaryNodeForSecurityIssue(prodDgraphClient); err != nil {
 		return fmt.Errorf("UpgradeToSeptember2024: setSummaryNodeForSecurityIssue: %s", err.Error())
+	}
+
+	if restoreServiceUrl != "" {
+		if err := graphqlfunc.BackupAndRestoreDgraph(prodGraphUrl, restoreServiceUrl); err != nil {
+			return fmt.Errorf("UpgradeToSeptember2024: BackupAndRestoreDgraph: %s", err.Error())
+		}
 	}
 
 	logger.Logger.Info("--------------Completed UpgradeToSeptember2024------------------")
