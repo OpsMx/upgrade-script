@@ -18,7 +18,7 @@ func UpgradeToOctober2024(prodGraphUrl, prodToken, restoreServiceUrl string, pro
 	}
 
 	if err := migrateBuildToSourceNode(prodDgraphClient); err != nil {
-		return fmt.Errorf("UpgradeToSeptember2024: setSummaryNodeForSecurityIssue: %s", err.Error())
+		return fmt.Errorf("UpgradeToSeptember2024: migrateBuildToSourceNode: %s", err.Error())
 	}
 
 	if err := graphqlfunc.UpdateSchema(prodGraphUrl, prodToken, []byte(schemas.October2024Schema)); err != nil {
