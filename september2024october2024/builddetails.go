@@ -56,7 +56,7 @@ func migrateBuildToSourceNode(gqlClient graphql.Client) error {
 		}
 	}
 
-	remaingScanDataUpdates := make([]scanDataUpdate, 0, len(resp.QueryBuildTool))
+	remainingScanDataUpdates := make([]scanDataUpdate, 0, len(resp.QueryBuildTool))
 
 	for _, value := range scanDataUpdates {
 
@@ -67,12 +67,12 @@ func migrateBuildToSourceNode(gqlClient graphql.Client) error {
 			continue
 		}
 
-		remaingScanDataUpdates = append(remaingScanDataUpdates, value)
+		remainingScanDataUpdates = append(remainingScanDataUpdates, value)
 
 	}
 
-	var soruceCodeToolArr []*AddSourceCodeToolInput
-	for _, value := range remaingScanDataUpdates {
+	var sourceCodeToolArr []*AddSourceCodeToolInput
+	for _, value := range remainingScanDataUpdates {
 
 		currTime := time.Now()
 		input := &AddSourceCodeToolInput{
@@ -88,12 +88,12 @@ func migrateBuildToSourceNode(gqlClient graphql.Client) error {
 			},
 		}
 
-		soruceCodeToolArr = append(soruceCodeToolArr, input)
+		sourceCodeToolArr = append(sourceCodeToolArr, input)
 
 	}
 
-	if len(soruceCodeToolArr) != 0 {
-		if _, err := addSourceCodeTool(ctx, gqlClient, soruceCodeToolArr); err != nil {
+	if len(sourceCodeToolArr) != 0 {
+		if _, err := addSourceCodeTool(ctx, gqlClient, sourceCodeToolArr); err != nil {
 			return fmt.Errorf("error in adding source_code_tool : %s", err.Error())
 		}
 	}
