@@ -21,7 +21,7 @@ func migrateBuildToSourceNode(gqlClient graphql.Client) error {
 		return fmt.Errorf("error in getting build tool fields to transfer i.e digest, build_digest, artifact_node: %s", err.Error())
 	}
 
-	if resp == nil {
+	if resp == nil || len(resp.QueryBuildTool) == 0 {
 		logger.Sl.Debugf("No record for build tools")
 		return nil
 	}
