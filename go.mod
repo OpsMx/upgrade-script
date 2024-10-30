@@ -11,6 +11,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.17.7
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.58.2
 	github.com/aws/smithy-go v1.20.3
+	github.com/google/uuid v1.6.0
 	github.com/vektah/gqlparser v1.3.1
 	go.uber.org/zap v1.27.0
 	gopkg.in/yaml.v2 v2.4.0

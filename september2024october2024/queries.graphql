@@ -1,0 +1,39 @@
+query queryTransferableBuildToolFields {
+    queryBuildTool {
+        id
+        digest
+        buildDigest
+        artifactNode {
+            id
+        }
+        sourceCodeTool {
+            id
+        }
+    }
+}
+
+mutation updateSourceCodeToolFields(
+    $digest: String!
+    $buildDigest: String!
+    $artifactNodeID: String!
+    $sourceCodeToolID: String
+) {
+    updateSourceCodeTool(
+        input: {
+            filter: { id: { eq: $sourceCodeToolID } }
+            set: {
+                digest: $digest
+                buildDigest: $buildDigest
+                artifactNode: { id: $artifactNodeID }
+            }
+        }
+    ) {
+        numUids
+    }
+}
+
+mutation addSourceCodeTool($in: [AddSourceCodeToolInput!]!) {
+    addSourceCodeTool(input: $in) {
+        numUids
+    }
+}

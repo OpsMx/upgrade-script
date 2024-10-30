@@ -13,6 +13,7 @@ import (
 	"upgradationScript/july2024august2024"
 	"upgradationScript/june2024june2024v2"
 	"upgradationScript/june2024v2july2024"
+	"upgradationScript/september2024october2024"
 
 	"upgradationScript/logger"
 	policyingenstionscript "upgradationScript/policies"
@@ -155,18 +156,12 @@ func beginProcessOfUpgrade(upgradeTo SchemaOrder, isSecondDgraphRequired, isLast
 		return august2024august2024v2.UpgradeToAugust2024v2(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, "", prodGraphqlClient)
 
 	case September2024Version:
-		if isSecondDgraphRequired && !isLastStep {
 
-			if err := allChecksForExpDgraph(September2024Version); err != nil {
-				return err
-			}
-
-			expGraphqlClient := graphqlfunc.NewClient(Conf.ExpGraphQLAddr, Conf.ExpDgraphToken)
-
-			return august2024v2september2024.UpgradeToSeptember2024(Conf.ExpGraphQLAddr, Conf.ExpDgraphToken, Conf.RemoteDgraphRestoreUrl, expGraphqlClient)
-
-		}
 		return august2024v2september2024.UpgradeToSeptember2024(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, "", prodGraphqlClient)
+
+	case October2024Version:
+
+		return september2024october2024.UpgradeToOctober2024(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, "", prodGraphqlClient)
 
 	}
 
