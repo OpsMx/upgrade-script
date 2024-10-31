@@ -582,6 +582,8 @@ type BuildTool {
     buildTime: DateTime
     "buildUser is the user that built the artifact"
     buildUser: String
+    "plugins used at the build time"
+    buildPlugins:[Artifact!] @hasInverse(field: plugins)
     "sourceCodeTool links a BuildTool node to the source details"
     sourceCodeTool: [SourceCodeTool!] @hasInverse(field: buildTool)
     "commitMetaData links a BuildTool node to the git commit based details"
@@ -648,6 +650,7 @@ type Artifact {
     scanData: [ArtifactScanData!]
     artifactDeployment: [ApplicationDeployment!] @hasInverse(field: artifact)
     sourceDetails: SourceCodeTool @hasInverse(field: artifactNode)
+    plugins: [BuildTool!] @hasInverse(field: buildPlugins)
 }
 
 type ArtifactScanData {
@@ -702,8 +705,24 @@ type Component {
     purl: String @search(by: [exact])
     cpe: String @search(by: [exact])
     scannedAt: DateTime
+    analysis: ComponentAnalysis @hasInverse(field: Components)
     vulnerabilities: [Vulnerability!] @hasInverse(field: affects)
     artifacts: [ArtifactScanData!] @hasInverse(field: components)
+}
+
+type ComponentAnalysis {
+    Id: ID!
+    Name: String! @search(by: [exact,regexp])
+    Components:[Component!] @hasInverse(field: analysis)
+    RiskStatus: RiskStatus @search(by: [exact,regexp])
+    Stars: Int @search
+    Forks: Int @search
+    Contributors: Int @search
+    VulnCout: Int @search
+    MeanTimeToRepair:  Int @search
+    Licenses: [String!] @search(by: [exact,regexp])
+    CreatedAt: DateTime
+    ScannedAt: DateTime
 }
 
 enum Severity {

@@ -41,6 +41,10 @@ func migrateBuildToSourceNode(gqlClient graphql.Client) error {
 	for _, eachBuildTool := range resp.QueryBuildTool {
 		if eachBuildTool != nil {
 
+			if eachBuildTool.ArtifactNode == nil {
+				continue
+			}
+
 			temp := scanDataUpdate{
 				id:             eachBuildTool.Id,
 				digest:         eachBuildTool.Digest,
