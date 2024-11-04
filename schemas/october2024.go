@@ -718,7 +718,11 @@ type ComponentAnalysis {
     Stars: Int @search
     Forks: Int @search
     Contributors: Int @search
-    VulnCout: Int @search
+    VulnCritical: Int @search
+    VulnHigh: Int @search
+    VulnMedium: Int @search
+    VulnLow: Int @search
+    VulnOthers: Int @search
     MeanTimeToRepair:  Int @search
     Licenses: [String!] @search(by: [exact,regexp])
     CreatedAt: DateTime
