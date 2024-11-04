@@ -725,6 +725,12 @@ type ComponentAnalysis {
     ScannedAt: DateTime
 }
 
+type ComponentLicenses {
+    Id: ID!
+    Name: String! @search(by: [exact,regexp])
+    Category: String! @search(by: [exact,regexp])
+}
+
 enum Severity {
     critical
     high
