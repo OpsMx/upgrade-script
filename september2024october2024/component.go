@@ -16,7 +16,7 @@ func updateComponent(gqlClient graphql.Client) error {
 
 	_, err := updateComponentAnalysisRequired(ctx, gqlClient)
 	if err != nil {
-		return fmt.Errorf("error in updating anlysis_required field of component: %s", err.Error())
+		return fmt.Errorf("error in updating analysis_required field of component: %s", err.Error())
 	}
 
 	logger.Sl.Debugf("-----updated component analysis required field--------")
