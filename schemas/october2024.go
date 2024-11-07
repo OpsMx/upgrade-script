@@ -231,15 +231,6 @@ enum RiskStatus {
     scanning
 }
 
-enum SeverityStatus {
-    lowrisk
-    mediumrisk
-    highrisk
-    criticalrisk
-    apocalypserisk
-    scanning
-}
-
 """
 ApplicationRiskStatus tells us about the risk status and alerts for different stages for an application environment.
 """
@@ -724,7 +715,7 @@ type ComponentAnalysis {
     Id: ID!
     Name: String! @search(by: [exact,regexp])
     Components:[Component!] @hasInverse(field: analysis)
-    Severity: SeverityStatus @search(by: [exact,regexp])
+    Severity: Severity @search(by: [exact,regexp])
     SeverityInt: Int @search
     Stars: Int @search
     Forks: Int @search
