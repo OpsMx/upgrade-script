@@ -664,17 +664,94 @@ func (v *CommitMetaDataRef) GetApproverList() []string { return v.ApproverList }
 // GetBuildTool returns CommitMetaDataRef.BuildTool, and is useful for accessing the field via an interface.
 func (v *CommitMetaDataRef) GetBuildTool() *BuildToolRef { return v.BuildTool }
 
+type ComponentAnalysisRef struct {
+	Id               *string         `json:"Id"`
+	Name             string          `json:"Name"`
+	Components       []*ComponentRef `json:"Components,omitempty"`
+	Severity         Severity        `json:"Severity"`
+	SeverityInt      *int            `json:"SeverityInt"`
+	Stars            *int            `json:"Stars"`
+	Forks            *int            `json:"Forks"`
+	Contributors     *int            `json:"Contributors"`
+	VulnCritical     *int            `json:"VulnCritical"`
+	VulnHigh         *int            `json:"VulnHigh"`
+	VulnMedium       *int            `json:"VulnMedium"`
+	VulnLow          *int            `json:"VulnLow"`
+	VulnOthers       *int            `json:"VulnOthers"`
+	MeanTimeToRepair *int            `json:"MeanTimeToRepair"`
+	Licenses         []string        `json:"Licenses"`
+	CreatedAt        *time.Time      `json:"CreatedAt"`
+	ScannedAt        *time.Time      `json:"ScannedAt"`
+	LastViewed       *time.Time      `json:"LastViewed"`
+}
+
+// GetId returns ComponentAnalysisRef.Id, and is useful for accessing the field via an interface.
+func (v *ComponentAnalysisRef) GetId() *string { return v.Id }
+
+// GetName returns ComponentAnalysisRef.Name, and is useful for accessing the field via an interface.
+func (v *ComponentAnalysisRef) GetName() string { return v.Name }
+
+// GetComponents returns ComponentAnalysisRef.Components, and is useful for accessing the field via an interface.
+func (v *ComponentAnalysisRef) GetComponents() []*ComponentRef { return v.Components }
+
+// GetSeverity returns ComponentAnalysisRef.Severity, and is useful for accessing the field via an interface.
+func (v *ComponentAnalysisRef) GetSeverity() Severity { return v.Severity }
+
+// GetSeverityInt returns ComponentAnalysisRef.SeverityInt, and is useful for accessing the field via an interface.
+func (v *ComponentAnalysisRef) GetSeverityInt() *int { return v.SeverityInt }
+
+// GetStars returns ComponentAnalysisRef.Stars, and is useful for accessing the field via an interface.
+func (v *ComponentAnalysisRef) GetStars() *int { return v.Stars }
+
+// GetForks returns ComponentAnalysisRef.Forks, and is useful for accessing the field via an interface.
+func (v *ComponentAnalysisRef) GetForks() *int { return v.Forks }
+
+// GetContributors returns ComponentAnalysisRef.Contributors, and is useful for accessing the field via an interface.
+func (v *ComponentAnalysisRef) GetContributors() *int { return v.Contributors }
+
+// GetVulnCritical returns ComponentAnalysisRef.VulnCritical, and is useful for accessing the field via an interface.
+func (v *ComponentAnalysisRef) GetVulnCritical() *int { return v.VulnCritical }
+
+// GetVulnHigh returns ComponentAnalysisRef.VulnHigh, and is useful for accessing the field via an interface.
+func (v *ComponentAnalysisRef) GetVulnHigh() *int { return v.VulnHigh }
+
+// GetVulnMedium returns ComponentAnalysisRef.VulnMedium, and is useful for accessing the field via an interface.
+func (v *ComponentAnalysisRef) GetVulnMedium() *int { return v.VulnMedium }
+
+// GetVulnLow returns ComponentAnalysisRef.VulnLow, and is useful for accessing the field via an interface.
+func (v *ComponentAnalysisRef) GetVulnLow() *int { return v.VulnLow }
+
+// GetVulnOthers returns ComponentAnalysisRef.VulnOthers, and is useful for accessing the field via an interface.
+func (v *ComponentAnalysisRef) GetVulnOthers() *int { return v.VulnOthers }
+
+// GetMeanTimeToRepair returns ComponentAnalysisRef.MeanTimeToRepair, and is useful for accessing the field via an interface.
+func (v *ComponentAnalysisRef) GetMeanTimeToRepair() *int { return v.MeanTimeToRepair }
+
+// GetLicenses returns ComponentAnalysisRef.Licenses, and is useful for accessing the field via an interface.
+func (v *ComponentAnalysisRef) GetLicenses() []string { return v.Licenses }
+
+// GetCreatedAt returns ComponentAnalysisRef.CreatedAt, and is useful for accessing the field via an interface.
+func (v *ComponentAnalysisRef) GetCreatedAt() *time.Time { return v.CreatedAt }
+
+// GetScannedAt returns ComponentAnalysisRef.ScannedAt, and is useful for accessing the field via an interface.
+func (v *ComponentAnalysisRef) GetScannedAt() *time.Time { return v.ScannedAt }
+
+// GetLastViewed returns ComponentAnalysisRef.LastViewed, and is useful for accessing the field via an interface.
+func (v *ComponentAnalysisRef) GetLastViewed() *time.Time { return v.LastViewed }
+
 type ComponentRef struct {
-	Id              string                 `json:"id"`
-	Type            string                 `json:"type"`
-	Name            string                 `json:"name"`
-	Version         string                 `json:"version"`
-	Licenses        []string               `json:"licenses"`
-	Purl            string                 `json:"purl"`
-	Cpe             string                 `json:"cpe"`
-	ScannedAt       *time.Time             `json:"scannedAt"`
-	Vulnerabilities []*VulnerabilityRef    `json:"vulnerabilities,omitempty"`
-	Artifacts       []*ArtifactScanDataRef `json:"artifacts,omitempty"`
+	Id               string                 `json:"id"`
+	Type             string                 `json:"type"`
+	Name             string                 `json:"name"`
+	Version          string                 `json:"version"`
+	Licenses         []string               `json:"licenses"`
+	Purl             string                 `json:"purl"`
+	Cpe              string                 `json:"cpe"`
+	ScannedAt        *time.Time             `json:"scannedAt"`
+	AnalysisRequired *bool                  `json:"analysisRequired"`
+	Analysis         *ComponentAnalysisRef  `json:"analysis,omitempty"`
+	Vulnerabilities  []*VulnerabilityRef    `json:"vulnerabilities,omitempty"`
+	Artifacts        []*ArtifactScanDataRef `json:"artifacts,omitempty"`
 }
 
 // GetId returns ComponentRef.Id, and is useful for accessing the field via an interface.
@@ -700,6 +777,12 @@ func (v *ComponentRef) GetCpe() string { return v.Cpe }
 
 // GetScannedAt returns ComponentRef.ScannedAt, and is useful for accessing the field via an interface.
 func (v *ComponentRef) GetScannedAt() *time.Time { return v.ScannedAt }
+
+// GetAnalysisRequired returns ComponentRef.AnalysisRequired, and is useful for accessing the field via an interface.
+func (v *ComponentRef) GetAnalysisRequired() *bool { return v.AnalysisRequired }
+
+// GetAnalysis returns ComponentRef.Analysis, and is useful for accessing the field via an interface.
+func (v *ComponentRef) GetAnalysis() *ComponentAnalysisRef { return v.Analysis }
 
 // GetVulnerabilities returns ComponentRef.Vulnerabilities, and is useful for accessing the field via an interface.
 func (v *ComponentRef) GetVulnerabilities() []*VulnerabilityRef { return v.Vulnerabilities }
@@ -1903,6 +1986,26 @@ func (v *queryTransferableBuildToolFieldsResponse) GetQueryBuildTool() []*queryT
 	return v.QueryBuildTool
 }
 
+// updateComponentAnalysisRequiredResponse is returned by updateComponentAnalysisRequired on success.
+type updateComponentAnalysisRequiredResponse struct {
+	UpdateComponent *updateComponentAnalysisRequiredUpdateComponentUpdateComponentPayload `json:"updateComponent"`
+}
+
+// GetUpdateComponent returns updateComponentAnalysisRequiredResponse.UpdateComponent, and is useful for accessing the field via an interface.
+func (v *updateComponentAnalysisRequiredResponse) GetUpdateComponent() *updateComponentAnalysisRequiredUpdateComponentUpdateComponentPayload {
+	return v.UpdateComponent
+}
+
+// updateComponentAnalysisRequiredUpdateComponentUpdateComponentPayload includes the requested fields of the GraphQL type UpdateComponentPayload.
+type updateComponentAnalysisRequiredUpdateComponentUpdateComponentPayload struct {
+	NumUids *int `json:"numUids"`
+}
+
+// GetNumUids returns updateComponentAnalysisRequiredUpdateComponentUpdateComponentPayload.NumUids, and is useful for accessing the field via an interface.
+func (v *updateComponentAnalysisRequiredUpdateComponentUpdateComponentPayload) GetNumUids() *int {
+	return v.NumUids
+}
+
 // updateSourceCodeToolFieldsResponse is returned by updateSourceCodeToolFields on success.
 type updateSourceCodeToolFieldsResponse struct {
 	UpdateSourceCodeTool *updateSourceCodeToolFieldsUpdateSourceCodeToolUpdateSourceCodeToolPayload `json:"updateSourceCodeTool"`
@@ -1986,6 +2089,37 @@ func queryTransferableBuildToolFields(
 	var err_ error
 
 	var data_ queryTransferableBuildToolFieldsResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by updateComponentAnalysisRequired.
+const updateComponentAnalysisRequired_Operation = `
+mutation updateComponentAnalysisRequired {
+	updateComponent(input: {set:{analysisRequired:true},filter:{has:id}}) {
+		numUids
+	}
+}
+`
+
+func updateComponentAnalysisRequired(
+	ctx_ context.Context,
+	client_ graphql.Client,
+) (*updateComponentAnalysisRequiredResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "updateComponentAnalysisRequired",
+		Query:  updateComponentAnalysisRequired_Operation,
+	}
+	var err_ error
+
+	var data_ updateComponentAnalysisRequiredResponse
 	resp_ := &graphql.Response{Data: &data_}
 
 	err_ = client_.MakeRequest(
