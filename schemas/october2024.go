@@ -231,6 +231,15 @@ enum RiskStatus {
     scanning
 }
 
+enum SeverityStatus {
+    lowrisk
+    mediumrisk
+    highrisk
+    criticalrisk
+    apocalypserisk
+    scanning
+}
+
 """
 ApplicationRiskStatus tells us about the risk status and alerts for different stages for an application environment.
 """
@@ -705,6 +714,7 @@ type Component {
     purl: String @search(by: [exact])
     cpe: String @search(by: [exact])
     scannedAt: DateTime
+    analysisRequired: Boolean @search
     analysis: ComponentAnalysis @hasInverse(field: Components)
     vulnerabilities: [Vulnerability!] @hasInverse(field: affects)
     artifacts: [ArtifactScanData!] @hasInverse(field: components)
@@ -714,7 +724,8 @@ type ComponentAnalysis {
     Id: ID!
     Name: String! @search(by: [exact,regexp])
     Components:[Component!] @hasInverse(field: analysis)
-    RiskStatus: RiskStatus @search(by: [exact,regexp])
+    Severity: SeverityStatus @search(by: [exact,regexp])
+    SeverityInt: Int @search
     Stars: Int @search
     Forks: Int @search
     Contributors: Int @search
@@ -727,6 +738,7 @@ type ComponentAnalysis {
     Licenses: [String!] @search(by: [exact,regexp])
     CreatedAt: DateTime
     ScannedAt: DateTime
+    LastViewed: DateTime
 }
 
 type ComponentLicenses {
