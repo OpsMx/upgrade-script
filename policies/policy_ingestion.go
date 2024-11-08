@@ -81,7 +81,7 @@ func ingestTags(graphqlClient graphql.Client) error {
 			return fmt.Errorf("ingestTags: checkIfTagExists: iteration: %d err: %s", i, err.Error())
 		}
 
-		if existingTag.QueryTag != nil && len(existingTag.QueryTag) > 0 {
+		if len(existingTag.QueryTag) > 0 {
 
 			tagIdInScriptMapIdInDB[tagScript.Id] = existingTag.QueryTag[0].Id
 
