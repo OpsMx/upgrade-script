@@ -40,8 +40,8 @@ query checkIfPolicyNameExists($policyName: String!, $orgId: String!) {
 
 query getLastPolicyId($organizationId: String!) {
     queryOrganization(filter: { id: { eq: $organizationId } }) {
-        policiesAggregate {
-            count
+        policies {
+            id
         }
     }
 }

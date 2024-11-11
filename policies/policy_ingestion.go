@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -174,7 +175,9 @@ func ingestPolicyDef(graphqlClient graphql.Client, orgId string) error {
 			return fmt.Errorf("ingestPolicyDef: getLastPolicyId: iteration: %v err: %s", i, err.Error())
 		}
 
-		policyDefIdInt := *getLastPolicyIdResp.QueryOrganization[0].PoliciesAggregate.Count + 1
+		lastId := getlastid(getLastPolicyIdResp)
+
+		policyDefIdInt := lastId + 1
 
 		policy := AddPolicyDefinitionInput{
 			Id: fmt.Sprintf("%v", policyDefIdInt),
@@ -328,4 +331,16 @@ func MapSeverity(s string) Severity {
 	default:
 		return SeverityUnknown
 	}
+}
+
+func getlastid(getLastPolicyIdResp *getLastPolicyIdResponse) int {
+
+	idsInt := []int{}
+	for _, check := range getLastPolicyIdResp.QueryOrganization[0].Policies {
+		num, _ := strconv.Atoi(check.Id)
+		idsInt = append(idsInt, num)
+	}
+
+	sort.Ints(idsInt)
+	return idsInt[len(idsInt)-1]
 }
