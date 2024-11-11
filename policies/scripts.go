@@ -757,15 +757,22 @@ var scriptMap = map[int]string{
 	policy_category = replace(input.metadata.policyCategory, " ", "_")
 	exception_list = input.metadata.exception[policy_category]
 
-	openssf_results_file = concat("_", [input.metadata.owner, input.metadata.repository, input.metadata.build_id])
-	openssf_results_file_complete = concat("", [openssf_results_file, "_scorecard.json"])
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_scorecard.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+		input.metadata.source_code_path != ""
+	}
 
 	policy_name = input.conditions[0].condition_name 
 	check_orig = replace(replace(policy_name, "Open SSF ", ""), " Policy", "")
 
 	check_name = replace(lower(check_orig), " ", "-")
 	threshold = to_number(input.conditions[0].condition_value)
-	request_url = concat("",[input.metadata.toolchain_addr, "api", "/v1", "/openssfScore?scoreCardName=", openssf_results_file_complete, "&", "checkName=", check_name, "&", "scanOperation=", "openssfScan"])
+	request_url = concat("",[input.metadata.toolchain_addr, "api", "/v1", "/openssfScore?scoreCardName=", file_name, "&", "checkName=", check_name, "&", "scanOperation=", "openssfScan"])
 
 	request = {
 		"method": "GET",
@@ -1575,15 +1582,22 @@ var scriptMap = map[int]string{
 	policy_category = replace(input.metadata.policyCategory, " ", "_")
 	exception_list = input.metadata.exception[policy_category]
 
-	openssf_results_file = concat("_", [input.metadata.owner, input.metadata.repository, input.metadata.build_id])
-	openssf_results_file_complete = concat("", [openssf_results_file, "_scorecard.json"])
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_scorecard.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_scorecard.json"]) {
+		input.metadata.source_code_path != ""
+	}
 
 	policy_name = input.conditions[0].condition_name 
 	check_orig = replace(replace(policy_name, "Open SSF ", ""), " Policy", "")
 
 	check_name = replace(lower(check_orig), " ", "-")
 	threshold = to_number(input.conditions[0].condition_value)
-	request_url = concat("",[input.metadata.toolchain_addr, "api", "/v1", "/openssfScore?scoreCardName=", openssf_results_file_complete, "&", "checkName=", check_name, "&", "scanOperation=", "openssfScan"])
+	request_url = concat("",[input.metadata.toolchain_addr, "api", "/v1", "/openssfScore?scoreCardName=", file_name, "&", "checkName=", check_name, "&", "scanOperation=", "openssfScan"])
 
 	request = {
 		"method": "GET",
@@ -1671,9 +1685,19 @@ var scriptMap = map[int]string{
 	required_rating_name := concat("", ["new_", lower(split(input.conditions[0].condition_name, " ")[1]), "_rating"])
 	required_rating_score := rating_map[split(input.conditions[0].condition_name, " ")[3]]
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_sonarqube.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_", image_sha, "_sonarqube.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name, "&scanOperation=sonarqubescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name ,"&scanOperation=sonarqubescan"] )
+	
 	request = {
 			"method": "GET",
 			"url": complete_url
@@ -1732,9 +1756,19 @@ var scriptMap = map[int]string{
 	required_rating_name := concat("", ["new_", lower(split(input.conditions[0].condition_name, " ")[1]), "_rating"])
 	required_rating_score := rating_map[split(input.conditions[0].condition_name, " ")[3]]
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_sonarqube.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_", image_sha, "_sonarqube.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name, "&scanOperation=sonarqubescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name ,"&scanOperation=sonarqubescan"] )
+	
 	request = {
 			"method": "GET",
 			"url": complete_url
@@ -1792,10 +1826,20 @@ var scriptMap = map[int]string{
 
 	required_rating_name := concat("", ["new_", lower(split(input.conditions[0].condition_name, " ")[1]), "_rating"])
 	required_rating_score := rating_map[split(input.conditions[0].condition_name, " ")[3]]
+	
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"] )
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_sonarqube.json"]) {
+		input.metadata.source_code_path == ""
+	}
 
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_", image_sha, "_sonarqube.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name, "&scanOperation=sonarqubescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name ,"&scanOperation=sonarqubescan"] )
+	
 	request = {
 			"method": "GET",
 			"url": complete_url
@@ -2279,8 +2323,19 @@ var scriptMap = map[int]string{
 	severity = "high"
 	default findings_count = 0
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=findings_", input.metadata.owner, "_", input.metadata.repository, "_", severity, "_", input.metadata.build_id, "_semgrep.json&scanOperation=semgrepScan"]	)
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=findings_", input.metadata.owner, "_", input.metadata.repository, "_", severity, "_", input.metadata.build_id, "_semgrep.json&scanOperation=semgrepScan"]	)
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", ["findings_", input.metadata.owner, "_", input.metadata.repository, "_", severity, "_", input.metadata.build_id, "_semgrep.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["findings_", input.metadata.owner, "_", input.metadata.repository, "_", severity, "_", input.metadata.build_id, "_", image_sha, "_semgrep.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=semgrepScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=semgrepScan"])
+
 	request = {	
 			"method": "GET",
 			"url": complete_url
@@ -2327,8 +2382,18 @@ var scriptMap = map[int]string{
 	severity = "medium"
 	default findings_count = 0
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=findings_", input.metadata.owner, "_", input.metadata.repository, "_", severity, "_", input.metadata.build_id, "_semgrep.json&scanOperation=semgrepScan"]	)
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=findings_", input.metadata.owner, "_", input.metadata.repository, "_", severity, "_", input.metadata.build_id, "_semgrep.json&scanOperation=semgrepScan"]	)
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", ["findings_", input.metadata.owner, "_", input.metadata.repository, "_", severity, "_", input.metadata.build_id, "_semgrep.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["findings_", input.metadata.owner, "_", input.metadata.repository, "_", severity, "_", input.metadata.build_id, "_", image_sha, "_semgrep.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=semgrepScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=semgrepScan"])
 
 	request = {	
 			"method": "GET",
@@ -2635,8 +2700,18 @@ var scriptMap = map[int]string{
 	severity = "low"
 	default findings_count = 0
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=findings_", input.metadata.owner, "_", input.metadata.repository, "_", severity, "_", input.metadata.build_id, "_semgrep.json&scanOperation=semgrepScan"]	)
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=findings_", input.metadata.owner, "_", input.metadata.repository, "_", severity, "_", input.metadata.build_id, "_semgrep.json&scanOperation=semgrepScan"]	)
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", ["findings_", input.metadata.owner, "_", input.metadata.repository, "_", severity, "_", input.metadata.build_id, "_semgrep.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["findings_", input.metadata.owner, "_", input.metadata.repository, "_", severity, "_", input.metadata.build_id, "_", image_sha, "_semgrep.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=semgrepScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=semgrepScan"])
 
 	request = {	
 			"method": "GET",
@@ -3606,9 +3681,18 @@ var scriptMap = map[int]string{
 
 	default quality_gate_status = ""
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_sonarqube.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_", image_sha, "_sonarqube.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name, "&scanOperation=sonarqubescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name ,"&scanOperation=sonarqubescan"] )
 
 	request = {
 			"method": "GET",
@@ -3671,8 +3755,18 @@ var scriptMap = map[int]string{
 	required_rating_name := concat("", ["new_", lower(split(input.conditions[0].condition_name, " ")[1]), "_rating"])
 	required_rating_score := rating_map[split(input.conditions[0].condition_name, " ")[3]]
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_sonarqube.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_", image_sha, "_sonarqube.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name, "&scanOperation=sonarqubescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name ,"&scanOperation=sonarqubescan"] )
 
 	request = {
 			"method": "GET",
@@ -3732,8 +3826,18 @@ var scriptMap = map[int]string{
 	required_rating_name := concat("", ["new_", lower(split(input.conditions[0].condition_name, " ")[1]), "_rating"])
 	required_rating_score := rating_map[split(input.conditions[0].condition_name, " ")[3]]
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_sonarqube.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_", image_sha, "_sonarqube.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name, "&scanOperation=sonarqubescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name ,"&scanOperation=sonarqubescan"] )
 
 	request = {
 			"method": "GET",
@@ -3793,8 +3897,18 @@ var scriptMap = map[int]string{
 	required_rating_name := concat("", ["new_", lower(split(input.conditions[0].condition_name, " ")[1]), "_rating"])
 	required_rating_score := rating_map[split(input.conditions[0].condition_name, " ")[3]]
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_sonarqube.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_", image_sha, "_sonarqube.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name, "&scanOperation=sonarqubescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name ,"&scanOperation=sonarqubescan"] )
 
 	request = {
 			"method": "GET",
@@ -3854,8 +3968,18 @@ var scriptMap = map[int]string{
 	required_rating_name := concat("", ["new_", lower(split(input.conditions[0].condition_name, " ")[1]), "_rating"])
 	required_rating_score := rating_map[split(input.conditions[0].condition_name, " ")[3]]
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_sonarqube.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_", image_sha, "_sonarqube.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name, "&scanOperation=sonarqubescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name ,"&scanOperation=sonarqubescan"] )
 
 	request = {
 			"method": "GET",
@@ -3915,8 +4039,18 @@ var scriptMap = map[int]string{
 	required_rating_name := concat("", ["new_", lower(split(input.conditions[0].condition_name, " ")[1]), "_rating"])
 	required_rating_score := rating_map[split(input.conditions[0].condition_name, " ")[3]]
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_sonarqube.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_", image_sha, "_sonarqube.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name, "&scanOperation=sonarqubescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name ,"&scanOperation=sonarqubescan"] )
 
 	request = {
 			"method": "GET",
@@ -3976,8 +4110,18 @@ var scriptMap = map[int]string{
 	required_rating_name := concat("", ["new_", lower(split(input.conditions[0].condition_name, " ")[1]), "_rating"])
 	required_rating_score := rating_map[split(input.conditions[0].condition_name, " ")[3]]
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_sonarqube.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_", image_sha, "_sonarqube.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name, "&scanOperation=sonarqubescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name ,"&scanOperation=sonarqubescan"] )
 
 	request = {
 			"method": "GET",
@@ -4037,8 +4181,18 @@ var scriptMap = map[int]string{
 	required_rating_name := concat("", ["new_", lower(split(input.conditions[0].condition_name, " ")[1]), "_rating"])
 	required_rating_score := rating_map[split(input.conditions[0].condition_name, " ")[3]]
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_sonarqube.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_", image_sha, "_sonarqube.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name, "&scanOperation=sonarqubescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name ,"&scanOperation=sonarqubescan"] )
 
 	request = {
 			"method": "GET",
@@ -4098,8 +4252,18 @@ var scriptMap = map[int]string{
 	required_rating_name := concat("", ["new_", lower(split(input.conditions[0].condition_name, " ")[1]), "_rating"])
 	required_rating_score := rating_map[split(input.conditions[0].condition_name, " ")[3]]
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_sonarqube.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_", image_sha, "_sonarqube.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name, "&scanOperation=sonarqubescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name ,"&scanOperation=sonarqubescan"] )
 
 	request = {
 			"method": "GET",
@@ -4159,8 +4323,18 @@ var scriptMap = map[int]string{
 	required_rating_name := concat("", ["new_", lower(split(input.conditions[0].condition_name, " ")[1]), "_rating"])
 	required_rating_score := rating_map[split(input.conditions[0].condition_name, " ")[3]]
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_sonarqube.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_", image_sha, "_sonarqube.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name, "&scanOperation=sonarqubescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name ,"&scanOperation=sonarqubescan"] )
 
 	request = {
 			"method": "GET",
@@ -5522,11 +5696,18 @@ var scriptMap = map[int]string{
 	default secrets_count = 0
 
 	request_url = concat("",[input.metadata.toolchain_addr,"api/", "v1/", "scanResult?fileName="])
-	filename_components = [input.metadata.owner, input.metadata.repository, input.metadata.build_id, "codeScanResult.json"]
-	filename = concat("_", filename_components)
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
-	complete_url = concat("", [request_url, filename, "&scanOperation=codeSecretScan"])
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codeScanResult.json"]) {
+		input.metadata.source_code_path == ""
+	}
 
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_codeScanResult.json"]) {
+		input.metadata.source_code_path != ""
+	}
+		
+	complete_url = concat("", [request_url, file_name, "&scanOperation=codeSecretScan"])
+	
 	request = {
 			"method": "GET",
 			"url": complete_url
@@ -5575,11 +5756,18 @@ var scriptMap = map[int]string{
 	default secrets_count = 0
 
 	request_url = concat("",[input.metadata.toolchain_addr,"api/", "v1/", "scanResult?fileName="])
-	filename_components = [input.metadata.owner, input.metadata.repository, input.metadata.build_id, "codeScanResult.json"]
-	filename = concat("_", filename_components)
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
-	complete_url = concat("", [request_url, filename, "&scanOperation=codeSecretScan"])
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codeScanResult.json"]) {
+		input.metadata.source_code_path == ""
+	}
 
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_codeScanResult.json"]) {
+		input.metadata.source_code_path != ""
+	}
+		
+	complete_url = concat("", [request_url, file_name, "&scanOperation=codeSecretScan"])
+		
 	request = {
 			"method": "GET",
 			"url": complete_url
@@ -5628,11 +5816,18 @@ var scriptMap = map[int]string{
 	default secrets_count = 0
 
 	request_url = concat("",[input.metadata.toolchain_addr,"api/", "v1/", "scanResult?fileName="])
-	filename_components = [input.metadata.owner, input.metadata.repository, input.metadata.build_id, "codeScanResult.json"]
-	filename = concat("_", filename_components)
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
-	complete_url = concat("", [request_url, filename, "&scanOperation=codeSecretScan"])
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codeScanResult.json"]) {
+		input.metadata.source_code_path == ""
+	}
 
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_codeScanResult.json"]) {
+		input.metadata.source_code_path != ""
+	}
+		
+	complete_url = concat("", [request_url, file_name, "&scanOperation=codeSecretScan"])
+	
 	request = {
 			"method": "GET",
 			"url": complete_url
@@ -5681,11 +5876,18 @@ var scriptMap = map[int]string{
 	default secrets_count = 0
 
 	request_url = concat("",[input.metadata.toolchain_addr,"api/", "v1/", "scanResult?fileName="])
-	filename_components = [input.metadata.owner, input.metadata.repository, input.metadata.build_id, "codeScanResult.json"]
-	filename = concat("_", filename_components)
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
-	complete_url = concat("", [request_url, filename, "&scanOperation=codeSecretScan"])
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codeScanResult.json"]) {
+		input.metadata.source_code_path == ""
+	}
 
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_codeScanResult.json"]) {
+		input.metadata.source_code_path != ""
+	}
+		
+	complete_url = concat("", [request_url, file_name, "&scanOperation=codeSecretScan"])
+	
 	request = {
 			"method": "GET",
 			"url": complete_url
@@ -8127,8 +8329,18 @@ var scriptMap = map[int]string{
 
 	severity = "High"
 	default findings_count = 0
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codescan_snyk.json&scanOperation=snykcodescan"]	)
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codescan_snyk.json&scanOperation=snykcodescan"]	)
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codescan_snyk.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_codescan_snyk.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=snykcodescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=snykcodescan"])
 
 	request = {	
 		"method": "GET",
@@ -8176,8 +8388,18 @@ var scriptMap = map[int]string{
 
 	severity = "Medium"
 	default findings_count = 0
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codescan_snyk.json&scanOperation=snykcodescan"]	)
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codescan_snyk.json&scanOperation=snykcodescan"]	)
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codescan_snyk.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_codescan_snyk.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=snykcodescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=snykcodescan"])
 
 	request = {	
 		"method": "GET",
@@ -8225,8 +8447,18 @@ var scriptMap = map[int]string{
 
 	severity = "Low"
 	default findings_count = 0
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codescan_snyk.json&scanOperation=snykcodescan"]	)
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codescan_snyk.json&scanOperation=snykcodescan"]	)
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codescan_snyk.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_codescan_snyk.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=snykcodescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=snykcodescan"])
 
 	request = {	
 		"method": "GET",
@@ -8273,8 +8505,18 @@ var scriptMap = map[int]string{
 	exception_list = input.metadata.exception[policy_category]
 
 	default license_count = 0
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codeLicenseScanResult.json&scanOperation=codelicensescan"]	)
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codeLicenseScanResult.json&scanOperation=codelicensescan"]	)
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codeLicenseScanResult.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_codeLicenseScanResult.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=codelicensescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=codelicensescan"])
 
 	request = {	
 		"method": "GET",
@@ -8320,8 +8562,18 @@ var scriptMap = map[int]string{
 
 	default license_count = 0
 	default low_severity_licenses = []
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codeLicenseScanResult.json&scanOperation=codelicensescan"]      )
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codeLicenseScanResult.json&scanOperation=codelicensescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codeLicenseScanResult.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_codeLicenseScanResult.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=codelicensescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=codelicensescan"])
 
 	request = {
 			"method": "GET",
@@ -8382,8 +8634,18 @@ var scriptMap = map[int]string{
 
 	default license_count = 0
 	default medium_severity_licenses = []
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codeLicenseScanResult.json&scanOperation=codelicensescan"]      )
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codeLicenseScanResult.json&scanOperation=codelicensescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codeLicenseScanResult.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_codeLicenseScanResult.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=codelicensescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=codelicensescan"])
 
 	request = {
 			"method": "GET",
@@ -8444,8 +8706,19 @@ var scriptMap = map[int]string{
 
 	default license_count = 0
 	default high_severity_licenses = []
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codeLicenseScanResult.json&scanOperation=codelicensescan"]      )
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codeLicenseScanResult.json&scanOperation=codelicensescan"] )
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codeLicenseScanResult.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_codeLicenseScanResult.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=codelicensescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=codelicensescan"])
 
 	request = {
 			"method": "GET",
@@ -8506,8 +8779,18 @@ var scriptMap = map[int]string{
 
 	default license_count = 0
 	default critical_severity_licenses = []
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codeLicenseScanResult.json&scanOperation=codelicensescan"]      )
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codeLicenseScanResult.json&scanOperation=codelicensescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codeLicenseScanResult.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_codeLicenseScanResult.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=codelicensescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=codelicensescan"])
 
 	request = {
 			"method": "GET",
@@ -8882,9 +9165,18 @@ var scriptMap = map[int]string{
 	default malicious_urls = []
 	default malicious_urls_count = 0
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_virustotal_url_scan.json&scanOperation=virustotalscan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_virustotal_url_scan.json&scanOperation=virustotalscan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_virustotal_url_scan.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_virustotal_url_scan.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=virustotalscan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=virustotalscan"])
 
 	request = {
 			"method": "GET",
@@ -8938,9 +9230,18 @@ var scriptMap = map[int]string{
 	default suspicious_urls = []
 	default suspicious_urls_count = 0
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_virustotal_url_scan.json&scanOperation=virustotalscan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_virustotal_url_scan.json&scanOperation=virustotalscan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_virustotal_url_scan.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", [input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_virustotal_url_scan.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=virustotalscan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=virustotalscan"])
 
 	request = {
 			"method": "GET",
@@ -9919,9 +10220,18 @@ var scriptMap = map[int]string{
 	exception_list = input.metadata.exception[policy_category]
 	default count_blocker_issues = -1
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_sonarqube.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_", image_sha, "_sonarqube.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name, "&scanOperation=sonarqubescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name ,"&scanOperation=sonarqubescan"] )
 
 	request = {
 			"method": "GET",
@@ -9977,9 +10287,18 @@ var scriptMap = map[int]string{
 
 	default count_critical_issues = -1
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_sonarqube.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_", image_sha, "_sonarqube.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name, "&scanOperation=sonarqubescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name ,"&scanOperation=sonarqubescan"] )
 
 	request = {
 			"method": "GET",
@@ -10035,9 +10354,18 @@ var scriptMap = map[int]string{
 
 	default facetvalues := []
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_sonarqube.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_", image_sha, "_sonarqube.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name, "&scanOperation=sonarqubescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name ,"&scanOperation=sonarqubescan"] )
 
 	request = {
 			"method": "GET",
@@ -10110,9 +10438,19 @@ var scriptMap = map[int]string{
 	exception_list = input.metadata.exception[policy_category]
 
 	default facetvalues := []
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"] )
 
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_sonarqube.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_", image_sha, "_sonarqube.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name, "&scanOperation=sonarqubescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name ,"&scanOperation=sonarqubescan"] )
 
 	request = {
 			"method": "GET",
@@ -10164,9 +10502,18 @@ var scriptMap = map[int]string{
 	exception_list = input.metadata.exception[policy_category]
 
 	default facetvalues := []
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_sonarqube.json&scanOperation=sonarqubescan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_sonarqube.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.sonarqube_projectKey, "_", input.metadata.build_id, "_", image_sha, "_sonarqube.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name, "&scanOperation=sonarqubescan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name ,"&scanOperation=sonarqubescan"] )
 
 	request = {
 			"method": "GET",
@@ -10240,9 +10587,18 @@ var scriptMap = map[int]string{
 
 	default count_critical_issues = -1
 	default count_issues = -1
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codescan_codacy.json&scanOperation=codacyscan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codescan_codacy.json&scanOperation=codacyscan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codescan_codacy.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_codescan_codacy.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=codacyscan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=codacyscan"])
 
 	request = {
 			"method": "GET",
@@ -10295,9 +10651,18 @@ var scriptMap = map[int]string{
 	exception_list = input.metadata.exception[policy_category]
 
 	default count_issues = -1
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codescan_codacy.json&scanOperation=codacyscan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codescan_codacy.json&scanOperation=codacyscan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codescan_codacy.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_codescan_codacy.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=codacyscan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=codacyscan"])
 
 	request = {
 			"method": "GET",
@@ -10350,9 +10715,18 @@ var scriptMap = map[int]string{
 	exception_list = input.metadata.exception[policy_category]
 
 	default count_issues = -1
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codescan_codacy.json&scanOperation=codacyscan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codescan_codacy.json&scanOperation=codacyscan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
 
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_codescan_codacy.json"]) {
+		input.metadata.source_code_path == ""
+	}
+
+	file_name = concat("", ["analysis_", input.metadata.owner, "_", input.metadata.repository, "_", input.metadata.build_id, "_", image_sha, "_codescan_codacy.json"]) {
+		input.metadata.source_code_path != ""
+	}
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=codacyscan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=codacyscan"])
 
 	request = {
 			"method": "GET",
