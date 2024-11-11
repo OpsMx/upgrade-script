@@ -1,36 +1,36 @@
-directive @withSubscription on OBJECT | INTERFACE | FIELD_DEFINITION
-
-directive @secret(field: String!, pred: String) on OBJECT | INTERFACE
-
-directive @auth(password: AuthRule, query: AuthRule, add: AuthRule, update: AuthRule, delete: AuthRule) on OBJECT | INTERFACE
-
-directive @cascade(fields: [String]) on FIELD
-
-directive @cacheControl(maxAge: Int!) on QUERY
-
-directive @search(by: [String!]) on FIELD_DEFINITION
-
 directive @id(interface: Boolean) on FIELD_DEFINITION
 
 directive @default(add: DgraphDefault, update: DgraphDefault) on FIELD_DEFINITION
 
+directive @secret(field: String!, pred: String) on OBJECT | INTERFACE
+
 directive @custom(http: CustomHTTP, dql: String) on FIELD_DEFINITION
 
-directive @lambdaOnMutate(add: Boolean, update: Boolean, delete: Boolean) on OBJECT | INTERFACE
-
-directive @remote on OBJECT | INTERFACE | UNION | INPUT_OBJECT | ENUM
-
 directive @remoteResponse(name: String) on FIELD_DEFINITION
-
-directive @generate(query: GenerateQueryParams, mutation: GenerateMutationParams, subscription: Boolean) on OBJECT | INTERFACE
 
 directive @hasInverse(field: String!) on FIELD_DEFINITION
 
 directive @embedding on FIELD_DEFINITION
 
-directive @dgraph(type: String, pred: String) on OBJECT | INTERFACE | FIELD_DEFINITION
+directive @remote on OBJECT | INTERFACE | UNION | INPUT_OBJECT | ENUM
+
+directive @cascade(fields: [String]) on FIELD
 
 directive @lambda on FIELD_DEFINITION
+
+directive @dgraph(type: String, pred: String) on OBJECT | INTERFACE | FIELD_DEFINITION
+
+directive @withSubscription on OBJECT | INTERFACE | FIELD_DEFINITION
+
+directive @auth(password: AuthRule, query: AuthRule, add: AuthRule, update: AuthRule, delete: AuthRule) on OBJECT | INTERFACE
+
+directive @lambdaOnMutate(add: Boolean, update: Boolean, delete: Boolean) on OBJECT | INTERFACE
+
+directive @cacheControl(maxAge: Int!) on QUERY
+
+directive @generate(query: GenerateQueryParams, mutation: GenerateMutationParams, subscription: Boolean) on OBJECT | INTERFACE
+
+directive @search(by: [String!]) on FIELD_DEFINITION
 
 input AddApplicationDeploymentInput {
   """id is randomly assigned"""
@@ -279,6 +279,31 @@ type AddCommitMetaDataPayload {
   numUids: Int
 }
 
+input AddComponentAnalysisInput {
+  Name: String!
+  Components: [ComponentRef!]
+  Severity: Severity
+  SeverityInt: Int
+  Stars: Int
+  Forks: Int
+  Contributors: Int
+  VulnCritical: Int
+  VulnHigh: Int
+  VulnMedium: Int
+  VulnLow: Int
+  VulnOthers: Int
+  MeanTimeToRepair: Int
+  Licenses: [String!]
+  CreatedAt: DateTime
+  ScannedAt: DateTime
+  LastViewed: DateTime
+}
+
+type AddComponentAnalysisPayload {
+  componentAnalysis(filter: ComponentAnalysisFilter, order: ComponentAnalysisOrder, first: Int, offset: Int): [ComponentAnalysis]
+  numUids: Int
+}
+
 input AddComponentInput {
   id: String!
   type: String!
@@ -288,8 +313,20 @@ input AddComponentInput {
   purl: String
   cpe: String
   scannedAt: DateTime
+  analysisRequired: Boolean
+  analysis: ComponentAnalysisRef
   vulnerabilities: [VulnerabilityRef!]
   artifacts: [ArtifactScanDataRef!]
+}
+
+input AddComponentLicensesInput {
+  Name: String!
+  Category: String!
+}
+
+type AddComponentLicensesPayload {
+  componentLicenses(filter: ComponentLicensesFilter, order: ComponentLicensesOrder, first: Int, offset: Int): [ComponentLicenses]
+  numUids: Int
 }
 
 type AddComponentPayload {
@@ -2066,6 +2103,8 @@ type Component {
   purl: String
   cpe: String
   scannedAt: DateTime
+  analysisRequired: Boolean
+  analysis(filter: ComponentAnalysisFilter): ComponentAnalysis
   vulnerabilities(filter: VulnerabilityFilter, order: VulnerabilityOrder, first: Int, offset: Int): [Vulnerability!]
   artifacts(filter: ArtifactScanDataFilter, order: ArtifactScanDataOrder, first: Int, offset: Int): [ArtifactScanData!]
   vulnerabilitiesAggregate(filter: VulnerabilityFilter): VulnerabilityAggregateResult
@@ -2090,12 +2129,192 @@ type ComponentAggregateResult {
   scannedAtMax: DateTime
 }
 
+type ComponentAnalysis {
+  Id: ID!
+  Name: String!
+  Components(filter: ComponentFilter, order: ComponentOrder, first: Int, offset: Int): [Component!]
+  Severity: Severity
+  SeverityInt: Int
+  Stars: Int
+  Forks: Int
+  Contributors: Int
+  VulnCritical: Int
+  VulnHigh: Int
+  VulnMedium: Int
+  VulnLow: Int
+  VulnOthers: Int
+  MeanTimeToRepair: Int
+  Licenses: [String!]
+  CreatedAt: DateTime
+  ScannedAt: DateTime
+  LastViewed: DateTime
+  ComponentsAggregate(filter: ComponentFilter): ComponentAggregateResult
+}
+
+type ComponentAnalysisAggregateResult {
+  count: Int
+  NameMin: String
+  NameMax: String
+  SeverityIntMin: Int
+  SeverityIntMax: Int
+  SeverityIntSum: Int
+  SeverityIntAvg: Float
+  StarsMin: Int
+  StarsMax: Int
+  StarsSum: Int
+  StarsAvg: Float
+  ForksMin: Int
+  ForksMax: Int
+  ForksSum: Int
+  ForksAvg: Float
+  ContributorsMin: Int
+  ContributorsMax: Int
+  ContributorsSum: Int
+  ContributorsAvg: Float
+  VulnCriticalMin: Int
+  VulnCriticalMax: Int
+  VulnCriticalSum: Int
+  VulnCriticalAvg: Float
+  VulnHighMin: Int
+  VulnHighMax: Int
+  VulnHighSum: Int
+  VulnHighAvg: Float
+  VulnMediumMin: Int
+  VulnMediumMax: Int
+  VulnMediumSum: Int
+  VulnMediumAvg: Float
+  VulnLowMin: Int
+  VulnLowMax: Int
+  VulnLowSum: Int
+  VulnLowAvg: Float
+  VulnOthersMin: Int
+  VulnOthersMax: Int
+  VulnOthersSum: Int
+  VulnOthersAvg: Float
+  MeanTimeToRepairMin: Int
+  MeanTimeToRepairMax: Int
+  MeanTimeToRepairSum: Int
+  MeanTimeToRepairAvg: Float
+  CreatedAtMin: DateTime
+  CreatedAtMax: DateTime
+  ScannedAtMin: DateTime
+  ScannedAtMax: DateTime
+  LastViewedMin: DateTime
+  LastViewedMax: DateTime
+}
+
+input ComponentAnalysisFilter {
+  Id: [ID!]
+  Name: StringExactFilter_StringRegExpFilter
+  Severity: Severity_exact_StringRegExpFilter
+  SeverityInt: IntFilter
+  Stars: IntFilter
+  Forks: IntFilter
+  Contributors: IntFilter
+  VulnCritical: IntFilter
+  VulnHigh: IntFilter
+  VulnMedium: IntFilter
+  VulnLow: IntFilter
+  VulnOthers: IntFilter
+  MeanTimeToRepair: IntFilter
+  Licenses: StringExactFilter_StringRegExpFilter
+  has: [ComponentAnalysisHasFilter]
+  and: [ComponentAnalysisFilter]
+  or: [ComponentAnalysisFilter]
+  not: ComponentAnalysisFilter
+}
+
+enum ComponentAnalysisHasFilter {
+  Name
+  Components
+  Severity
+  SeverityInt
+  Stars
+  Forks
+  Contributors
+  VulnCritical
+  VulnHigh
+  VulnMedium
+  VulnLow
+  VulnOthers
+  MeanTimeToRepair
+  Licenses
+  CreatedAt
+  ScannedAt
+  LastViewed
+}
+
+input ComponentAnalysisOrder {
+  asc: ComponentAnalysisOrderable
+  desc: ComponentAnalysisOrderable
+  then: ComponentAnalysisOrder
+}
+
+enum ComponentAnalysisOrderable {
+  Name
+  SeverityInt
+  Stars
+  Forks
+  Contributors
+  VulnCritical
+  VulnHigh
+  VulnMedium
+  VulnLow
+  VulnOthers
+  MeanTimeToRepair
+  CreatedAt
+  ScannedAt
+  LastViewed
+}
+
+input ComponentAnalysisPatch {
+  Name: String
+  Components: [ComponentRef!]
+  Severity: Severity
+  SeverityInt: Int
+  Stars: Int
+  Forks: Int
+  Contributors: Int
+  VulnCritical: Int
+  VulnHigh: Int
+  VulnMedium: Int
+  VulnLow: Int
+  VulnOthers: Int
+  MeanTimeToRepair: Int
+  Licenses: [String!]
+  CreatedAt: DateTime
+  ScannedAt: DateTime
+  LastViewed: DateTime
+}
+
+input ComponentAnalysisRef {
+  Id: ID
+  Name: String
+  Components: [ComponentRef!]
+  Severity: Severity
+  SeverityInt: Int
+  Stars: Int
+  Forks: Int
+  Contributors: Int
+  VulnCritical: Int
+  VulnHigh: Int
+  VulnMedium: Int
+  VulnLow: Int
+  VulnOthers: Int
+  MeanTimeToRepair: Int
+  Licenses: [String!]
+  CreatedAt: DateTime
+  ScannedAt: DateTime
+  LastViewed: DateTime
+}
+
 input ComponentFilter {
   id: StringHashFilter
   name: StringExactFilter_StringRegExpFilter
   version: StringExactFilter_StringRegExpFilter
   purl: StringExactFilter
   cpe: StringExactFilter
+  analysisRequired: Boolean
   has: [ComponentHasFilter]
   and: [ComponentFilter]
   or: [ComponentFilter]
@@ -2111,8 +2330,61 @@ enum ComponentHasFilter {
   purl
   cpe
   scannedAt
+  analysisRequired
+  analysis
   vulnerabilities
   artifacts
+}
+
+type ComponentLicenses {
+  Id: ID!
+  Name: String!
+  Category: String!
+}
+
+type ComponentLicensesAggregateResult {
+  count: Int
+  NameMin: String
+  NameMax: String
+  CategoryMin: String
+  CategoryMax: String
+}
+
+input ComponentLicensesFilter {
+  Id: [ID!]
+  Name: StringExactFilter_StringRegExpFilter
+  Category: StringExactFilter_StringRegExpFilter
+  has: [ComponentLicensesHasFilter]
+  and: [ComponentLicensesFilter]
+  or: [ComponentLicensesFilter]
+  not: ComponentLicensesFilter
+}
+
+enum ComponentLicensesHasFilter {
+  Name
+  Category
+}
+
+input ComponentLicensesOrder {
+  asc: ComponentLicensesOrderable
+  desc: ComponentLicensesOrderable
+  then: ComponentLicensesOrder
+}
+
+enum ComponentLicensesOrderable {
+  Name
+  Category
+}
+
+input ComponentLicensesPatch {
+  Name: String
+  Category: String
+}
+
+input ComponentLicensesRef {
+  Id: ID
+  Name: String
+  Category: String
 }
 
 input ComponentOrder {
@@ -2140,6 +2412,8 @@ input ComponentPatch {
   purl: String
   cpe: String
   scannedAt: DateTime
+  analysisRequired: Boolean
+  analysis: ComponentAnalysisRef
   vulnerabilities: [VulnerabilityRef!]
   artifacts: [ArtifactScanDataRef!]
 }
@@ -2153,6 +2427,8 @@ input ComponentRef {
   purl: String
   cpe: String
   scannedAt: DateTime
+  analysisRequired: Boolean
+  analysis: ComponentAnalysisRef
   vulnerabilities: [VulnerabilityRef!]
   artifacts: [ArtifactScanDataRef!]
 }
@@ -2311,6 +2587,18 @@ type DeleteBuildToolPayload {
 
 type DeleteCommitMetaDataPayload {
   commitMetaData(filter: CommitMetaDataFilter, order: CommitMetaDataOrder, first: Int, offset: Int): [CommitMetaData]
+  msg: String
+  numUids: Int
+}
+
+type DeleteComponentAnalysisPayload {
+  componentAnalysis(filter: ComponentAnalysisFilter, order: ComponentAnalysisOrder, first: Int, offset: Int): [ComponentAnalysis]
+  msg: String
+  numUids: Int
+}
+
+type DeleteComponentLicensesPayload {
+  componentLicenses(filter: ComponentLicensesFilter, order: ComponentLicensesOrder, first: Int, offset: Int): [ComponentLicenses]
   msg: String
   numUids: Int
 }
@@ -3528,6 +3816,12 @@ type Mutation {
   addComponent(input: [AddComponentInput!]!, upsert: Boolean): AddComponentPayload
   updateComponent(input: UpdateComponentInput!): UpdateComponentPayload
   deleteComponent(filter: ComponentFilter!): DeleteComponentPayload
+  addComponentAnalysis(input: [AddComponentAnalysisInput!]!): AddComponentAnalysisPayload
+  updateComponentAnalysis(input: UpdateComponentAnalysisInput!): UpdateComponentAnalysisPayload
+  deleteComponentAnalysis(filter: ComponentAnalysisFilter!): DeleteComponentAnalysisPayload
+  addComponentLicenses(input: [AddComponentLicensesInput!]!): AddComponentLicensesPayload
+  updateComponentLicenses(input: UpdateComponentLicensesInput!): UpdateComponentLicensesPayload
+  deleteComponentLicenses(filter: ComponentLicensesFilter!): DeleteComponentLicensesPayload
   addVulnerability(input: [AddVulnerabilityInput!]!, upsert: Boolean): AddVulnerabilityPayload
   updateVulnerability(input: UpdateVulnerabilityInput!): UpdateVulnerabilityPayload
   deleteVulnerability(filter: VulnerabilityFilter!): DeleteVulnerabilityPayload
@@ -4090,6 +4384,12 @@ type Query {
   getComponent(id: String!): Component
   queryComponent(filter: ComponentFilter, order: ComponentOrder, first: Int, offset: Int): [Component]
   aggregateComponent(filter: ComponentFilter): ComponentAggregateResult
+  getComponentAnalysis(Id: ID!): ComponentAnalysis
+  queryComponentAnalysis(filter: ComponentAnalysisFilter, order: ComponentAnalysisOrder, first: Int, offset: Int): [ComponentAnalysis]
+  aggregateComponentAnalysis(filter: ComponentAnalysisFilter): ComponentAnalysisAggregateResult
+  getComponentLicenses(Id: ID!): ComponentLicenses
+  queryComponentLicenses(filter: ComponentLicensesFilter, order: ComponentLicensesOrder, first: Int, offset: Int): [ComponentLicenses]
+  aggregateComponentLicenses(filter: ComponentLicensesFilter): ComponentLicensesAggregateResult
   getVulnerability(id: String!): Vulnerability
   queryVulnerability(filter: VulnerabilityFilter, order: VulnerabilityOrder, first: Int, offset: Int): [Vulnerability]
   aggregateVulnerability(filter: VulnerabilityFilter): VulnerabilityAggregateResult
@@ -5410,10 +5710,32 @@ type UpdateCommitMetaDataPayload {
   numUids: Int
 }
 
+input UpdateComponentAnalysisInput {
+  filter: ComponentAnalysisFilter!
+  set: ComponentAnalysisPatch
+  remove: ComponentAnalysisPatch
+}
+
+type UpdateComponentAnalysisPayload {
+  componentAnalysis(filter: ComponentAnalysisFilter, order: ComponentAnalysisOrder, first: Int, offset: Int): [ComponentAnalysis]
+  numUids: Int
+}
+
 input UpdateComponentInput {
   filter: ComponentFilter!
   set: ComponentPatch
   remove: ComponentPatch
+}
+
+input UpdateComponentLicensesInput {
+  filter: ComponentLicensesFilter!
+  set: ComponentLicensesPatch
+  remove: ComponentLicensesPatch
+}
+
+type UpdateComponentLicensesPayload {
+  componentLicenses(filter: ComponentLicensesFilter, order: ComponentLicensesOrder, first: Int, offset: Int): [ComponentLicenses]
+  numUids: Int
 }
 
 type UpdateComponentPayload {

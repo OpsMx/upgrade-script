@@ -10624,6 +10624,60 @@ var scriptMap = map[int]string{
 		error = ""
 		alertStatus := "active"
 	}`,
+
+	341: `
+	package opsmx
+	severities = ["LOW"]
+	vuln_id = input.conditions[0].condition_value
+	vuln_severity = {input.conditions[i].condition_value | input.conditions[i].condition_name = "severity"}
+	deny[msg]{
+		some i
+		inputSeverity = severities[i]
+		some j
+		vuln_severity[j] == inputSeverity
+		msg:= sprintf("%v Criticality Vulnerability : %v found in plugin: %v", [inputSeverity, vuln_id, input.metadata.plugin_name])
+	}`,
+
+	342: `
+	package opsmx
+	severities = ["CRITICAL"]
+	vuln_id = input.conditions[0].condition_value
+	vuln_severity = {input.conditions[i].condition_value | input.conditions[i].condition_name = "severity"}
+	deny[msg]{
+		some i
+		inputSeverity = severities[i]
+		some j
+		vuln_severity[j] == inputSeverity
+		msg:= sprintf("%v Criticality Vulnerability : %v found in plugin: %v", [inputSeverity, vuln_id, input.metadata.plugin_name])
+	}
+	`,
+
+	343: `
+	package opsmx
+	severities = ["MODERATE","UNDEFINED","MEDIUM","UNKNOWN"]
+	vuln_id = input.conditions[0].condition_value
+	vuln_severity = {input.conditions[i].condition_value | input.conditions[i].condition_name = "severity"}
+	deny[msg]{
+		some i
+		inputSeverity = severities[i]
+		some j
+		vuln_severity[j] == inputSeverity 
+		msg:= sprintf("%v Criticality Vulnerability : %v found in plugin: %v", [inputSeverity, vuln_id, input.metadata.plugin_name])
+	} `,
+
+	344: `
+	package opsmx
+	severities = ["HIGH"]
+	vuln_id = input.conditions[0].condition_value
+	vuln_severity = {input.conditions[i].condition_value | input.conditions[i].condition_name = "severity"}
+	deny[msg]{
+		some i
+		inputSeverity = severities[i]
+		some j
+		vuln_severity[j] == inputSeverity
+		msg:= sprintf("%v Criticality Vulnerability : %v found in plugin: %v", [inputSeverity, vuln_id, input.metadata.plugin_name])
+	}
+	`,
 }
 
 var policyDefinition = []string{
@@ -15696,6 +15750,66 @@ var policyDefinition = []string{
 		 "suggestion":""
 	}
 	`,
+	`
+	{
+		 "policyId":"341",
+		 "orgId":"1",
+		 "policyName":"Low Vulnerability Prevention Policy for Jenkins Plugins",
+		 "category":"Build Security Posture",
+		 "stage":"build",
+		 "description":"Low Severity Vulnerability should not be found in the plugins installed on the Jenkins Servers.",
+		 "scheduled_policy":false,
+		 "scriptId":"341",
+		 "variables":"",
+		 "conditionName":"severity",
+		 "suggestion":""
+	}
+	`,
+	`
+	{
+		 "policyId":"342",
+		 "orgId":"1",
+		 "policyName":"Critical Vulnerability Prevention Policy for Jenkins Plugins",
+		 "category":"Build Security Posture",
+		 "stage":"build",
+		 "description":"Critical Severity Vulnerabilities should not be found in the plugins installed on the Jenkins Servers.",
+		 "scheduled_policy":false,
+		 "scriptId":"342",
+		 "variables":"",
+		 "conditionName":"severity",
+		 "suggestion":""
+	}
+	`,
+	`
+	{
+		 "policyId":"343",
+		 "orgId":"1",
+		 "policyName":"Medium Vulnerability Prevention Policy for Jenkins Plugins",
+		 "category":"Build Security Posture",
+		 "stage":"build",
+		 "description":"Medium Severity Vulnerabilities should not be found in the plugins installed on the Jenkins Servers.",
+		 "scheduled_policy":false,
+		 "scriptId":"343",
+		 "variables":"",
+		 "conditionName":"severity",
+		 "suggestion":""
+	}
+	`,
+	`
+	{
+		 "policyId":"344",
+		 "orgId":"1",
+		 "policyName":"High Vulnerability Prevention Policy for Jenkins Plugins",
+		 "category":"Build Security Posture",
+		 "stage":"build",
+		 "description":"High Severity Vulnerabilities should not be found in the plugins installed on the Jenkins Servers.",
+		 "scheduled_policy":false,
+		 "scriptId":"344",
+		 "variables":"",
+		 "conditionName":"",
+		 "suggestion":""
+	}
+	`,
 }
 
 var policyEnforcement = []string{
@@ -16160,6 +16274,26 @@ var policyEnforcement = []string{
 	]
   }`,
 	`{
+	"policyId": "38",
+	"severity": "Critical",
+	"action": "Alert",
+	"status": true,
+	"datasourceTool": "acr",
+	"tags": [
+	   "2"
+	]
+}`,
+	`{
+	"policyId": "38",
+	"severity": "Critical",
+	"action": "Alert",
+	"status": true,
+	"datasourceTool": "gcr",
+	"tags": [
+	   "2"
+	]
+}`,
+	`{
       "policyId": "39",
       "severity": "Critical",
       "action": "Alert",
@@ -16199,6 +16333,26 @@ var policyEnforcement = []string{
 	   "2"
 	]
   }`,
+	`{
+	"policyId": "39",
+	"severity": "Critical",
+	"action": "Alert",
+	"status": true,
+	"datasourceTool": "acr",
+	"tags": [
+	   "2"
+	]
+	}`,
+	`{
+	"policyId": "39",
+	"severity": "Critical",
+	"action": "Alert",
+	"status": true,
+	"datasourceTool": "gcr",
+	"tags": [
+	   "2"
+	]
+	}`,
 	`{
       "policyId": "40",
       "severity": "Medium",
@@ -18739,6 +18893,28 @@ var policyEnforcement = []string{
 	]
   }`,
 	`{
+	"policyId": "271",
+	"severity": "Medium",
+	"action": "Alert",
+	"status": true,
+	"datasourceTool": "acr",
+	"tags": [
+	   "18",
+	   "2"
+	]
+  }`,
+	`{
+	"policyId": "271",
+	"severity": "Medium",
+	"action": "Alert",
+	"status": true,
+	"datasourceTool": "gcr",
+	"tags": [
+	   "18",
+	   "2"
+	]
+  }`,
+	`{
       "policyId": "272",
       "severity": "Low",
       "action": "Alert",
@@ -18793,6 +18969,28 @@ var policyEnforcement = []string{
 	   "22"
 	]
   }`,
+	`{
+	"policyId": "273",
+	"severity": "Critical",
+	"action": "Alert",
+	"status": true,
+	"datasourceTool": "acr",
+	"tags": [
+	   "18",
+	   "22"
+	]
+   }`,
+	`{
+	"policyId": "273",
+	"severity": "Critical",
+	"action": "Alert",
+	"status": true,
+	"datasourceTool": "gcr",
+	"tags": [
+	   "18",
+	   "22"
+	]
+   }`,
 	`{
       "policyId": "274",
       "severity": "High",
@@ -19532,6 +19730,50 @@ var policyEnforcement = []string{
 		  "30"
 		]
 	}`,
+	`{
+      "policyId": "341",
+      "severity": "Low",
+      "action": "Alert",
+      "conditionValue": "LOW",
+      "status": true,
+	  "datasourceTool": "graphql",
+      "tags": [
+         "3"
+      ]
+  }`,
+	`{
+      "policyId": "342",
+      "severity": "Critical",
+      "action": "Alert",
+      "conditionValue": "CRITICAL",
+      "status": true,
+	  "datasourceTool": "graphql",
+      "tags": [
+         "3"
+      ]
+  }`,
+	`{
+      "policyId": "343",
+      "severity": "Medium",
+      "action": "Alert",
+      "conditionValue": "MEDIUM",
+      "status": true,
+	  "datasourceTool": "graphql",
+      "tags": [
+         "3"
+      ]
+  }`,
+	`{
+      "policyId": "344",
+      "severity": "High",
+      "action": "Alert",
+      "conditionValue": "HIGH",
+      "status": true,
+	  "datasourceTool": "graphql",
+      "tags": [
+         "3"
+      ]
+  }`,
 }
 
 var tagPolicy = []string{

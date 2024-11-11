@@ -37,3 +37,11 @@ mutation addSourceCodeTool($in: [AddSourceCodeToolInput!]!) {
         numUids
     }
 }
+
+mutation updateComponentAnalysisRequired {
+    updateComponent(
+        input: { set: { analysisRequired: true }, filter: { has: id } }
+    ) {
+        numUids
+    }
+}

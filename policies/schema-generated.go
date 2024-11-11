@@ -1913,23 +1913,21 @@ func (v *checkIfTagExistsResponse) GetQueryTag() []*checkIfTagExistsQueryTag { r
 
 // getLastPolicyIdQueryOrganization includes the requested fields of the GraphQL type Organization.
 type getLastPolicyIdQueryOrganization struct {
-	PoliciesAggregate *getLastPolicyIdQueryOrganizationPoliciesAggregatePolicyDefinitionAggregateResult `json:"policiesAggregate"`
+	Policies []*getLastPolicyIdQueryOrganizationPoliciesPolicyDefinition `json:"policies"`
 }
 
-// GetPoliciesAggregate returns getLastPolicyIdQueryOrganization.PoliciesAggregate, and is useful for accessing the field via an interface.
-func (v *getLastPolicyIdQueryOrganization) GetPoliciesAggregate() *getLastPolicyIdQueryOrganizationPoliciesAggregatePolicyDefinitionAggregateResult {
-	return v.PoliciesAggregate
+// GetPolicies returns getLastPolicyIdQueryOrganization.Policies, and is useful for accessing the field via an interface.
+func (v *getLastPolicyIdQueryOrganization) GetPolicies() []*getLastPolicyIdQueryOrganizationPoliciesPolicyDefinition {
+	return v.Policies
 }
 
-// getLastPolicyIdQueryOrganizationPoliciesAggregatePolicyDefinitionAggregateResult includes the requested fields of the GraphQL type PolicyDefinitionAggregateResult.
-type getLastPolicyIdQueryOrganizationPoliciesAggregatePolicyDefinitionAggregateResult struct {
-	Count *int `json:"count"`
+// getLastPolicyIdQueryOrganizationPoliciesPolicyDefinition includes the requested fields of the GraphQL type PolicyDefinition.
+type getLastPolicyIdQueryOrganizationPoliciesPolicyDefinition struct {
+	Id string `json:"id"`
 }
 
-// GetCount returns getLastPolicyIdQueryOrganizationPoliciesAggregatePolicyDefinitionAggregateResult.Count, and is useful for accessing the field via an interface.
-func (v *getLastPolicyIdQueryOrganizationPoliciesAggregatePolicyDefinitionAggregateResult) GetCount() *int {
-	return v.Count
-}
+// GetId returns getLastPolicyIdQueryOrganizationPoliciesPolicyDefinition.Id, and is useful for accessing the field via an interface.
+func (v *getLastPolicyIdQueryOrganizationPoliciesPolicyDefinition) GetId() string { return v.Id }
 
 // getLastPolicyIdResponse is returned by getLastPolicyId on success.
 type getLastPolicyIdResponse struct {
@@ -2329,8 +2327,8 @@ func checkIfTagExists(
 const getLastPolicyId_Operation = `
 query getLastPolicyId ($organizationId: String!) {
 	queryOrganization(filter: {id:{eq:$organizationId}}) {
-		policiesAggregate {
-			count
+		policies {
+			id
 		}
 	}
 }

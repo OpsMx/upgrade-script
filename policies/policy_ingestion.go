@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -81,7 +82,7 @@ func ingestTags(graphqlClient graphql.Client) error {
 			return fmt.Errorf("ingestTags: checkIfTagExists: iteration: %d err: %s", i, err.Error())
 		}
 
-		if existingTag.QueryTag != nil && len(existingTag.QueryTag) > 0 {
+		if len(existingTag.QueryTag) > 0 {
 
 			tagIdInScriptMapIdInDB[tagScript.Id] = existingTag.QueryTag[0].Id
 
@@ -174,7 +175,9 @@ func ingestPolicyDef(graphqlClient graphql.Client, orgId string) error {
 			return fmt.Errorf("ingestPolicyDef: getLastPolicyId: iteration: %v err: %s", i, err.Error())
 		}
 
-		policyDefIdInt := *getLastPolicyIdResp.QueryOrganization[0].PoliciesAggregate.Count + 1
+		lastId := getlastid(getLastPolicyIdResp)
+
+		policyDefIdInt := lastId + 1
 
 		policy := AddPolicyDefinitionInput{
 			Id: fmt.Sprintf("%v", policyDefIdInt),
@@ -328,4 +331,16 @@ func MapSeverity(s string) Severity {
 	default:
 		return SeverityUnknown
 	}
+}
+
+func getlastid(getLastPolicyIdResp *getLastPolicyIdResponse) int {
+
+	idsInt := []int{}
+	for _, check := range getLastPolicyIdResp.QueryOrganization[0].Policies {
+		num, _ := strconv.Atoi(check.Id)
+		idsInt = append(idsInt, num)
+	}
+
+	sort.Ints(idsInt)
+	return idsInt[len(idsInt)-1]
 }
