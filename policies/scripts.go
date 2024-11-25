@@ -2915,6 +2915,7 @@ var scriptMap = map[int]string{
 		policy_name in exception_list
 		msg := sprintf("init container <%v> has a disallowed capability. Allowed capabilities are %v", [container.name, get_default(input.parameters, "allowedCapabilities", "NONE")])
 		alertStatus := "exception"
+	}
 
 	deny[{"alertMsg": msg, "suggestion": "Suggest to restrict the disallowed capabilities of containers.", "error": "", "exception": "", "alertStatus": alertStatus}] {
 		not is_update(input.request)
@@ -8491,7 +8492,7 @@ var scriptMap = map[int]string{
 		error := ""
 		exception_cause := findings[i].ruleName
 		alertStatus := "exception"
-	}}`,
+	}`,
 
 	310: `
 	package opsmx
@@ -8526,7 +8527,7 @@ var scriptMap = map[int]string{
 	response = http.send(request)
 	results := response.body.Results
 
-	licenses = [input.Results[i].Licenses[j] | count(input.Results[i].Licenses) > 0]
+	licenses = [response.body.Results[i].Licenses[j] | count(response.body.Results[i].Licenses) > 0]
 
 	license_count = count(licenses)
 
@@ -8864,13 +8865,13 @@ var scriptMap = map[int]string{
 	response = http.send(request)
 	results := response.body.Results
 
-	licenses = [input.Results[i].Licenses[j] | count(input.Results[i].Licenses) > 0]
+	licenses = [response.body.Results[i].Licenses[j] | count(response.body.Results[i].Licenses) > 0]
 
 	license_count = count(licenses)
 
 	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
 			license_count == 0
-		        not policy_name in exception_list
+		    not policy_name in exception_list
 			msg := sprintf("Artifact License Scan: No license found to be associated with artifact %v.",[input.metadata.image])
 			sugg := "Please associate appropriate license with artifact to be able to evaluate quality of license."
 			error := ""
@@ -8912,7 +8913,7 @@ var scriptMap = map[int]string{
 	response = http.send(request)
 	results := response.body.Results
 
-	licenses = [input.Results[i].Licenses[j] | count(input.Results[i].Licenses) > 0]
+	licenses = [response.body.Results[i].Licenses[j] | count(response.body.Results[i].Licenses) > 0]
 
 	license_count = count(licenses)
 
@@ -8978,7 +8979,7 @@ var scriptMap = map[int]string{
 	response = http.send(request)
 	results := response.body.Results
 
-	licenses = [input.Results[i].Licenses[j] | count(input.Results[i].Licenses) > 0]
+	licenses = [response.body.Results[i].Licenses[j] | count(response.body.Results[i].Licenses) > 0]
 
 	license_count = count(licenses)
 
@@ -9044,7 +9045,7 @@ var scriptMap = map[int]string{
 	response = http.send(request)
 	results := response.body.Results
 
-	licenses = [input.Results[i].Licenses[j] | count(input.Results[i].Licenses) > 0]
+	licenses = [response.body.Results[i].Licenses[j] | count(response.body.Results[i].Licenses) > 0]
 
 	license_count = count(licenses)
 
@@ -9110,7 +9111,7 @@ var scriptMap = map[int]string{
 	response = http.send(request)
 	results := response.body.Results
 
-	licenses = [input.Results[i].Licenses[j] | count(input.Results[i].Licenses) > 0]
+	licenses = [response.body.Results[i].Licenses[j] | count(response.body.Results[i].Licenses) > 0]
 
 	license_count = count(licenses)
 
@@ -10321,7 +10322,7 @@ var scriptMap = map[int]string{
 		count_critical_issues > 0
 		some idx
 		critical_issues[idx].message in exception_list
-		title := sprintf("Sonarqube Scan: %v", [blocker_issues[idx].message])
+		title := sprintf("Sonarqube Scan: %v", [critical_issues[idx].message])
 		msg = critical_issues[idx].message
 		sugg = "Kindly refer to the suggested resolutions by Sonarqube. For more details about the error, please refer to the detailed scan results."
 		error = ""
@@ -10333,7 +10334,7 @@ var scriptMap = map[int]string{
 		count_critical_issues > 0
 		some idx
 		not critical_issues[idx].message in exception_list
-		title := sprintf("Sonarqube Scan: %v", [blocker_issues[idx].message])
+		title := sprintf("Sonarqube Scan: %v", [critical_issues[idx].message])
 		msg = critical_issues[idx].message
 		sugg = "Kindly refer to the suggested resolutions by Sonarqube. For more details about the error, please refer to the detailed scan results."
 		error = ""
