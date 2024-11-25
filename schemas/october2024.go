@@ -577,7 +577,7 @@ type BuildTool {
     tool: String! @search(by: [exact])
     "buildName is the name of the job/pipeline/action"
     buildName: String! @search(by: [exact, regexp])
-    buildUrl: String! @search(by: [exact])
+    buildUrl: String! @search(by: [exact,  regexp])
     "buildTime is the time at which the artifact was built"
     buildTime: DateTime
     "buildUser is the user that built the artifact"
@@ -729,7 +729,7 @@ type ComponentAnalysis {
     Licenses: [String!] @search(by: [exact,regexp])
     CreatedAt: DateTime
     ScannedAt: DateTime
-    LastViewed: DateTime
+    LastViewed: DateTime @search
 }
 
 type ComponentLicenses {
@@ -739,6 +739,7 @@ type ComponentLicenses {
 }
 
 enum Severity {
+    apocalypse
     critical
     high
     medium

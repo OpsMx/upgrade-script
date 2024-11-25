@@ -21,12 +21,12 @@ func UpgradeToOctober2024(prodGraphUrl, prodToken, restoreServiceUrl string, pro
 		return fmt.Errorf("UpgradeToSeptember2024: migrateBuildToSourceNode: %s", err.Error())
 	}
 
-	if err := updateComponent(prodDgraphClient); err != nil {
-		return fmt.Errorf("UpgradeToSeptember2024: updateComponent: %s", err.Error())
-	}
-
 	if err := graphqlfunc.UpdateSchema(prodGraphUrl, prodToken, []byte(schemas.October2024Schema)); err != nil {
 		return fmt.Errorf("UpgradeToOctober2024: UpdateSchema: %s", err.Error())
+	}
+
+	if err := updateComponent(prodDgraphClient); err != nil {
+		return fmt.Errorf("UpgradeToSeptember2024: updateComponent: %s", err.Error())
 	}
 
 	if restoreServiceUrl != "" {
