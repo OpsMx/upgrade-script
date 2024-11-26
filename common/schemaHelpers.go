@@ -17,6 +17,7 @@ const (
 	August2024Version2
 	September2024Version
 	October2024Version
+	November2024Version
 )
 
 var SchemasString = map[SchemaOrder]string{
@@ -28,6 +29,7 @@ var SchemasString = map[SchemaOrder]string{
 	August2024Version2:   schemas.August2024Version2,
 	September2024Version: schemas.September2024Schema,
 	October2024Version:   schemas.October2024Schema,
+	November2024Version:  schemas.November2024Schema,
 }
 
 var schemaOrderMap = map[string]SchemaOrder{
@@ -39,6 +41,7 @@ var schemaOrderMap = map[string]SchemaOrder{
 	"August2024V2":  August2024Version2,
 	"September2024": September2024Version,
 	"October2024":   October2024Version,
+	"November2024":  November2024Version,
 }
 
 var expDgraphSchemaMap = map[int]bool{
@@ -50,6 +53,7 @@ var expDgraphSchemaMap = map[int]bool{
 	August2024Version2.Int():   false,
 	September2024Version.Int(): false,
 	October2024Version.Int():   false,
+	November2024Version.Int():  false,
 }
 
 func (e SchemaOrder) NameOfSchema() string {
