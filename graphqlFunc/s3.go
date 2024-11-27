@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -102,6 +103,29 @@ func (u *S3Client) upload(ctx context.Context, bucketName, key string, outfile *
 		Body:        outfile,
 		Tagging:     aws.String("ItemType=docker-image"),
 		ContentType: aws.String("application/tar+gzip"),
+	})
+	return err
+}
+
+func (u *S3Client) ObjectExists(ctx context.Context, bucketName string, key string) bool {
+	_, err := u.S3Client.HeadObject(ctx, &s3.HeadObjectInput{
+		Bucket: aws.String(bucketName),
+		Key:    aws.String(key),
+	})
+	return err == nil
+}
+
+const (
+	partMBS = int64(10) // size of chunks to upload/download
+)
+
+func (u *S3Client) Download(ctx context.Context, bucketName string, key string, dst io.WriterAt) error {
+	downloader := manager.NewDownloader(u.S3Client, func(u *manager.Downloader) {
+		u.PartSize = partMBS * 1024 * 1024
+	})
+	_, err := downloader.Download(ctx, dst, &s3.GetObjectInput{
+		Bucket: aws.String(bucketName),
+		Key:    aws.String(key),
 	})
 	return err
 }

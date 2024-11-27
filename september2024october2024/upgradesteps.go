@@ -17,6 +17,8 @@ func UpgradeToOctober2024(prodGraphUrl, prodToken, restoreServiceUrl string, pro
 		return fmt.Errorf("UpgradeToOctober2024: UpdateSchema: %s", err.Error())
 	}
 
+	logger.Logger.Info("--------------Added Oct Translate Schema------------------")
+
 	if err := migrateBuildToSourceNode(prodDgraphClient); err != nil {
 		return fmt.Errorf("UpgradeToSeptember2024: migrateBuildToSourceNode: %s", err.Error())
 	}
@@ -27,6 +29,10 @@ func UpgradeToOctober2024(prodGraphUrl, prodToken, restoreServiceUrl string, pro
 
 	if err := updateComponent(prodDgraphClient); err != nil {
 		return fmt.Errorf("UpgradeToSeptember2024: updateComponent: %s", err.Error())
+	}
+
+	if err := ingestLicenses(prodDgraphClient); err != nil {
+		return fmt.Errorf("UpgradeToSeptember2024: %s", err.Error())
 	}
 
 	if restoreServiceUrl != "" {

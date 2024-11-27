@@ -1876,6 +1876,26 @@ type __addSourceCodeToolInput struct {
 // GetIn returns __addSourceCodeToolInput.In, and is useful for accessing the field via an interface.
 func (v *__addSourceCodeToolInput) GetIn() []*AddSourceCodeToolInput { return v.In }
 
+// __getAllComponentsInput is used internally by genqlient
+type __getAllComponentsInput struct {
+	Offset *int `json:"offset"`
+}
+
+// GetOffset returns __getAllComponentsInput.Offset, and is useful for accessing the field via an interface.
+func (v *__getAllComponentsInput) GetOffset() *int { return v.Offset }
+
+// __updateComponentLicenseInput is used internally by genqlient
+type __updateComponentLicenseInput struct {
+	Id       string   `json:"id"`
+	Licenses []string `json:"licenses"`
+}
+
+// GetId returns __updateComponentLicenseInput.Id, and is useful for accessing the field via an interface.
+func (v *__updateComponentLicenseInput) GetId() string { return v.Id }
+
+// GetLicenses returns __updateComponentLicenseInput.Licenses, and is useful for accessing the field via an interface.
+func (v *__updateComponentLicenseInput) GetLicenses() []string { return v.Licenses }
+
 // __updateSourceCodeToolFieldsInput is used internally by genqlient
 type __updateSourceCodeToolFieldsInput struct {
 	Digest           string `json:"digest"`
@@ -1914,6 +1934,50 @@ type addSourceCodeToolResponse struct {
 // GetAddSourceCodeTool returns addSourceCodeToolResponse.AddSourceCodeTool, and is useful for accessing the field via an interface.
 func (v *addSourceCodeToolResponse) GetAddSourceCodeTool() *addSourceCodeToolAddSourceCodeToolAddSourceCodeToolPayload {
 	return v.AddSourceCodeTool
+}
+
+// getAllComponentsQueryComponent includes the requested fields of the GraphQL type Component.
+type getAllComponentsQueryComponent struct {
+	Id        string                                                     `json:"id"`
+	Artifacts []*getAllComponentsQueryComponentArtifactsArtifactScanData `json:"artifacts"`
+}
+
+// GetId returns getAllComponentsQueryComponent.Id, and is useful for accessing the field via an interface.
+func (v *getAllComponentsQueryComponent) GetId() string { return v.Id }
+
+// GetArtifacts returns getAllComponentsQueryComponent.Artifacts, and is useful for accessing the field via an interface.
+func (v *getAllComponentsQueryComponent) GetArtifacts() []*getAllComponentsQueryComponentArtifactsArtifactScanData {
+	return v.Artifacts
+}
+
+// getAllComponentsQueryComponentArtifactsArtifactScanData includes the requested fields of the GraphQL type ArtifactScanData.
+type getAllComponentsQueryComponentArtifactsArtifactScanData struct {
+	ScanFile []*getAllComponentsQueryComponentArtifactsArtifactScanDataScanFileScanFileResult `json:"scanFile"`
+}
+
+// GetScanFile returns getAllComponentsQueryComponentArtifactsArtifactScanData.ScanFile, and is useful for accessing the field via an interface.
+func (v *getAllComponentsQueryComponentArtifactsArtifactScanData) GetScanFile() []*getAllComponentsQueryComponentArtifactsArtifactScanDataScanFileScanFileResult {
+	return v.ScanFile
+}
+
+// getAllComponentsQueryComponentArtifactsArtifactScanDataScanFileScanFileResult includes the requested fields of the GraphQL type ScanFileResult.
+type getAllComponentsQueryComponentArtifactsArtifactScanDataScanFileScanFileResult struct {
+	Url string `json:"url"`
+}
+
+// GetUrl returns getAllComponentsQueryComponentArtifactsArtifactScanDataScanFileScanFileResult.Url, and is useful for accessing the field via an interface.
+func (v *getAllComponentsQueryComponentArtifactsArtifactScanDataScanFileScanFileResult) GetUrl() string {
+	return v.Url
+}
+
+// getAllComponentsResponse is returned by getAllComponents on success.
+type getAllComponentsResponse struct {
+	QueryComponent []*getAllComponentsQueryComponent `json:"queryComponent"`
+}
+
+// GetQueryComponent returns getAllComponentsResponse.QueryComponent, and is useful for accessing the field via an interface.
+func (v *getAllComponentsResponse) GetQueryComponent() []*getAllComponentsQueryComponent {
+	return v.QueryComponent
 }
 
 // queryTransferableBuildToolFieldsQueryBuildTool includes the requested fields of the GraphQL type BuildTool.
@@ -1986,6 +2050,26 @@ func (v *queryTransferableBuildToolFieldsResponse) GetQueryBuildTool() []*queryT
 	return v.QueryBuildTool
 }
 
+// totalCountOfComponentsAggregateComponentComponentAggregateResult includes the requested fields of the GraphQL type ComponentAggregateResult.
+type totalCountOfComponentsAggregateComponentComponentAggregateResult struct {
+	Count *int `json:"count"`
+}
+
+// GetCount returns totalCountOfComponentsAggregateComponentComponentAggregateResult.Count, and is useful for accessing the field via an interface.
+func (v *totalCountOfComponentsAggregateComponentComponentAggregateResult) GetCount() *int {
+	return v.Count
+}
+
+// totalCountOfComponentsResponse is returned by totalCountOfComponents on success.
+type totalCountOfComponentsResponse struct {
+	AggregateComponent *totalCountOfComponentsAggregateComponentComponentAggregateResult `json:"aggregateComponent"`
+}
+
+// GetAggregateComponent returns totalCountOfComponentsResponse.AggregateComponent, and is useful for accessing the field via an interface.
+func (v *totalCountOfComponentsResponse) GetAggregateComponent() *totalCountOfComponentsAggregateComponentComponentAggregateResult {
+	return v.AggregateComponent
+}
+
 // updateComponentAnalysisRequiredResponse is returned by updateComponentAnalysisRequired on success.
 type updateComponentAnalysisRequiredResponse struct {
 	UpdateComponent *updateComponentAnalysisRequiredUpdateComponentUpdateComponentPayload `json:"updateComponent"`
@@ -2003,6 +2087,26 @@ type updateComponentAnalysisRequiredUpdateComponentUpdateComponentPayload struct
 
 // GetNumUids returns updateComponentAnalysisRequiredUpdateComponentUpdateComponentPayload.NumUids, and is useful for accessing the field via an interface.
 func (v *updateComponentAnalysisRequiredUpdateComponentUpdateComponentPayload) GetNumUids() *int {
+	return v.NumUids
+}
+
+// updateComponentLicenseResponse is returned by updateComponentLicense on success.
+type updateComponentLicenseResponse struct {
+	UpdateComponent *updateComponentLicenseUpdateComponentUpdateComponentPayload `json:"updateComponent"`
+}
+
+// GetUpdateComponent returns updateComponentLicenseResponse.UpdateComponent, and is useful for accessing the field via an interface.
+func (v *updateComponentLicenseResponse) GetUpdateComponent() *updateComponentLicenseUpdateComponentUpdateComponentPayload {
+	return v.UpdateComponent
+}
+
+// updateComponentLicenseUpdateComponentUpdateComponentPayload includes the requested fields of the GraphQL type UpdateComponentPayload.
+type updateComponentLicenseUpdateComponentUpdateComponentPayload struct {
+	NumUids *int `json:"numUids"`
+}
+
+// GetNumUids returns updateComponentLicenseUpdateComponentUpdateComponentPayload.NumUids, and is useful for accessing the field via an interface.
+func (v *updateComponentLicenseUpdateComponentUpdateComponentPayload) GetNumUids() *int {
 	return v.NumUids
 }
 
@@ -2061,6 +2165,46 @@ func addSourceCodeTool(
 	return &data_, err_
 }
 
+// The query or mutation executed by getAllComponents.
+const getAllComponents_Operation = `
+query getAllComponents ($offset: Int) {
+	queryComponent(first: 1000, offset: $offset) @cascade {
+		id
+		artifacts {
+			scanFile(filter: {name:{eq:"sbom"}}) {
+				url
+			}
+		}
+	}
+}
+`
+
+func getAllComponents(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	offset *int,
+) (*getAllComponentsResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "getAllComponents",
+		Query:  getAllComponents_Operation,
+		Variables: &__getAllComponentsInput{
+			Offset: offset,
+		},
+	}
+	var err_ error
+
+	var data_ getAllComponentsResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
 // The query or mutation executed by queryTransferableBuildToolFields.
 const queryTransferableBuildToolFields_Operation = `
 query queryTransferableBuildToolFields {
@@ -2100,6 +2244,37 @@ func queryTransferableBuildToolFields(
 	return &data_, err_
 }
 
+// The query or mutation executed by totalCountOfComponents.
+const totalCountOfComponents_Operation = `
+query totalCountOfComponents {
+	aggregateComponent {
+		count
+	}
+}
+`
+
+func totalCountOfComponents(
+	ctx_ context.Context,
+	client_ graphql.Client,
+) (*totalCountOfComponentsResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "totalCountOfComponents",
+		Query:  totalCountOfComponents_Operation,
+	}
+	var err_ error
+
+	var data_ totalCountOfComponentsResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
 // The query or mutation executed by updateComponentAnalysisRequired.
 const updateComponentAnalysisRequired_Operation = `
 mutation updateComponentAnalysisRequired {
@@ -2120,6 +2295,43 @@ func updateComponentAnalysisRequired(
 	var err_ error
 
 	var data_ updateComponentAnalysisRequiredResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by updateComponentLicense.
+const updateComponentLicense_Operation = `
+mutation updateComponentLicense ($id: String!, $licenses: [String!]) {
+	updateComponent(input: {filter:{id:{eq:$id}},set:{licenses:$licenses}}) {
+		numUids
+	}
+}
+`
+
+func updateComponentLicense(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	id string,
+	licenses []string,
+) (*updateComponentLicenseResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "updateComponentLicense",
+		Query:  updateComponentLicense_Operation,
+		Variables: &__updateComponentLicenseInput{
+			Id:       id,
+			Licenses: licenses,
+		},
+	}
+	var err_ error
+
+	var data_ updateComponentLicenseResponse
 	resp_ := &graphql.Response{Data: &data_}
 
 	err_ = client_.MakeRequest(

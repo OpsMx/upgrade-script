@@ -45,3 +45,28 @@ mutation updateComponentAnalysisRequired {
         numUids
     }
 }
+
+query totalCountOfComponents {
+    aggregateComponent {
+        count
+    }
+}
+
+query getAllComponents($offset:Int) {
+    queryComponent(first: 1000, offset: $offset) @cascade {
+        id
+        artifacts {
+            scanFile(filter: { name: { eq: "sbom" } }) {
+                url
+            }
+        }
+    }
+}
+
+mutation updateComponentLicense($id: String!, $licenses: [String!]) {
+    updateComponent(
+        input: { filter: { id: { eq: $id } }, set: { licenses: $licenses } }
+    ) {
+        numUids
+    }
+}
