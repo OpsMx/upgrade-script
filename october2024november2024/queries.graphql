@@ -1,0 +1,10 @@
+mutation defaultVulnrichmentParams {
+    updateVulnerability(
+        input: {
+            set: { exploitation: "", automatable: "", technicalImpact: "" }
+            filter: { has: id }
+        }
+    ) {
+        numUids
+    }
+}

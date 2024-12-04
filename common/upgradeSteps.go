@@ -13,6 +13,7 @@ import (
 	"upgradationScript/july2024august2024"
 	"upgradationScript/june2024june2024v2"
 	"upgradationScript/june2024v2july2024"
+	"upgradationScript/october2024november2024"
 	"upgradationScript/september2024october2024"
 
 	"upgradationScript/logger"
@@ -162,6 +163,10 @@ func beginProcessOfUpgrade(upgradeTo SchemaOrder, isSecondDgraphRequired, isLast
 	case October2024Version:
 
 		return september2024october2024.UpgradeToOctober2024(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, "", prodGraphqlClient)
+
+	case November2024Version:
+
+		return october2024november2024.UpgradeToNovember2024(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, "", prodGraphqlClient)
 
 	}
 
