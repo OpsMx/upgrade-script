@@ -13,3 +13,35 @@ mutation UpdateArtifactType($ids: [String!]!) {
         numUids
     }
 }
+
+query FetchFeatureConfigsWithIntegratorConfigID {
+    queryFeatureMode {
+        organization {
+            id
+        }
+        integrator {
+            integratorConfigs {
+                id
+            }
+            featureConfigs {
+                key
+                value
+            }
+        }
+    }
+}
+
+mutation SetIntegratorConfigStatusAndUpdateKeyValues(
+    $id: ID!
+    $orgID: String!
+    $configs: [IntegratorKeyValuesRef!]
+) {
+    updateIntegratorConfigs(
+        input: {
+            filter: { id: [$id] }
+            set: { configs: $configs, status: "active", organization: { id: $orgID } }
+        }
+    ) {
+        numUids
+    }
+}

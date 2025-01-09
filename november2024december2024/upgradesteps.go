@@ -19,21 +19,17 @@ func UpgradeToDecember2024(prodGraphUrl, prodToken string, prodDgraphClient grap
 
 	logger.Logger.Info("--------------Added Dec Translate Schema------------------")
 
-	// if err := migrateBuildToSourceNode(prodDgraphClient); err != nil {
-	// 	return fmt.Errorf("UpgradeToSeptember2024: migrateBuildToSourceNode: %s", err.Error())
-	// }
+	if err := migrateFeatureToConfigKeyValues(prodDgraphClient); err != nil {
+		return fmt.Errorf("UpgradeToDecember2024: migrateFeatureToConfigKeyValues: %s", err.Error())
+	}
 
 	if err := graphqlfunc.UpdateSchema(prodGraphUrl, prodToken, []byte(schemas.December2024Schema)); err != nil {
 		return fmt.Errorf("UpgradeToDecember2024: UpdateSchema: %s", err.Error())
 	}
 
 	if err := updateArtifactTypeForPlugin(prodDgraphClient); err != nil {
-		return fmt.Errorf("UpgradeToSeptember2024: updateComponent: %s", err.Error())
+		return fmt.Errorf("UpgradeToSeptember2024: updateArtifactTypeForPlugin: %s", err.Error())
 	}
-
-	// if err := ingestLicenses(prodDgraphClient); err != nil {
-	// 	return fmt.Errorf("UpgradeToSeptember2024: %s", err.Error())
-	// }
 
 	logger.Logger.Info("--------------Completed UpgradeToDecember2024------------------")
 

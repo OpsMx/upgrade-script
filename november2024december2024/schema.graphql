@@ -1,36 +1,32 @@
-directive @auth(password: AuthRule, query: AuthRule, add: AuthRule, update: AuthRule, delete: AuthRule) on OBJECT | INTERFACE
-
-directive @default(add: DgraphDefault, update: DgraphDefault) on FIELD_DEFINITION
+directive @search(by: [DgraphIndex!]) on FIELD_DEFINITION
 
 directive @withSubscription on OBJECT | INTERFACE | FIELD_DEFINITION
 
-directive @embedding on FIELD_DEFINITION
+directive @secret(field: String!, pred: String) on OBJECT | INTERFACE
+
+directive @auth(password: AuthRule, query: AuthRule, add: AuthRule, update: AuthRule, delete: AuthRule) on OBJECT | INTERFACE
+
+directive @hasInverse(field: String!) on FIELD_DEFINITION
 
 directive @custom(http: CustomHTTP, dql: String) on FIELD_DEFINITION
 
-directive @cascade(fields: [String]) on FIELD
-
-directive @search(by: [String!]) on FIELD_DEFINITION
-
-directive @generate(query: GenerateQueryParams, mutation: GenerateMutationParams, subscription: Boolean) on OBJECT | INTERFACE
-
-directive @id(interface: Boolean) on FIELD_DEFINITION
-
-directive @secret(field: String!, pred: String) on OBJECT | INTERFACE
-
-directive @lambda on FIELD_DEFINITION
-
 directive @remoteResponse(name: String) on FIELD_DEFINITION
+
+directive @dgraph(type: String, pred: String) on OBJECT | INTERFACE | FIELD_DEFINITION
+
+directive @remote on OBJECT | INTERFACE | UNION | INPUT_OBJECT | ENUM
 
 directive @lambdaOnMutate(add: Boolean, update: Boolean, delete: Boolean) on OBJECT | INTERFACE
 
 directive @cacheControl(maxAge: Int!) on QUERY
 
-directive @hasInverse(field: String!) on FIELD_DEFINITION
+directive @id(interface: Boolean) on FIELD_DEFINITION
 
-directive @dgraph(type: String, pred: String) on OBJECT | INTERFACE | FIELD_DEFINITION
+directive @cascade(fields: [String]) on FIELD
 
-directive @remote on OBJECT | INTERFACE | UNION | INPUT_OBJECT | ENUM
+directive @lambda on FIELD_DEFINITION
+
+directive @generate(query: GenerateQueryParams, mutation: GenerateMutationParams, subscription: Boolean) on OBJECT | INTERFACE
 
 input AddApplicationDeploymentInput {
   """id is randomly assigned"""
@@ -418,6 +414,22 @@ type AddExceptionPayload {
   numUids: Int
 }
 
+input AddFeatureModeInput {
+  id: String!
+  organization: OrganizationRef!
+  key: String!
+  value: String!
+  category: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  integrator: IntegratorRef!
+}
+
+type AddFeatureModePayload {
+  featureMode(filter: FeatureModeFilter, order: FeatureModeOrder, first: Int, offset: Int): [FeatureMode]
+  numUids: Int
+}
+
 input AddIntegratorConfigsInput {
   name: String!
   configs: [IntegratorKeyValuesRef!]
@@ -440,6 +452,7 @@ input AddIntegratorInput {
   type: String!
   category: String!
   status: String!
+  featureConfigs: [FeatureModeRef!]
   integratorConfigs: [IntegratorConfigsRef!]
   createdAt: DateTime!
   updatedAt: DateTime!
@@ -500,6 +513,7 @@ input AddOrganizationInput {
   policies: [PolicyDefinitionRef!]
   policyEnforcements: [PolicyEnforcementRef!]
   integrators: [IntegratorRef!]
+  featureModes: [FeatureModeRef!]
   integratorConfigs: [IntegratorConfigsRef!]
   resources: [ResourceRef!]
 }
@@ -963,9 +977,6 @@ enum ApplicationDeploymentOrderable {
 }
 
 input ApplicationDeploymentPatch {
-  """id is randomly assigned"""
-  id: String
-
   """
   platform will help us identify which image was actually deployed helping us identify the accurate sha
   """
@@ -1194,8 +1205,6 @@ enum ApplicationEnvironmentOrderable {
 }
 
 input ApplicationEnvironmentPatch {
-  """id is randomly assigned"""
-  id: String
   environment: EnvironmentRef
   application: ApplicationRef
   deploymentTarget: DeploymentTargetRef
@@ -1266,8 +1275,6 @@ enum ApplicationOrderable {
 }
 
 input ApplicationPatch {
-  """id is randomly assigned"""
-  id: String
   name: String
   roles: [RoleRef!]
   environments: [ApplicationEnvironmentRef!]
@@ -1465,7 +1472,6 @@ enum ArtifactOrderable {
 }
 
 input ArtifactPatch {
-  id: String
   artifactType: String
   artifactName: String
   artifactTag: String
@@ -1725,8 +1731,6 @@ enum ArtifactScanDataOrderable {
 }
 
 input ArtifactScanDataPatch {
-  id: String
-
   """platform: String! @search(by: [exact]) -> add later"""
   artifactSha: String
   artifactNameTag: String
@@ -1926,9 +1930,6 @@ enum BuildToolOrderable {
 }
 
 input BuildToolPatch {
-  """id is randomly assigned"""
-  id: String
-
   """buildId is a unique job id, run id for a job/pipeline/action"""
   buildId: String
 
@@ -2376,7 +2377,6 @@ enum ComponentOrderable {
 }
 
 input ComponentPatch {
-  id: String
   type: String
   name: String
   version: String
@@ -2465,7 +2465,6 @@ enum CWEOrderable {
 }
 
 input CWEPatch {
-  id: String
   name: String
   description: String
 }
@@ -2613,6 +2612,12 @@ type DeleteExceptionAffectsPayload {
 
 type DeleteExceptionPayload {
   exception(filter: ExceptionFilter, order: ExceptionOrder, first: Int, offset: Int): [Exception]
+  msg: String
+  numUids: Int
+}
+
+type DeleteFeatureModePayload {
+  featureMode(filter: FeatureModeFilter, order: FeatureModeOrder, first: Int, offset: Int): [FeatureMode]
   msg: String
   numUids: Int
 }
@@ -2863,8 +2868,6 @@ enum DeploymentTargetOrderable {
 }
 
 input DeploymentTargetPatch {
-  """id is randomly assigned"""
-  id: String
   name: String
 
   """this would be the ip/server address of the target environment"""
@@ -2902,10 +2905,6 @@ input DeploymentTargetRef {
   defaultEnvironment: EnvironmentRef
 }
 
-input DgraphDefault {
-  value: String
-}
-
 enum DgraphIndex {
   int
   int64
@@ -2922,7 +2921,6 @@ enum DgraphIndex {
   day
   hour
   geo
-  hnsw
 }
 
 type EnrichedFinding {
@@ -2968,7 +2966,6 @@ enum EnrichedFindingOrderable {
 }
 
 input EnrichedFindingPatch {
-  id: String
   affectedResource: ResourceRef
   finding: PolicyEvaluationDataRef
   affectedAttributes: String
@@ -3026,7 +3023,6 @@ enum EnvironmentOrderable {
 }
 
 input EnvironmentPatch {
-  id: String
   organization: OrganizationRef
   purpose: String
   integratorConfigs: [IntegratorConfigsRef!]
@@ -3231,6 +3227,91 @@ input ExceptionRef {
   updatedAt: DateTime
 }
 
+type FeatureMode {
+  id: String!
+  organization(filter: OrganizationFilter): Organization!
+  key: String!
+  value: String!
+  category: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  integrator(filter: IntegratorFilter): Integrator!
+}
+
+type FeatureModeAggregateResult {
+  count: Int
+  idMin: String
+  idMax: String
+  keyMin: String
+  keyMax: String
+  valueMin: String
+  valueMax: String
+  categoryMin: String
+  categoryMax: String
+  createdAtMin: DateTime
+  createdAtMax: DateTime
+  updatedAtMin: DateTime
+  updatedAtMax: DateTime
+}
+
+input FeatureModeFilter {
+  id: StringHashFilter
+  key: StringExactFilter
+  value: StringExactFilter
+  category: StringExactFilter
+  has: [FeatureModeHasFilter]
+  and: [FeatureModeFilter]
+  or: [FeatureModeFilter]
+  not: FeatureModeFilter
+}
+
+enum FeatureModeHasFilter {
+  id
+  organization
+  key
+  value
+  category
+  createdAt
+  updatedAt
+  integrator
+}
+
+input FeatureModeOrder {
+  asc: FeatureModeOrderable
+  desc: FeatureModeOrderable
+  then: FeatureModeOrder
+}
+
+enum FeatureModeOrderable {
+  id
+  key
+  value
+  category
+  createdAt
+  updatedAt
+}
+
+input FeatureModePatch {
+  organization: OrganizationRef
+  key: String
+  value: String
+  category: String
+  createdAt: DateTime
+  updatedAt: DateTime
+  integrator: IntegratorRef
+}
+
+input FeatureModeRef {
+  id: String
+  organization: OrganizationRef
+  key: String
+  value: String
+  category: String
+  createdAt: DateTime
+  updatedAt: DateTime
+  integrator: IntegratorRef
+}
+
 input FloatFilter {
   eq: Float
   in: [Float]
@@ -3294,9 +3375,11 @@ type Integrator {
   type: String!
   category: String!
   status: String!
+  featureConfigs(filter: FeatureModeFilter, order: FeatureModeOrder, first: Int, offset: Int): [FeatureMode!]
   integratorConfigs(filter: IntegratorConfigsFilter, order: IntegratorConfigsOrder, first: Int, offset: Int): [IntegratorConfigs!]
   createdAt: DateTime!
   updatedAt: DateTime!
+  featureConfigsAggregate(filter: FeatureModeFilter): FeatureModeAggregateResult
   integratorConfigsAggregate(filter: IntegratorConfigsFilter): IntegratorConfigsAggregateResult
 }
 
@@ -3409,6 +3492,7 @@ enum IntegratorHasFilter {
   type
   category
   status
+  featureConfigs
   integratorConfigs
   createdAt
   updatedAt
@@ -3487,11 +3571,11 @@ enum IntegratorOrderable {
 }
 
 input IntegratorPatch {
-  id: String
   organization: OrganizationRef
   type: String
   category: String
   status: String
+  featureConfigs: [FeatureModeRef!]
   integratorConfigs: [IntegratorConfigsRef!]
   createdAt: DateTime
   updatedAt: DateTime
@@ -3503,6 +3587,7 @@ input IntegratorRef {
   type: String
   category: String
   status: String
+  featureConfigs: [FeatureModeRef!]
   integratorConfigs: [IntegratorConfigsRef!]
   createdAt: DateTime
   updatedAt: DateTime
@@ -3666,7 +3751,6 @@ enum KeyValueOrderable {
 }
 
 input KeyValuePatch {
-  id: String
   name: String
   value: String
   createdAt: DateTime
@@ -3737,6 +3821,9 @@ type Mutation {
   addIntegrator(input: [AddIntegratorInput!]!, upsert: Boolean): AddIntegratorPayload
   updateIntegrator(input: UpdateIntegratorInput!): UpdateIntegratorPayload
   deleteIntegrator(filter: IntegratorFilter!): DeleteIntegratorPayload
+  addFeatureMode(input: [AddFeatureModeInput!]!, upsert: Boolean): AddFeatureModePayload
+  updateFeatureMode(input: UpdateFeatureModeInput!): UpdateFeatureModePayload
+  deleteFeatureMode(filter: FeatureModeFilter!): DeleteFeatureModePayload
   addIntegratorConfigs(input: [AddIntegratorConfigsInput!]!): AddIntegratorConfigsPayload
   updateIntegratorConfigs(input: UpdateIntegratorConfigsInput!): UpdateIntegratorConfigsPayload
   deleteIntegratorConfigs(filter: IntegratorConfigsFilter!): DeleteIntegratorConfigsPayload
@@ -3835,6 +3922,7 @@ type Organization implements RBAC {
   policies(filter: PolicyDefinitionFilter, order: PolicyDefinitionOrder, first: Int, offset: Int): [PolicyDefinition!]
   policyEnforcements(filter: PolicyEnforcementFilter, order: PolicyEnforcementOrder, first: Int, offset: Int): [PolicyEnforcement!]
   integrators(filter: IntegratorFilter, order: IntegratorOrder, first: Int, offset: Int): [Integrator!]
+  featureModes(filter: FeatureModeFilter, order: FeatureModeOrder, first: Int, offset: Int): [FeatureMode!]
   integratorConfigs(filter: IntegratorConfigsFilter, order: IntegratorConfigsOrder, first: Int, offset: Int): [IntegratorConfigs!]
   resources(filter: ResourceFilter, order: ResourceOrder, first: Int, offset: Int): [Resource!]
   rolesAggregate(filter: RoleFilter): RoleAggregateResult
@@ -3843,6 +3931,7 @@ type Organization implements RBAC {
   policiesAggregate(filter: PolicyDefinitionFilter): PolicyDefinitionAggregateResult
   policyEnforcementsAggregate(filter: PolicyEnforcementFilter): PolicyEnforcementAggregateResult
   integratorsAggregate(filter: IntegratorFilter): IntegratorAggregateResult
+  featureModesAggregate(filter: FeatureModeFilter): FeatureModeAggregateResult
   integratorConfigsAggregate(filter: IntegratorConfigsFilter): IntegratorConfigsAggregateResult
   resourcesAggregate(filter: ResourceFilter): ResourceAggregateResult
 }
@@ -3873,6 +3962,7 @@ enum OrganizationHasFilter {
   policies
   policyEnforcements
   integrators
+  featureModes
   integratorConfigs
   resources
 }
@@ -3889,8 +3979,6 @@ enum OrganizationOrderable {
 }
 
 input OrganizationPatch {
-  """id is randomly assigned"""
-  id: String
   name: String
   roles: [RoleRef!]
   teams: [TeamRef!]
@@ -3898,6 +3986,7 @@ input OrganizationPatch {
   policies: [PolicyDefinitionRef!]
   policyEnforcements: [PolicyEnforcementRef!]
   integrators: [IntegratorRef!]
+  featureModes: [FeatureModeRef!]
   integratorConfigs: [IntegratorConfigsRef!]
   resources: [ResourceRef!]
 }
@@ -3912,6 +4001,7 @@ input OrganizationRef {
   policies: [PolicyDefinitionRef!]
   policyEnforcements: [PolicyEnforcementRef!]
   integrators: [IntegratorRef!]
+  featureModes: [FeatureModeRef!]
   integratorConfigs: [IntegratorConfigsRef!]
   resources: [ResourceRef!]
 }
@@ -4039,7 +4129,6 @@ enum PolicyDefinitionOrderable {
 }
 
 input PolicyDefinitionPatch {
-  id: String
   ownerOrg: OrganizationRef
   ownerTeam: TeamRef
   ownerApplication: ApplicationRef
@@ -4337,6 +4426,9 @@ type Query {
   getIntegrator(id: String!): Integrator
   queryIntegrator(filter: IntegratorFilter, order: IntegratorOrder, first: Int, offset: Int): [Integrator]
   aggregateIntegrator(filter: IntegratorFilter): IntegratorAggregateResult
+  getFeatureMode(id: String!): FeatureMode
+  queryFeatureMode(filter: FeatureModeFilter, order: FeatureModeOrder, first: Int, offset: Int): [FeatureMode]
+  aggregateFeatureMode(filter: FeatureModeFilter): FeatureModeAggregateResult
   getIntegratorConfigs(id: ID!): IntegratorConfigs
   queryIntegratorConfigs(filter: IntegratorConfigsFilter, order: IntegratorConfigsOrder, first: Int, offset: Int): [IntegratorConfigs]
   aggregateIntegratorConfigs(filter: IntegratorConfigsFilter): IntegratorConfigsAggregateResult
@@ -4527,7 +4619,6 @@ enum ResourceOrderable {
 }
 
 input ResourcePatch {
-  id: String
   resourceId: String
   name: String
   organization: OrganizationRef
@@ -4635,9 +4726,6 @@ enum RoleOrderable {
 }
 
 input RolePatch {
-  """id is randomly assigned"""
-  id: String
-
   """group should be a URI format that includes a scope or realm"""
   group: String
   permission: RolePermission
@@ -5319,8 +5407,6 @@ enum SourceCodeToolOrderable {
 }
 
 input SourceCodeToolPatch {
-  """id is randomly assigned"""
-  id: String
   createdAt: DateTime
 
   """scm is the scm tool github/gitlab etc"""
@@ -5528,7 +5614,6 @@ enum TagOrderable {
 }
 
 input TagPatch {
-  id: String
   tagName: String
   tagValue: String
   tagDescription: String
@@ -5624,8 +5709,6 @@ enum TeamOrderable {
 }
 
 input TeamPatch {
-  """id is randomly assigned"""
-  id: String
   name: String
   email: String
   roles: [RoleRef!]
@@ -5956,6 +6039,17 @@ input UpdateExceptionInput {
 
 type UpdateExceptionPayload {
   exception(filter: ExceptionFilter, order: ExceptionOrder, first: Int, offset: Int): [Exception]
+  numUids: Int
+}
+
+input UpdateFeatureModeInput {
+  filter: FeatureModeFilter!
+  set: FeatureModePatch
+  remove: FeatureModePatch
+}
+
+type UpdateFeatureModePayload {
+  featureMode(filter: FeatureModeFilter, order: FeatureModeOrder, first: Int, offset: Int): [FeatureMode]
   numUids: Int
 }
 
@@ -6345,7 +6439,6 @@ enum VulnerabilityOrderable {
 }
 
 input VulnerabilityPatch {
-  id: String
   parent: String
   ratings: Severity
   ratingsInt: Int

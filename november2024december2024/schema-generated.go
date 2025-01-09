@@ -8,6 +8,104 @@ import (
 	"github.com/Khan/genqlient/graphql"
 )
 
+// FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureMode includes the requested fields of the GraphQL type FeatureMode.
+type FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureMode struct {
+	Organization *FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeOrganization `json:"organization"`
+	Integrator   *FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegrator   `json:"integrator"`
+}
+
+// GetOrganization returns FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureMode.Organization, and is useful for accessing the field via an interface.
+func (v *FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureMode) GetOrganization() *FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeOrganization {
+	return v.Organization
+}
+
+// GetIntegrator returns FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureMode.Integrator, and is useful for accessing the field via an interface.
+func (v *FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureMode) GetIntegrator() *FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegrator {
+	return v.Integrator
+}
+
+// FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegrator includes the requested fields of the GraphQL type Integrator.
+type FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegrator struct {
+	IntegratorConfigs []*FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegratorIntegratorConfigs         `json:"integratorConfigs"`
+	FeatureConfigs    []*FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegratorFeatureConfigsFeatureMode `json:"featureConfigs"`
+}
+
+// GetIntegratorConfigs returns FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegrator.IntegratorConfigs, and is useful for accessing the field via an interface.
+func (v *FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegrator) GetIntegratorConfigs() []*FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegratorIntegratorConfigs {
+	return v.IntegratorConfigs
+}
+
+// GetFeatureConfigs returns FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegrator.FeatureConfigs, and is useful for accessing the field via an interface.
+func (v *FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegrator) GetFeatureConfigs() []*FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegratorFeatureConfigsFeatureMode {
+	return v.FeatureConfigs
+}
+
+// FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegratorFeatureConfigsFeatureMode includes the requested fields of the GraphQL type FeatureMode.
+type FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegratorFeatureConfigsFeatureMode struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+// GetKey returns FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegratorFeatureConfigsFeatureMode.Key, and is useful for accessing the field via an interface.
+func (v *FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegratorFeatureConfigsFeatureMode) GetKey() string {
+	return v.Key
+}
+
+// GetValue returns FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegratorFeatureConfigsFeatureMode.Value, and is useful for accessing the field via an interface.
+func (v *FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegratorFeatureConfigsFeatureMode) GetValue() string {
+	return v.Value
+}
+
+// FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegratorIntegratorConfigs includes the requested fields of the GraphQL type IntegratorConfigs.
+type FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegratorIntegratorConfigs struct {
+	Id *string `json:"id"`
+}
+
+// GetId returns FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegratorIntegratorConfigs.Id, and is useful for accessing the field via an interface.
+func (v *FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegratorIntegratorConfigs) GetId() *string {
+	return v.Id
+}
+
+// FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeOrganization includes the requested fields of the GraphQL type Organization.
+type FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeOrganization struct {
+	// id is randomly assigned
+	Id string `json:"id"`
+}
+
+// GetId returns FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeOrganization.Id, and is useful for accessing the field via an interface.
+func (v *FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeOrganization) GetId() string {
+	return v.Id
+}
+
+// FetchFeatureConfigsWithIntegratorConfigIDResponse is returned by FetchFeatureConfigsWithIntegratorConfigID on success.
+type FetchFeatureConfigsWithIntegratorConfigIDResponse struct {
+	QueryFeatureMode []*FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureMode `json:"queryFeatureMode"`
+}
+
+// GetQueryFeatureMode returns FetchFeatureConfigsWithIntegratorConfigIDResponse.QueryFeatureMode, and is useful for accessing the field via an interface.
+func (v *FetchFeatureConfigsWithIntegratorConfigIDResponse) GetQueryFeatureMode() []*FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureMode {
+	return v.QueryFeatureMode
+}
+
+type IntegratorKeyValuesRef struct {
+	Feat    *bool  `json:"feat"`
+	Key     string `json:"key"`
+	Value   string `json:"value"`
+	Encrypt *bool  `json:"encrypt"`
+}
+
+// GetFeat returns IntegratorKeyValuesRef.Feat, and is useful for accessing the field via an interface.
+func (v *IntegratorKeyValuesRef) GetFeat() *bool { return v.Feat }
+
+// GetKey returns IntegratorKeyValuesRef.Key, and is useful for accessing the field via an interface.
+func (v *IntegratorKeyValuesRef) GetKey() string { return v.Key }
+
+// GetValue returns IntegratorKeyValuesRef.Value, and is useful for accessing the field via an interface.
+func (v *IntegratorKeyValuesRef) GetValue() string { return v.Value }
+
+// GetEncrypt returns IntegratorKeyValuesRef.Encrypt, and is useful for accessing the field via an interface.
+func (v *IntegratorKeyValuesRef) GetEncrypt() *bool { return v.Encrypt }
+
 // QueryAllBuildPluginsQueryBuildTool includes the requested fields of the GraphQL type BuildTool.
 // The GraphQL type's documentation follows.
 //
@@ -40,6 +138,26 @@ func (v *QueryAllBuildPluginsResponse) GetQueryBuildTool() []*QueryAllBuildPlugi
 	return v.QueryBuildTool
 }
 
+// SetIntegratorConfigStatusAndUpdateKeyValuesResponse is returned by SetIntegratorConfigStatusAndUpdateKeyValues on success.
+type SetIntegratorConfigStatusAndUpdateKeyValuesResponse struct {
+	UpdateIntegratorConfigs *SetIntegratorConfigStatusAndUpdateKeyValuesUpdateIntegratorConfigsUpdateIntegratorConfigsPayload `json:"updateIntegratorConfigs"`
+}
+
+// GetUpdateIntegratorConfigs returns SetIntegratorConfigStatusAndUpdateKeyValuesResponse.UpdateIntegratorConfigs, and is useful for accessing the field via an interface.
+func (v *SetIntegratorConfigStatusAndUpdateKeyValuesResponse) GetUpdateIntegratorConfigs() *SetIntegratorConfigStatusAndUpdateKeyValuesUpdateIntegratorConfigsUpdateIntegratorConfigsPayload {
+	return v.UpdateIntegratorConfigs
+}
+
+// SetIntegratorConfigStatusAndUpdateKeyValuesUpdateIntegratorConfigsUpdateIntegratorConfigsPayload includes the requested fields of the GraphQL type UpdateIntegratorConfigsPayload.
+type SetIntegratorConfigStatusAndUpdateKeyValuesUpdateIntegratorConfigsUpdateIntegratorConfigsPayload struct {
+	NumUids *int `json:"numUids"`
+}
+
+// GetNumUids returns SetIntegratorConfigStatusAndUpdateKeyValuesUpdateIntegratorConfigsUpdateIntegratorConfigsPayload.NumUids, and is useful for accessing the field via an interface.
+func (v *SetIntegratorConfigStatusAndUpdateKeyValuesUpdateIntegratorConfigsUpdateIntegratorConfigsPayload) GetNumUids() *int {
+	return v.NumUids
+}
+
 // UpdateArtifactTypeResponse is returned by UpdateArtifactType on success.
 type UpdateArtifactTypeResponse struct {
 	UpdateArtifact *UpdateArtifactTypeUpdateArtifactUpdateArtifactPayload `json:"updateArtifact"`
@@ -58,6 +176,24 @@ type UpdateArtifactTypeUpdateArtifactUpdateArtifactPayload struct {
 // GetNumUids returns UpdateArtifactTypeUpdateArtifactUpdateArtifactPayload.NumUids, and is useful for accessing the field via an interface.
 func (v *UpdateArtifactTypeUpdateArtifactUpdateArtifactPayload) GetNumUids() *int { return v.NumUids }
 
+// __SetIntegratorConfigStatusAndUpdateKeyValuesInput is used internally by genqlient
+type __SetIntegratorConfigStatusAndUpdateKeyValuesInput struct {
+	Id      *string                   `json:"id"`
+	OrgID   string                    `json:"orgID"`
+	Configs []*IntegratorKeyValuesRef `json:"configs,omitempty"`
+}
+
+// GetId returns __SetIntegratorConfigStatusAndUpdateKeyValuesInput.Id, and is useful for accessing the field via an interface.
+func (v *__SetIntegratorConfigStatusAndUpdateKeyValuesInput) GetId() *string { return v.Id }
+
+// GetOrgID returns __SetIntegratorConfigStatusAndUpdateKeyValuesInput.OrgID, and is useful for accessing the field via an interface.
+func (v *__SetIntegratorConfigStatusAndUpdateKeyValuesInput) GetOrgID() string { return v.OrgID }
+
+// GetConfigs returns __SetIntegratorConfigStatusAndUpdateKeyValuesInput.Configs, and is useful for accessing the field via an interface.
+func (v *__SetIntegratorConfigStatusAndUpdateKeyValuesInput) GetConfigs() []*IntegratorKeyValuesRef {
+	return v.Configs
+}
+
 // __UpdateArtifactTypeInput is used internally by genqlient
 type __UpdateArtifactTypeInput struct {
 	Ids []string `json:"ids"`
@@ -65,6 +201,48 @@ type __UpdateArtifactTypeInput struct {
 
 // GetIds returns __UpdateArtifactTypeInput.Ids, and is useful for accessing the field via an interface.
 func (v *__UpdateArtifactTypeInput) GetIds() []string { return v.Ids }
+
+// The query or mutation executed by FetchFeatureConfigsWithIntegratorConfigID.
+const FetchFeatureConfigsWithIntegratorConfigID_Operation = `
+query FetchFeatureConfigsWithIntegratorConfigID {
+	queryFeatureMode {
+		organization {
+			id
+		}
+		integrator {
+			integratorConfigs {
+				id
+			}
+			featureConfigs {
+				key
+				value
+			}
+		}
+	}
+}
+`
+
+func FetchFeatureConfigsWithIntegratorConfigID(
+	ctx_ context.Context,
+	client_ graphql.Client,
+) (*FetchFeatureConfigsWithIntegratorConfigIDResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "FetchFeatureConfigsWithIntegratorConfigID",
+		Query:  FetchFeatureConfigsWithIntegratorConfigID_Operation,
+	}
+	var err_ error
+
+	var data_ FetchFeatureConfigsWithIntegratorConfigIDResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
 
 // The query or mutation executed by QueryAllBuildPlugins.
 const QueryAllBuildPlugins_Operation = `
@@ -88,6 +266,45 @@ func QueryAllBuildPlugins(
 	var err_ error
 
 	var data_ QueryAllBuildPluginsResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by SetIntegratorConfigStatusAndUpdateKeyValues.
+const SetIntegratorConfigStatusAndUpdateKeyValues_Operation = `
+mutation SetIntegratorConfigStatusAndUpdateKeyValues ($id: ID!, $orgID: String!, $configs: [IntegratorKeyValuesRef!]) {
+	updateIntegratorConfigs(input: {filter:{id:[$id]},set:{configs:$configs,status:"active",organization:{id:$orgID}}}) {
+		numUids
+	}
+}
+`
+
+func SetIntegratorConfigStatusAndUpdateKeyValues(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	id *string,
+	orgID string,
+	configs []*IntegratorKeyValuesRef,
+) (*SetIntegratorConfigStatusAndUpdateKeyValuesResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "SetIntegratorConfigStatusAndUpdateKeyValues",
+		Query:  SetIntegratorConfigStatusAndUpdateKeyValues_Operation,
+		Variables: &__SetIntegratorConfigStatusAndUpdateKeyValuesInput{
+			Id:      id,
+			OrgID:   orgID,
+			Configs: configs,
+		},
+	}
+	var err_ error
+
+	var data_ SetIntegratorConfigStatusAndUpdateKeyValuesResponse
 	resp_ := &graphql.Response{Data: &data_}
 
 	err_ = client_.MakeRequest(
