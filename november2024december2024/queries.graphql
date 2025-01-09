@@ -1,0 +1,15 @@
+query QueryAllBuildPlugins {
+    queryBuildTool {
+        buildPlugins @cascade {
+            id
+        }
+    }
+}
+
+mutation UpdateArtifactType($ids: [String!]!) {
+    updateArtifact(
+        input: { set: { artifactType: "plugin" }, filter: { id: { in: $ids } } }
+    ) {
+        numUids
+    }
+}

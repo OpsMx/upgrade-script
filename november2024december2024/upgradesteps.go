@@ -4,6 +4,7 @@ import (
 	"fmt"
 	graphqlfunc "upgradationScript/graphqlFunc"
 	"upgradationScript/logger"
+	"upgradationScript/schemas"
 
 	"github.com/Khan/genqlient/graphql"
 )
@@ -22,13 +23,13 @@ func UpgradeToDecember2024(prodGraphUrl, prodToken string, prodDgraphClient grap
 	// 	return fmt.Errorf("UpgradeToSeptember2024: migrateBuildToSourceNode: %s", err.Error())
 	// }
 
-	// if err := graphqlfunc.UpdateSchema(prodGraphUrl, prodToken, []byte(schemas.October2024Schema)); err != nil {
-	// 	return fmt.Errorf("UpgradeToOctober2024: UpdateSchema: %s", err.Error())
-	// }
+	if err := graphqlfunc.UpdateSchema(prodGraphUrl, prodToken, []byte(schemas.December2024Schema)); err != nil {
+		return fmt.Errorf("UpgradeToDecember2024: UpdateSchema: %s", err.Error())
+	}
 
-	// if err := updateComponent(prodDgraphClient); err != nil {
-	// 	return fmt.Errorf("UpgradeToSeptember2024: updateComponent: %s", err.Error())
-	// }
+	if err := updateArtifactTypeForPlugin(prodDgraphClient); err != nil {
+		return fmt.Errorf("UpgradeToSeptember2024: updateComponent: %s", err.Error())
+	}
 
 	// if err := ingestLicenses(prodDgraphClient); err != nil {
 	// 	return fmt.Errorf("UpgradeToSeptember2024: %s", err.Error())
