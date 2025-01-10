@@ -19,7 +19,7 @@ func updateArtifactTypeForPlugin(gqlClient graphql.Client) error {
 		return fmt.Errorf("error in getting build plugins artifact id: %s", err.Error())
 	}
 
-	if len(res.QueryBuildTool) == 0 && len(res.QueryBuildTool[0].BuildPlugins) == 0 {
+	if len(res.QueryBuildTool) == 0 {
 		logger.Sl.Debugf("No record for build plugin artifact")
 		return nil
 	}

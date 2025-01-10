@@ -1,8 +1,8 @@
 package november2024december2024
 
-func AppendIfNotPresent(slice []string, str string) []string {
+func AppendIfNotPresent(slice []FeatureValue, str FeatureValue) []FeatureValue {
 
-	if str == "" || str == "[]" {
+	if str.Key == "" || str.Key == "[]" {
 		return slice
 	}
 

@@ -52,7 +52,7 @@ func migrateFeatureToConfigKeyValues(gqlClient graphql.Client) error {
 				}
 			} else {
 				temp := detailsToMigrate[integratorID]
-				temp.FeatureValues = append(temp.FeatureValues, FeatureValue{
+				temp.FeatureValues = AppendIfNotPresent(temp.FeatureValues, FeatureValue{
 					Key:   feature.Key,
 					Value: feature.Value,
 				})
