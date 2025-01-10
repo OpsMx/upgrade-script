@@ -129,5 +129,8 @@ func getIntegratorConfigID(ctx context.Context, gqlClient graphql.Client, featur
 		return "", fmt.Errorf("no records found after adding integrator config for integrator id %s and feature %s", feature.Integrator.Id, feature.Key)
 	}
 
-	return *res.AddIntegratorConfigs.IntegratorConfigs[0].Id, nil
+	integratorConfigID := *res.AddIntegratorConfigs.IntegratorConfigs[0].Id
+	featureMappingByIntegrator[key] = integratorConfigID
+
+	return integratorConfigID, nil
 }
