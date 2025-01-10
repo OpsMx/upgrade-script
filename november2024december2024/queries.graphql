@@ -1,6 +1,6 @@
 query QueryAllBuildPlugins {
-    queryBuildTool {
-        buildPlugins @cascade {
+    queryBuildTool @cascade {
+        buildPlugins {
             id
         }
     }
@@ -15,17 +15,15 @@ mutation UpdateArtifactType($ids: [String!]!) {
 }
 
 query FetchFeatureConfigsWithIntegratorConfigID {
-    queryFeatureMode {
+    queryFeatureMode @cascade{
+        key
+        value
         organization {
             id
         }
         integrator {
             integratorConfigs {
                 id
-            }
-            featureConfigs {
-                key
-                value
             }
         }
     }

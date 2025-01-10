@@ -9,9 +9,8 @@ import (
 )
 
 type FeatureModeDetails struct {
-	OrgID              string
-	IntegratorConfigID string
-	FeatureValues      []FeatureValue
+	OrgID         string
+	FeatureValues []FeatureValue
 }
 
 type FeatureValue struct {
@@ -35,33 +34,37 @@ func migrateFeatureToConfigKeyValues(gqlClient graphql.Client) error {
 		return nil
 	}
 
-	var detailsToMigrate []FeatureModeDetails
+	detailsToMigrate := make(map[string]FeatureModeDetails)
 
 	for _, feature := range res.QueryFeatureMode {
+
 		if len(feature.Integrator.IntegratorConfigs) != 0 {
-
-			tempValue := make([]FeatureValue, 0, len(feature.Integrator.FeatureConfigs))
-
-			for _, config := range feature.Integrator.FeatureConfigs {
-				tempValue = append(tempValue, FeatureValue{
-					Key:   config.Key,
-					Value: config.Value,
+			integratorID := *feature.Integrator.IntegratorConfigs[0].Id
+			if _, ok := detailsToMigrate[integratorID]; !ok {
+				detailsToMigrate[integratorID] = FeatureModeDetails{
+					OrgID: feature.Organization.Id,
+					FeatureValues: []FeatureValue{
+						{
+							Key:   feature.Key,
+							Value: feature.Value,
+						},
+					},
+				}
+			} else {
+				temp := detailsToMigrate[integratorID]
+				temp.FeatureValues = append(temp.FeatureValues, FeatureValue{
+					Key:   feature.Key,
+					Value: feature.Value,
 				})
+				detailsToMigrate[integratorID] = temp
 			}
 
-			currFeature := FeatureModeDetails{
-				OrgID:              feature.Organization.Id,
-				IntegratorConfigID: *feature.Integrator.IntegratorConfigs[0].Id,
-				FeatureValues:      tempValue,
-			}
-
-			detailsToMigrate = append(detailsToMigrate, currFeature)
 		}
 	}
 
 	True, False := true, false
 
-	for _, val := range detailsToMigrate {
+	for key, val := range detailsToMigrate {
 
 		keyValueToSet := make([]*IntegratorKeyValuesRef, 0, len(val.FeatureValues))
 
@@ -74,7 +77,7 @@ func migrateFeatureToConfigKeyValues(gqlClient graphql.Client) error {
 			})
 		}
 
-		_, err := SetIntegratorConfigStatusAndUpdateKeyValues(ctx, gqlClient, &val.IntegratorConfigID, val.OrgID, keyValueToSet)
+		_, err := SetIntegratorConfigStatusAndUpdateKeyValues(ctx, gqlClient, &key, val.OrgID, keyValueToSet)
 		if err != nil {
 			return fmt.Errorf("error in setting integrator config and updating key values: %s", err.Error())
 		}

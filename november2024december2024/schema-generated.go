@@ -10,9 +10,17 @@ import (
 
 // FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureMode includes the requested fields of the GraphQL type FeatureMode.
 type FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureMode struct {
+	Key          string                                                                 `json:"key"`
+	Value        string                                                                 `json:"value"`
 	Organization *FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeOrganization `json:"organization"`
 	Integrator   *FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegrator   `json:"integrator"`
 }
+
+// GetKey returns FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureMode.Key, and is useful for accessing the field via an interface.
+func (v *FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureMode) GetKey() string { return v.Key }
+
+// GetValue returns FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureMode.Value, and is useful for accessing the field via an interface.
+func (v *FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureMode) GetValue() string { return v.Value }
 
 // GetOrganization returns FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureMode.Organization, and is useful for accessing the field via an interface.
 func (v *FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureMode) GetOrganization() *FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeOrganization {
@@ -26,34 +34,12 @@ func (v *FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureMode) GetIntegrato
 
 // FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegrator includes the requested fields of the GraphQL type Integrator.
 type FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegrator struct {
-	IntegratorConfigs []*FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegratorIntegratorConfigs         `json:"integratorConfigs"`
-	FeatureConfigs    []*FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegratorFeatureConfigsFeatureMode `json:"featureConfigs"`
+	IntegratorConfigs []*FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegratorIntegratorConfigs `json:"integratorConfigs"`
 }
 
 // GetIntegratorConfigs returns FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegrator.IntegratorConfigs, and is useful for accessing the field via an interface.
 func (v *FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegrator) GetIntegratorConfigs() []*FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegratorIntegratorConfigs {
 	return v.IntegratorConfigs
-}
-
-// GetFeatureConfigs returns FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegrator.FeatureConfigs, and is useful for accessing the field via an interface.
-func (v *FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegrator) GetFeatureConfigs() []*FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegratorFeatureConfigsFeatureMode {
-	return v.FeatureConfigs
-}
-
-// FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegratorFeatureConfigsFeatureMode includes the requested fields of the GraphQL type FeatureMode.
-type FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegratorFeatureConfigsFeatureMode struct {
-	Key   string `json:"key"`
-	Value string `json:"value"`
-}
-
-// GetKey returns FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegratorFeatureConfigsFeatureMode.Key, and is useful for accessing the field via an interface.
-func (v *FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegratorFeatureConfigsFeatureMode) GetKey() string {
-	return v.Key
-}
-
-// GetValue returns FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegratorFeatureConfigsFeatureMode.Value, and is useful for accessing the field via an interface.
-func (v *FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegratorFeatureConfigsFeatureMode) GetValue() string {
-	return v.Value
 }
 
 // FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureModeIntegratorIntegratorConfigs includes the requested fields of the GraphQL type IntegratorConfigs.
@@ -205,17 +191,15 @@ func (v *__UpdateArtifactTypeInput) GetIds() []string { return v.Ids }
 // The query or mutation executed by FetchFeatureConfigsWithIntegratorConfigID.
 const FetchFeatureConfigsWithIntegratorConfigID_Operation = `
 query FetchFeatureConfigsWithIntegratorConfigID {
-	queryFeatureMode {
+	queryFeatureMode @cascade {
+		key
+		value
 		organization {
 			id
 		}
 		integrator {
 			integratorConfigs {
 				id
-			}
-			featureConfigs {
-				key
-				value
 			}
 		}
 	}
@@ -247,8 +231,8 @@ func FetchFeatureConfigsWithIntegratorConfigID(
 // The query or mutation executed by QueryAllBuildPlugins.
 const QueryAllBuildPlugins_Operation = `
 query QueryAllBuildPlugins {
-	queryBuildTool {
-		buildPlugins @cascade {
+	queryBuildTool @cascade {
+		buildPlugins {
 			id
 		}
 	}
