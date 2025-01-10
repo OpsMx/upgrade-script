@@ -22,6 +22,8 @@ query FetchFeatureConfigsWithIntegratorConfigID {
             id
         }
         integrator {
+            id
+            type
             integratorConfigs {
                 id
             }
@@ -41,5 +43,13 @@ mutation SetIntegratorConfigStatusAndUpdateKeyValues(
         }
     ) {
         numUids
+    }
+}
+
+mutation AddIntegratorConfigs($input: AddIntegratorConfigsInput!) {
+    addIntegratorConfigs(input: [$input]) {
+        integratorConfigs {
+            id
+        }
     }
 }
