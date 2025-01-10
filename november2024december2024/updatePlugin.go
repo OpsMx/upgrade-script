@@ -24,10 +24,12 @@ func updateArtifactTypeForPlugin(gqlClient graphql.Client) error {
 		return nil
 	}
 
-	artifactIDs := make([]string, 0, len(res.QueryBuildTool[0].BuildPlugins))
+	artifactIDs := make([]string, 0)
 
-	for _, val := range res.QueryBuildTool[0].BuildPlugins {
-		artifactIDs = append(artifactIDs, val.Id)
+	for _, buildTool := range res.QueryBuildTool {
+		for _, plugin := range buildTool.BuildPlugins {
+			artifactIDs = AppendIfNotPresentStr(artifactIDs, plugin.Id)
+		}
 	}
 
 	_, err = UpdateArtifactType(ctx, gqlClient, artifactIDs)
