@@ -18,9 +18,9 @@ type FeatureValue struct {
 	Value string
 }
 
-type IntegratorFeatureKey struct {
-	FeatureKey   string
-	IntegratorID string
+type IntegratorKey struct {
+	IntegratorType string
+	IntegratorID   string
 }
 
 func migrateFeatureToConfigKeyValues(gqlClient graphql.Client) error {
@@ -40,7 +40,7 @@ func migrateFeatureToConfigKeyValues(gqlClient graphql.Client) error {
 	}
 
 	detailsToMigrate := make(map[string]FeatureModeDetails)
-	featureMappingByIntegrator := make(map[IntegratorFeatureKey]string)
+	featureMappingByIntegrator := make(map[IntegratorKey]string)
 
 	for _, feature := range res.QueryFeatureMode {
 
@@ -95,15 +95,15 @@ func migrateFeatureToConfigKeyValues(gqlClient graphql.Client) error {
 }
 
 func getIntegratorConfigID(ctx context.Context, gqlClient graphql.Client, feature *FetchFeatureConfigsWithIntegratorConfigIDQueryFeatureMode,
-	featureMappingByIntegrator map[IntegratorFeatureKey]string) (string, error) {
+	featureMappingByIntegrator map[IntegratorKey]string) (string, error) {
 
 	if len(feature.Integrator.IntegratorConfigs) != 0 {
 		return *feature.Integrator.IntegratorConfigs[0].Id, nil
 	}
 
-	key := IntegratorFeatureKey{
-		FeatureKey:   feature.Key,
-		IntegratorID: feature.Integrator.Id,
+	key := IntegratorKey{
+		IntegratorType: feature.Integrator.Type,
+		IntegratorID:   feature.Integrator.Id,
 	}
 
 	if val, ok := featureMappingByIntegrator[key]; ok {
@@ -122,11 +122,11 @@ func getIntegratorConfigID(ctx context.Context, gqlClient graphql.Client, featur
 	})
 
 	if err != nil {
-		return "", fmt.Errorf("error in adding integratorConfig for feature key: %s  %s", feature.Key, err.Error())
+		return "", fmt.Errorf("error in adding integratorConfig for integrator type: %s  %s", feature.Integrator.Type, err.Error())
 	}
 
 	if res.AddIntegratorConfigs == nil || len(res.AddIntegratorConfigs.IntegratorConfigs) == 0 {
-		return "", fmt.Errorf("no records found after adding integrator config for integrator id %s and feature %s", feature.Integrator.Id, feature.Key)
+		return "", fmt.Errorf("no records found after adding integrator config for integrator id %s and type %s", feature.Integrator.Id, feature.Integrator.Type)
 	}
 
 	integratorConfigID := *res.AddIntegratorConfigs.IntegratorConfigs[0].Id
