@@ -35,7 +35,7 @@ func migrateFeatureToConfigKeyValues(gqlClient graphql.Client) error {
 	}
 
 	if len(res.QueryFeatureMode) == 0 {
-		return fmt.Errorf("ro record for feature mode")
+		return fmt.Errorf("no record for feature mode")
 	}
 
 	detailsToMigrate := make(map[string]FeatureModeDetails)

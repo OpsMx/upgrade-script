@@ -1,32 +1,124 @@
-directive @search(by: [DgraphIndex!]) on FIELD_DEFINITION
-
-directive @withSubscription on OBJECT | INTERFACE | FIELD_DEFINITION
-
-directive @secret(field: String!, pred: String) on OBJECT | INTERFACE
-
 directive @auth(password: AuthRule, query: AuthRule, add: AuthRule, update: AuthRule, delete: AuthRule) on OBJECT | INTERFACE
 
-directive @hasInverse(field: String!) on FIELD_DEFINITION
+directive @search(by: [DgraphIndex!]) on FIELD_DEFINITION
+
+directive @id(interface: Boolean) on FIELD_DEFINITION
 
 directive @custom(http: CustomHTTP, dql: String) on FIELD_DEFINITION
 
-directive @remoteResponse(name: String) on FIELD_DEFINITION
-
-directive @dgraph(type: String, pred: String) on OBJECT | INTERFACE | FIELD_DEFINITION
-
 directive @remote on OBJECT | INTERFACE | UNION | INPUT_OBJECT | ENUM
+
+directive @cascade(fields: [String]) on FIELD
+
+directive @secret(field: String!, pred: String) on OBJECT | INTERFACE
+
+directive @lambda on FIELD_DEFINITION
 
 directive @lambdaOnMutate(add: Boolean, update: Boolean, delete: Boolean) on OBJECT | INTERFACE
 
 directive @cacheControl(maxAge: Int!) on QUERY
 
-directive @id(interface: Boolean) on FIELD_DEFINITION
+directive @hasInverse(field: String!) on FIELD_DEFINITION
 
-directive @cascade(fields: [String]) on FIELD
+directive @dgraph(type: String, pred: String) on OBJECT | INTERFACE | FIELD_DEFINITION
 
-directive @lambda on FIELD_DEFINITION
+directive @withSubscription on OBJECT | INTERFACE | FIELD_DEFINITION
+
+directive @remoteResponse(name: String) on FIELD_DEFINITION
 
 directive @generate(query: GenerateQueryParams, mutation: GenerateMutationParams, subscription: Boolean) on OBJECT | INTERFACE
+
+interface AbstractResource {
+  id: String!
+  organization(filter: OrganizationFilter): Organization!
+  cloudAccountName: String!
+  cloudProvider: String!
+  resourceId: String
+  name: String
+  resourceType: String
+  childResources(filter: AbstractResourceFilter, order: AbstractResourceOrder, first: Int, offset: Int): [AbstractResource!]
+  parentResource(filter: AbstractResourceFilter): AbstractResource
+  associatedResources(filter: AbstractResourceFilter, order: AbstractResourceOrder, first: Int, offset: Int): [AbstractResource!]
+  enrichedFindings(filter: EnrichedFindingFilter, order: EnrichedFindingOrder, first: Int, offset: Int): [EnrichedFinding!]
+  childResourcesAggregate(filter: AbstractResourceFilter): AbstractResourceAggregateResult
+  associatedResourcesAggregate(filter: AbstractResourceFilter): AbstractResourceAggregateResult
+  enrichedFindingsAggregate(filter: EnrichedFindingFilter): EnrichedFindingAggregateResult
+}
+
+type AbstractResourceAggregateResult {
+  count: Int
+  idMin: String
+  idMax: String
+  cloudAccountNameMin: String
+  cloudAccountNameMax: String
+  cloudProviderMin: String
+  cloudProviderMax: String
+  resourceIdMin: String
+  resourceIdMax: String
+  nameMin: String
+  nameMax: String
+  resourceTypeMin: String
+  resourceTypeMax: String
+}
+
+input AbstractResourceFilter {
+  id: StringHashFilter
+  cloudAccountName: StringExactFilter
+  cloudProvider: StringExactFilter
+  resourceId: StringExactFilter_StringRegExpFilter
+  name: StringExactFilter_StringRegExpFilter
+  resourceType: StringExactFilter_StringRegExpFilter
+  has: [AbstractResourceHasFilter]
+  and: [AbstractResourceFilter]
+  or: [AbstractResourceFilter]
+  not: AbstractResourceFilter
+}
+
+enum AbstractResourceHasFilter {
+  id
+  organization
+  cloudAccountName
+  cloudProvider
+  resourceId
+  name
+  resourceType
+  childResources
+  parentResource
+  associatedResources
+  enrichedFindings
+}
+
+input AbstractResourceOrder {
+  asc: AbstractResourceOrderable
+  desc: AbstractResourceOrderable
+  then: AbstractResourceOrder
+}
+
+enum AbstractResourceOrderable {
+  id
+  cloudAccountName
+  cloudProvider
+  resourceId
+  name
+  resourceType
+}
+
+input AbstractResourcePatch {
+  organization: OrganizationRef
+  cloudAccountName: String
+  cloudProvider: String
+  resourceId: String
+  name: String
+  resourceType: String
+  childResources: [AbstractResourceRef!]
+  parentResource: AbstractResourceRef
+  associatedResources: [AbstractResourceRef!]
+  enrichedFindings: [EnrichedFindingRef!]
+}
+
+input AbstractResourceRef {
+  id: String!
+}
 
 input AddApplicationDeploymentInput {
   """id is randomly assigned"""
@@ -319,6 +411,42 @@ type AddComponentPayload {
   numUids: Int
 }
 
+input AddCSPMResourceScanGroupInput {
+  id: String!
+  resourceId: String
+  name: String
+  organization: OrganizationRef!
+  cloudAccountName: String!
+  cloudProvider: String!
+  resourceType: String
+  childResources: [AbstractResourceRef!]
+  parentResource: AbstractResourceRef
+  associatedResources: [AbstractResourceRef!]
+  cspmScan: CSPMScanRef!
+  enrichedFindings: [EnrichedFindingRef!]
+}
+
+type AddCSPMResourceScanGroupPayload {
+  cSPMResourceScanGroup(filter: CSPMResourceScanGroupFilter, order: CSPMResourceScanGroupOrder, first: Int, offset: Int): [CSPMResourceScanGroup]
+  numUids: Int
+}
+
+input AddCSPMScanInput {
+  id: String!
+  status: String
+  detailedStatus: String
+  category: String
+  tag: String
+  createdAt: DateTime
+  updatedAt: DateTime
+  associatedResourceScanGroup: [CSPMResourceScanGroupRef!]
+}
+
+type AddCSPMScanPayload {
+  cSPMScan(filter: CSPMScanFilter, order: CSPMScanOrder, first: Int, offset: Int): [CSPMScan]
+  numUids: Int
+}
+
 input AddCWEInput {
   id: String!
   name: String!
@@ -357,9 +485,12 @@ type AddDeploymentTargetPayload {
 
 input AddEnrichedFindingInput {
   id: String!
-  affectedResource: ResourceRef
+  affectedResource: AbstractResourceRef
   finding: PolicyEvaluationDataRef
   affectedAttributes: String
+  timestamp: DateTime!
+  affected: Boolean!
+  scanData: CSPMScanRef
 }
 
 type AddEnrichedFindingPayload {
@@ -479,6 +610,7 @@ input AddJiraInput {
   jiraId: String!
   url: String!
   status: String!
+  assignee: String
   createdAt: DateTime!
   updatedAt: DateTime!
   affectsIndividualComponent: RunHistoryRef
@@ -515,7 +647,7 @@ input AddOrganizationInput {
   integrators: [IntegratorRef!]
   featureModes: [FeatureModeRef!]
   integratorConfigs: [IntegratorConfigsRef!]
-  resources: [ResourceRef!]
+  resources: [AbstractResourceRef!]
 }
 
 type AddOrganizationPayload {
@@ -572,7 +704,7 @@ input AddPolicyEvaluationDataInput {
   dataType: String!
   rawData: String
   vulnNode: VulnerabilityRef
-  enrichedaAffectedResources: [EnrichedFindingRef]
+  enrichedAffectedResources: [EnrichedFindingRef!]
   affects: RunHistoryRef!
   checkedResources: Int
   affectedResources: Int
@@ -591,12 +723,12 @@ input AddResourceInput {
   cloudAccountName: String!
   cloudProvider: String!
   resourceType: String
-  enrichedFindings: [EnrichedFindingRef]
-  childResources: [ResourceRef]
-  parentResource: ResourceRef
-  associatedResources: [ResourceRef]
-  applicationEnvironments: [ApplicationEnvironmentRef]
+  childResources: [AbstractResourceRef!]
+  parentResource: AbstractResourceRef
+  associatedResources: [AbstractResourceRef!]
   details: String
+  enrichedFindings: [EnrichedFindingRef!]
+  applicationEnvironments: [ApplicationEnvironmentRef!]
 }
 
 type AddResourcePayload {
@@ -1664,6 +1796,7 @@ input ArtifactScanDataFilter {
   artifactSha: StringExactFilter
   artifactNameTag: StringExactFilter_StringRegExpFilter
   tool: StringExactFilter
+  createdAt: DateTimeFilter
   vulnScanState: StringExactFilter
   vulnCriticalCount: IntFilter
   vulnHighCount: IntFilter
@@ -2410,6 +2543,203 @@ input ContainsFilter {
   polygon: PolygonRef
 }
 
+type CSPMResourceScanGroup implements AbstractResource {
+  id: String!
+  resourceId: String
+  name: String
+  organization(filter: OrganizationFilter): Organization!
+  cloudAccountName: String!
+  cloudProvider: String!
+  resourceType: String
+  childResources(filter: AbstractResourceFilter, order: AbstractResourceOrder, first: Int, offset: Int): [AbstractResource!]
+  parentResource(filter: AbstractResourceFilter): AbstractResource
+  associatedResources(filter: AbstractResourceFilter, order: AbstractResourceOrder, first: Int, offset: Int): [AbstractResource!]
+  cspmScan(filter: CSPMScanFilter): CSPMScan!
+  enrichedFindings(filter: EnrichedFindingFilter, order: EnrichedFindingOrder, first: Int, offset: Int): [EnrichedFinding!]
+  childResourcesAggregate(filter: AbstractResourceFilter): AbstractResourceAggregateResult
+  associatedResourcesAggregate(filter: AbstractResourceFilter): AbstractResourceAggregateResult
+  enrichedFindingsAggregate(filter: EnrichedFindingFilter): EnrichedFindingAggregateResult
+}
+
+type CSPMResourceScanGroupAggregateResult {
+  count: Int
+  idMin: String
+  idMax: String
+  resourceIdMin: String
+  resourceIdMax: String
+  nameMin: String
+  nameMax: String
+  cloudAccountNameMin: String
+  cloudAccountNameMax: String
+  cloudProviderMin: String
+  cloudProviderMax: String
+  resourceTypeMin: String
+  resourceTypeMax: String
+}
+
+input CSPMResourceScanGroupFilter {
+  id: StringHashFilter
+  resourceId: StringExactFilter_StringRegExpFilter
+  name: StringExactFilter_StringRegExpFilter
+  cloudAccountName: StringExactFilter
+  cloudProvider: StringExactFilter
+  resourceType: StringExactFilter_StringRegExpFilter
+  has: [CSPMResourceScanGroupHasFilter]
+  and: [CSPMResourceScanGroupFilter]
+  or: [CSPMResourceScanGroupFilter]
+  not: CSPMResourceScanGroupFilter
+}
+
+enum CSPMResourceScanGroupHasFilter {
+  id
+  resourceId
+  name
+  organization
+  cloudAccountName
+  cloudProvider
+  resourceType
+  childResources
+  parentResource
+  associatedResources
+  cspmScan
+  enrichedFindings
+}
+
+input CSPMResourceScanGroupOrder {
+  asc: CSPMResourceScanGroupOrderable
+  desc: CSPMResourceScanGroupOrderable
+  then: CSPMResourceScanGroupOrder
+}
+
+enum CSPMResourceScanGroupOrderable {
+  id
+  resourceId
+  name
+  cloudAccountName
+  cloudProvider
+  resourceType
+}
+
+input CSPMResourceScanGroupPatch {
+  resourceId: String
+  name: String
+  organization: OrganizationRef
+  cloudAccountName: String
+  cloudProvider: String
+  resourceType: String
+  childResources: [AbstractResourceRef!]
+  parentResource: AbstractResourceRef
+  associatedResources: [AbstractResourceRef!]
+  cspmScan: CSPMScanRef
+  enrichedFindings: [EnrichedFindingRef!]
+}
+
+input CSPMResourceScanGroupRef {
+  id: String
+  resourceId: String
+  name: String
+  organization: OrganizationRef
+  cloudAccountName: String
+  cloudProvider: String
+  resourceType: String
+  childResources: [AbstractResourceRef!]
+  parentResource: AbstractResourceRef
+  associatedResources: [AbstractResourceRef!]
+  cspmScan: CSPMScanRef
+  enrichedFindings: [EnrichedFindingRef!]
+}
+
+type CSPMScan implements Scan {
+  id: String!
+  status: String
+  detailedStatus: String
+  category: String
+  tag: String
+  createdAt: DateTime
+  updatedAt: DateTime
+  associatedResourceScanGroup(filter: CSPMResourceScanGroupFilter, order: CSPMResourceScanGroupOrder, first: Int, offset: Int): [CSPMResourceScanGroup!]
+  associatedResourceScanGroupAggregate(filter: CSPMResourceScanGroupFilter): CSPMResourceScanGroupAggregateResult
+}
+
+type CSPMScanAggregateResult {
+  count: Int
+  idMin: String
+  idMax: String
+  statusMin: String
+  statusMax: String
+  detailedStatusMin: String
+  detailedStatusMax: String
+  categoryMin: String
+  categoryMax: String
+  tagMin: String
+  tagMax: String
+  createdAtMin: DateTime
+  createdAtMax: DateTime
+  updatedAtMin: DateTime
+  updatedAtMax: DateTime
+}
+
+input CSPMScanFilter {
+  id: StringHashFilter
+  status: StringExactFilter
+  category: StringExactFilter_StringRegExpFilter
+  tag: StringExactFilter_StringRegExpFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+  has: [CSPMScanHasFilter]
+  and: [CSPMScanFilter]
+  or: [CSPMScanFilter]
+  not: CSPMScanFilter
+}
+
+enum CSPMScanHasFilter {
+  id
+  status
+  detailedStatus
+  category
+  tag
+  createdAt
+  updatedAt
+  associatedResourceScanGroup
+}
+
+input CSPMScanOrder {
+  asc: CSPMScanOrderable
+  desc: CSPMScanOrderable
+  then: CSPMScanOrder
+}
+
+enum CSPMScanOrderable {
+  id
+  status
+  detailedStatus
+  category
+  tag
+  createdAt
+  updatedAt
+}
+
+input CSPMScanPatch {
+  status: String
+  detailedStatus: String
+  category: String
+  tag: String
+  createdAt: DateTime
+  updatedAt: DateTime
+  associatedResourceScanGroup: [CSPMResourceScanGroupRef!]
+}
+
+input CSPMScanRef {
+  id: String
+  status: String
+  detailedStatus: String
+  category: String
+  tag: String
+  createdAt: DateTime
+  updatedAt: DateTime
+  associatedResourceScanGroup: [CSPMResourceScanGroupRef!]
+}
+
 input CustomHTTP {
   url: String!
   method: HTTPMethod!
@@ -2496,6 +2826,12 @@ input DateTimeRange {
   max: DateTime!
 }
 
+type DeleteAbstractResourcePayload {
+  abstractResource(filter: AbstractResourceFilter, order: AbstractResourceOrder, first: Int, offset: Int): [AbstractResource]
+  msg: String
+  numUids: Int
+}
+
 type DeleteApplicationDeploymentPayload {
   applicationDeployment(filter: ApplicationDeploymentFilter, order: ApplicationDeploymentOrder, first: Int, offset: Int): [ApplicationDeployment]
   msg: String
@@ -2576,6 +2912,18 @@ type DeleteComponentLicensesPayload {
 
 type DeleteComponentPayload {
   component(filter: ComponentFilter, order: ComponentOrder, first: Int, offset: Int): [Component]
+  msg: String
+  numUids: Int
+}
+
+type DeleteCSPMResourceScanGroupPayload {
+  cSPMResourceScanGroup(filter: CSPMResourceScanGroupFilter, order: CSPMResourceScanGroupOrder, first: Int, offset: Int): [CSPMResourceScanGroup]
+  msg: String
+  numUids: Int
+}
+
+type DeleteCSPMScanPayload {
+  cSPMScan(filter: CSPMScanFilter, order: CSPMScanOrder, first: Int, offset: Int): [CSPMScan]
   msg: String
   numUids: Int
 }
@@ -2702,6 +3050,12 @@ type DeleteRunHistoryPayload {
 
 type DeleteScanFileResultPayload {
   scanFileResult(filter: ScanFileResultFilter, order: ScanFileResultOrder, first: Int, offset: Int): [ScanFileResult]
+  msg: String
+  numUids: Int
+}
+
+type DeleteScanPayload {
+  scan(filter: ScanFilter, order: ScanOrder, first: Int, offset: Int): [Scan]
   msg: String
   numUids: Int
 }
@@ -2925,9 +3279,12 @@ enum DgraphIndex {
 
 type EnrichedFinding {
   id: String!
-  affectedResource(filter: ResourceFilter): Resource
+  affectedResource(filter: AbstractResourceFilter): AbstractResource
   finding(filter: PolicyEvaluationDataFilter): PolicyEvaluationData
   affectedAttributes: String
+  timestamp: DateTime!
+  affected: Boolean!
+  scanData(filter: CSPMScanFilter): CSPMScan
 }
 
 type EnrichedFindingAggregateResult {
@@ -2936,11 +3293,15 @@ type EnrichedFindingAggregateResult {
   idMax: String
   affectedAttributesMin: String
   affectedAttributesMax: String
+  timestampMin: DateTime
+  timestampMax: DateTime
 }
 
 input EnrichedFindingFilter {
   id: StringHashFilter
   affectedAttributes: StringExactFilter_StringRegExpFilter
+  timestamp: DateTimeFilter
+  affected: Boolean
   has: [EnrichedFindingHasFilter]
   and: [EnrichedFindingFilter]
   or: [EnrichedFindingFilter]
@@ -2952,6 +3313,9 @@ enum EnrichedFindingHasFilter {
   affectedResource
   finding
   affectedAttributes
+  timestamp
+  affected
+  scanData
 }
 
 input EnrichedFindingOrder {
@@ -2963,19 +3327,26 @@ input EnrichedFindingOrder {
 enum EnrichedFindingOrderable {
   id
   affectedAttributes
+  timestamp
 }
 
 input EnrichedFindingPatch {
-  affectedResource: ResourceRef
+  affectedResource: AbstractResourceRef
   finding: PolicyEvaluationDataRef
   affectedAttributes: String
+  timestamp: DateTime
+  affected: Boolean
+  scanData: CSPMScanRef
 }
 
 input EnrichedFindingRef {
   id: String
-  affectedResource: ResourceRef
+  affectedResource: AbstractResourceRef
   finding: PolicyEvaluationDataRef
   affectedAttributes: String
+  timestamp: DateTime
+  affected: Boolean
+  scanData: CSPMScanRef
 }
 
 """Environment can be things like dev, prod, staging etc."""
@@ -3618,6 +3989,7 @@ type Jira {
   jiraId: String!
   url: String!
   status: String!
+  assignee: String
   createdAt: DateTime!
   updatedAt: DateTime!
   affectsIndividualComponent(filter: RunHistoryFilter): RunHistory
@@ -3633,6 +4005,8 @@ type JiraAggregateResult {
   urlMax: String
   statusMin: String
   statusMax: String
+  assigneeMin: String
+  assigneeMax: String
   createdAtMin: DateTime
   createdAtMax: DateTime
   updatedAtMin: DateTime
@@ -3643,6 +4017,7 @@ input JiraFilter {
   id: [ID!]
   jiraId: StringExactFilter_StringRegExpFilter
   status: StringExactFilter_StringRegExpFilter
+  assignee: StringExactFilter_StringRegExpFilter
   has: [JiraHasFilter]
   and: [JiraFilter]
   or: [JiraFilter]
@@ -3653,6 +4028,7 @@ enum JiraHasFilter {
   jiraId
   url
   status
+  assignee
   createdAt
   updatedAt
   affectsIndividualComponent
@@ -3670,6 +4046,7 @@ enum JiraOrderable {
   jiraId
   url
   status
+  assignee
   createdAt
   updatedAt
 }
@@ -3678,6 +4055,7 @@ input JiraPatch {
   jiraId: String
   url: String
   status: String
+  assignee: String
   createdAt: DateTime
   updatedAt: DateTime
   affectsIndividualComponent: RunHistoryRef
@@ -3690,6 +4068,7 @@ input JiraRef {
   jiraId: String
   url: String
   status: String
+  assignee: String
   createdAt: DateTime
   updatedAt: DateTime
   affectsIndividualComponent: RunHistoryRef
@@ -3869,6 +4248,8 @@ type Mutation {
   addArtifact(input: [AddArtifactInput!]!, upsert: Boolean): AddArtifactPayload
   updateArtifact(input: UpdateArtifactInput!): UpdateArtifactPayload
   deleteArtifact(filter: ArtifactFilter!): DeleteArtifactPayload
+  updateScan(input: UpdateScanInput!): UpdateScanPayload
+  deleteScan(filter: ScanFilter!): DeleteScanPayload
   addArtifactScanData(input: [AddArtifactScanDataInput!]!, upsert: Boolean): AddArtifactScanDataPayload
   updateArtifactScanData(input: UpdateArtifactScanDataInput!): UpdateArtifactScanDataPayload
   deleteArtifactScanData(filter: ArtifactScanDataFilter!): DeleteArtifactScanDataPayload
@@ -3899,12 +4280,20 @@ type Mutation {
   addExceptionAffects(input: [AddExceptionAffectsInput!]!): AddExceptionAffectsPayload
   updateExceptionAffects(input: UpdateExceptionAffectsInput!): UpdateExceptionAffectsPayload
   deleteExceptionAffects(filter: ExceptionAffectsFilter!): DeleteExceptionAffectsPayload
+  updateAbstractResource(input: UpdateAbstractResourceInput!): UpdateAbstractResourcePayload
+  deleteAbstractResource(filter: AbstractResourceFilter!): DeleteAbstractResourcePayload
+  addCSPMResourceScanGroup(input: [AddCSPMResourceScanGroupInput!]!, upsert: Boolean): AddCSPMResourceScanGroupPayload
+  updateCSPMResourceScanGroup(input: UpdateCSPMResourceScanGroupInput!): UpdateCSPMResourceScanGroupPayload
+  deleteCSPMResourceScanGroup(filter: CSPMResourceScanGroupFilter!): DeleteCSPMResourceScanGroupPayload
   addResource(input: [AddResourceInput!]!, upsert: Boolean): AddResourcePayload
   updateResource(input: UpdateResourceInput!): UpdateResourcePayload
   deleteResource(filter: ResourceFilter!): DeleteResourcePayload
   addEnrichedFinding(input: [AddEnrichedFindingInput!]!, upsert: Boolean): AddEnrichedFindingPayload
   updateEnrichedFinding(input: UpdateEnrichedFindingInput!): UpdateEnrichedFindingPayload
   deleteEnrichedFinding(filter: EnrichedFindingFilter!): DeleteEnrichedFindingPayload
+  addCSPMScan(input: [AddCSPMScanInput!]!, upsert: Boolean): AddCSPMScanPayload
+  updateCSPMScan(input: UpdateCSPMScanInput!): UpdateCSPMScanPayload
+  deleteCSPMScan(filter: CSPMScanFilter!): DeleteCSPMScanPayload
 }
 
 input NearFilter {
@@ -3924,7 +4313,7 @@ type Organization implements RBAC {
   integrators(filter: IntegratorFilter, order: IntegratorOrder, first: Int, offset: Int): [Integrator!]
   featureModes(filter: FeatureModeFilter, order: FeatureModeOrder, first: Int, offset: Int): [FeatureMode!]
   integratorConfigs(filter: IntegratorConfigsFilter, order: IntegratorConfigsOrder, first: Int, offset: Int): [IntegratorConfigs!]
-  resources(filter: ResourceFilter, order: ResourceOrder, first: Int, offset: Int): [Resource!]
+  resources(filter: AbstractResourceFilter, order: AbstractResourceOrder, first: Int, offset: Int): [AbstractResource!]
   rolesAggregate(filter: RoleFilter): RoleAggregateResult
   teamsAggregate(filter: TeamFilter): TeamAggregateResult
   environmentsAggregate(filter: DeploymentTargetFilter): DeploymentTargetAggregateResult
@@ -3933,7 +4322,7 @@ type Organization implements RBAC {
   integratorsAggregate(filter: IntegratorFilter): IntegratorAggregateResult
   featureModesAggregate(filter: FeatureModeFilter): FeatureModeAggregateResult
   integratorConfigsAggregate(filter: IntegratorConfigsFilter): IntegratorConfigsAggregateResult
-  resourcesAggregate(filter: ResourceFilter): ResourceAggregateResult
+  resourcesAggregate(filter: AbstractResourceFilter): AbstractResourceAggregateResult
 }
 
 type OrganizationAggregateResult {
@@ -3988,7 +4377,7 @@ input OrganizationPatch {
   integrators: [IntegratorRef!]
   featureModes: [FeatureModeRef!]
   integratorConfigs: [IntegratorConfigsRef!]
-  resources: [ResourceRef!]
+  resources: [AbstractResourceRef!]
 }
 
 input OrganizationRef {
@@ -4003,7 +4392,7 @@ input OrganizationRef {
   integrators: [IntegratorRef!]
   featureModes: [FeatureModeRef!]
   integratorConfigs: [IntegratorConfigsRef!]
-  resources: [ResourceRef!]
+  resources: [AbstractResourceRef!]
 }
 
 type Point {
@@ -4286,11 +4675,11 @@ type PolicyEvaluationData {
   dataType: String!
   rawData: String
   vulnNode(filter: VulnerabilityFilter): Vulnerability
-  enrichedaAffectedResources(filter: EnrichedFindingFilter, order: EnrichedFindingOrder, first: Int, offset: Int): [EnrichedFinding]
+  enrichedAffectedResources(filter: EnrichedFindingFilter, order: EnrichedFindingOrder, first: Int, offset: Int): [EnrichedFinding!]
   affects(filter: RunHistoryFilter): RunHistory!
   checkedResources: Int
   affectedResources: Int
-  enrichedaAffectedResourcesAggregate(filter: EnrichedFindingFilter): EnrichedFindingAggregateResult
+  enrichedAffectedResourcesAggregate(filter: EnrichedFindingFilter): EnrichedFindingAggregateResult
 }
 
 type PolicyEvaluationDataAggregateResult {
@@ -4322,7 +4711,7 @@ enum PolicyEvaluationDataHasFilter {
   dataType
   rawData
   vulnNode
-  enrichedaAffectedResources
+  enrichedAffectedResources
   affects
   checkedResources
   affectedResources
@@ -4345,7 +4734,7 @@ input PolicyEvaluationDataPatch {
   dataType: String
   rawData: String
   vulnNode: VulnerabilityRef
-  enrichedaAffectedResources: [EnrichedFindingRef]
+  enrichedAffectedResources: [EnrichedFindingRef!]
   affects: RunHistoryRef
   checkedResources: Int
   affectedResources: Int
@@ -4361,7 +4750,7 @@ input PolicyEvaluationDataRef {
   dataType: String
   rawData: String
   vulnNode: VulnerabilityRef
-  enrichedaAffectedResources: [EnrichedFindingRef]
+  enrichedAffectedResources: [EnrichedFindingRef!]
   affects: RunHistoryRef
   checkedResources: Int
   affectedResources: Int
@@ -4473,6 +4862,9 @@ type Query {
   getArtifact(id: String!): Artifact
   queryArtifact(filter: ArtifactFilter, order: ArtifactOrder, first: Int, offset: Int): [Artifact]
   aggregateArtifact(filter: ArtifactFilter): ArtifactAggregateResult
+  getScan(id: String!): Scan @deprecated(reason: "@id argument for get query on interface is being deprecated. Only those @id fields which have interface argument set to true will be available in getQuery argument on interface post v21.11.0, please update your schema accordingly.")
+  queryScan(filter: ScanFilter, order: ScanOrder, first: Int, offset: Int): [Scan]
+  aggregateScan(filter: ScanFilter): ScanAggregateResult
   getArtifactScanData(id: String!): ArtifactScanData
   queryArtifactScanData(filter: ArtifactScanDataFilter, order: ArtifactScanDataOrder, first: Int, offset: Int): [ArtifactScanData]
   aggregateArtifactScanData(filter: ArtifactScanDataFilter): ArtifactScanDataAggregateResult
@@ -4503,12 +4895,21 @@ type Query {
   getExceptionAffects(id: ID!): ExceptionAffects
   queryExceptionAffects(filter: ExceptionAffectsFilter, order: ExceptionAffectsOrder, first: Int, offset: Int): [ExceptionAffects]
   aggregateExceptionAffects(filter: ExceptionAffectsFilter): ExceptionAffectsAggregateResult
+  getAbstractResource(id: String!): AbstractResource @deprecated(reason: "@id argument for get query on interface is being deprecated. Only those @id fields which have interface argument set to true will be available in getQuery argument on interface post v21.11.0, please update your schema accordingly.")
+  queryAbstractResource(filter: AbstractResourceFilter, order: AbstractResourceOrder, first: Int, offset: Int): [AbstractResource]
+  aggregateAbstractResource(filter: AbstractResourceFilter): AbstractResourceAggregateResult
+  getCSPMResourceScanGroup(id: String!): CSPMResourceScanGroup
+  queryCSPMResourceScanGroup(filter: CSPMResourceScanGroupFilter, order: CSPMResourceScanGroupOrder, first: Int, offset: Int): [CSPMResourceScanGroup]
+  aggregateCSPMResourceScanGroup(filter: CSPMResourceScanGroupFilter): CSPMResourceScanGroupAggregateResult
   getResource(id: String!): Resource
   queryResource(filter: ResourceFilter, order: ResourceOrder, first: Int, offset: Int): [Resource]
   aggregateResource(filter: ResourceFilter): ResourceAggregateResult
   getEnrichedFinding(id: String!): EnrichedFinding
   queryEnrichedFinding(filter: EnrichedFindingFilter, order: EnrichedFindingOrder, first: Int, offset: Int): [EnrichedFinding]
   aggregateEnrichedFinding(filter: EnrichedFindingFilter): EnrichedFindingAggregateResult
+  getCSPMScan(id: String!): CSPMScan
+  queryCSPMScan(filter: CSPMScanFilter, order: CSPMScanOrder, first: Int, offset: Int): [CSPMScan]
+  aggregateCSPMScan(filter: CSPMScanFilter): CSPMScanAggregateResult
 }
 
 interface RBAC {
@@ -4535,7 +4936,7 @@ input RBACPatch {
   roles: [RoleRef!]
 }
 
-type Resource {
+type Resource implements AbstractResource {
   id: String!
   resourceId: String
   name: String
@@ -4543,15 +4944,15 @@ type Resource {
   cloudAccountName: String!
   cloudProvider: String!
   resourceType: String
-  enrichedFindings(filter: EnrichedFindingFilter, order: EnrichedFindingOrder, first: Int, offset: Int): [EnrichedFinding]
-  childResources(filter: ResourceFilter, order: ResourceOrder, first: Int, offset: Int): [Resource]
-  parentResource(filter: ResourceFilter): Resource
-  associatedResources(filter: ResourceFilter, order: ResourceOrder, first: Int, offset: Int): [Resource]
-  applicationEnvironments(filter: ApplicationEnvironmentFilter, order: ApplicationEnvironmentOrder, first: Int, offset: Int): [ApplicationEnvironment]
+  childResources(filter: AbstractResourceFilter, order: AbstractResourceOrder, first: Int, offset: Int): [AbstractResource!]
+  parentResource(filter: AbstractResourceFilter): AbstractResource
+  associatedResources(filter: AbstractResourceFilter, order: AbstractResourceOrder, first: Int, offset: Int): [AbstractResource!]
   details: String
+  enrichedFindings(filter: EnrichedFindingFilter, order: EnrichedFindingOrder, first: Int, offset: Int): [EnrichedFinding!]
+  applicationEnvironments(filter: ApplicationEnvironmentFilter, order: ApplicationEnvironmentOrder, first: Int, offset: Int): [ApplicationEnvironment!]
+  childResourcesAggregate(filter: AbstractResourceFilter): AbstractResourceAggregateResult
+  associatedResourcesAggregate(filter: AbstractResourceFilter): AbstractResourceAggregateResult
   enrichedFindingsAggregate(filter: EnrichedFindingFilter): EnrichedFindingAggregateResult
-  childResourcesAggregate(filter: ResourceFilter): ResourceAggregateResult
-  associatedResourcesAggregate(filter: ResourceFilter): ResourceAggregateResult
   applicationEnvironmentsAggregate(filter: ApplicationEnvironmentFilter): ApplicationEnvironmentAggregateResult
 }
 
@@ -4594,12 +4995,12 @@ enum ResourceHasFilter {
   cloudAccountName
   cloudProvider
   resourceType
-  enrichedFindings
   childResources
   parentResource
   associatedResources
-  applicationEnvironments
   details
+  enrichedFindings
+  applicationEnvironments
 }
 
 input ResourceOrder {
@@ -4625,12 +5026,12 @@ input ResourcePatch {
   cloudAccountName: String
   cloudProvider: String
   resourceType: String
-  enrichedFindings: [EnrichedFindingRef]
-  childResources: [ResourceRef]
-  parentResource: ResourceRef
-  associatedResources: [ResourceRef]
-  applicationEnvironments: [ApplicationEnvironmentRef]
+  childResources: [AbstractResourceRef!]
+  parentResource: AbstractResourceRef
+  associatedResources: [AbstractResourceRef!]
   details: String
+  enrichedFindings: [EnrichedFindingRef!]
+  applicationEnvironments: [ApplicationEnvironmentRef!]
 }
 
 input ResourceRef {
@@ -4641,12 +5042,12 @@ input ResourceRef {
   cloudAccountName: String
   cloudProvider: String
   resourceType: String
-  enrichedFindings: [EnrichedFindingRef]
-  childResources: [ResourceRef]
-  parentResource: ResourceRef
-  associatedResources: [ResourceRef]
-  applicationEnvironments: [ApplicationEnvironmentRef]
+  childResources: [AbstractResourceRef!]
+  parentResource: AbstractResourceRef
+  associatedResources: [AbstractResourceRef!]
   details: String
+  enrichedFindings: [EnrichedFindingRef!]
+  applicationEnvironments: [ApplicationEnvironmentRef!]
 }
 
 """
@@ -4934,6 +5335,31 @@ input RunHistoryRef {
   securityIssue: SecurityIssueRef
 }
 
+interface Scan {
+  id: String!
+  status: String
+  detailedStatus: String
+  category: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type ScanAggregateResult {
+  count: Int
+  idMin: String
+  idMax: String
+  statusMin: String
+  statusMax: String
+  detailedStatusMin: String
+  detailedStatusMax: String
+  categoryMin: String
+  categoryMax: String
+  createdAtMin: DateTime
+  createdAtMax: DateTime
+  updatedAtMin: DateTime
+  updatedAtMax: DateTime
+}
+
 type ScanFileResult {
   id: ID!
   name: String!
@@ -4982,6 +5408,60 @@ input ScanFileResultRef {
   id: ID
   name: String
   url: String
+}
+
+input ScanFilter {
+  id: StringHashFilter
+  status: StringExactFilter
+  category: StringExactFilter_StringRegExpFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+  has: [ScanHasFilter]
+  and: [ScanFilter]
+  or: [ScanFilter]
+  not: ScanFilter
+}
+
+enum ScanHasFilter {
+  id
+  status
+  detailedStatus
+  category
+  createdAt
+  updatedAt
+}
+
+input ScanOrder {
+  asc: ScanOrderable
+  desc: ScanOrderable
+  then: ScanOrder
+}
+
+enum ScanOrderable {
+  id
+  status
+  detailedStatus
+  category
+  createdAt
+  updatedAt
+}
+
+input ScanPatch {
+  status: String
+  detailedStatus: String
+  category: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ScanRef {
+  id: String!
+}
+
+enum ScanStatus {
+  runnning
+  aborted
+  completed
 }
 
 type SchemaVersion {
@@ -5822,6 +6302,17 @@ input ToolsUsedRef {
   misc: [String!]
 }
 
+input UpdateAbstractResourceInput {
+  filter: AbstractResourceFilter!
+  set: AbstractResourcePatch
+  remove: AbstractResourcePatch
+}
+
+type UpdateAbstractResourcePayload {
+  abstractResource(filter: AbstractResourceFilter, order: AbstractResourceOrder, first: Int, offset: Int): [AbstractResource]
+  numUids: Int
+}
+
 input UpdateApplicationDeploymentInput {
   filter: ApplicationDeploymentFilter!
   set: ApplicationDeploymentPatch
@@ -5973,6 +6464,28 @@ type UpdateComponentLicensesPayload {
 
 type UpdateComponentPayload {
   component(filter: ComponentFilter, order: ComponentOrder, first: Int, offset: Int): [Component]
+  numUids: Int
+}
+
+input UpdateCSPMResourceScanGroupInput {
+  filter: CSPMResourceScanGroupFilter!
+  set: CSPMResourceScanGroupPatch
+  remove: CSPMResourceScanGroupPatch
+}
+
+type UpdateCSPMResourceScanGroupPayload {
+  cSPMResourceScanGroup(filter: CSPMResourceScanGroupFilter, order: CSPMResourceScanGroupOrder, first: Int, offset: Int): [CSPMResourceScanGroup]
+  numUids: Int
+}
+
+input UpdateCSPMScanInput {
+  filter: CSPMScanFilter!
+  set: CSPMScanPatch
+  remove: CSPMScanPatch
+}
+
+type UpdateCSPMScanPayload {
+  cSPMScan(filter: CSPMScanFilter, order: CSPMScanOrder, first: Int, offset: Int): [CSPMScan]
   numUids: Int
 }
 
@@ -6204,6 +6717,17 @@ input UpdateScanFileResultInput {
 
 type UpdateScanFileResultPayload {
   scanFileResult(filter: ScanFileResultFilter, order: ScanFileResultOrder, first: Int, offset: Int): [ScanFileResult]
+  numUids: Int
+}
+
+input UpdateScanInput {
+  filter: ScanFilter!
+  set: ScanPatch
+  remove: ScanPatch
+}
+
+type UpdateScanPayload {
+  scan(filter: ScanFilter, order: ScanOrder, first: Int, offset: Int): [Scan]
   numUids: Int
 }
 

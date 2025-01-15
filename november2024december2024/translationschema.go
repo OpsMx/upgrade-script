@@ -68,7 +68,7 @@ type Organization implements RBAC
     integrators: [Integrator!] @hasInverse(field: organization)
     featureModes: [FeatureMode!] @hasInverse(field: organization)
     integratorConfigs: [IntegratorConfigs!] @hasInverse(field: organization)
-    resources: [Resource!] @hasInverse(field: organization)
+    resources: [AbstractResource!] @hasInverse(field: organization)
 }
 
 """
@@ -502,6 +502,7 @@ type Jira {
     jiraId: String! @search(by: [exact, regexp])
     url: String!
     status: String! @search(by: [exact, regexp])
+    assignee: String @search(by: [exact, regexp])
     createdAt: DateTime!
     updatedAt: DateTime!
     affectsIndividualComponent: RunHistory @hasInverse(field: AttachedJira)
@@ -543,7 +544,7 @@ type PolicyEvaluationData {
     dataType: String! @search(by: [exact])
     rawData: String
     vulnNode: Vulnerability @hasInverse(field: policyEvaluation)
-    enrichedaAffectedResources: [EnrichedFinding] @hasInverse(field: finding) 
+    enrichedAffectedResources: [EnrichedFinding!] @hasInverse(field: finding) 
     affects:RunHistory! @hasInverse(field: EvalData)
     checkedResources: Int
     affectedResources: Int
@@ -676,6 +677,16 @@ type Artifact {
     plugins: [BuildTool!] @hasInverse(field: buildPlugins)
 }
 
+
+interface Scan{
+    id: String! @id
+    status: String @search(by:[exact])
+    detailedStatus: String
+    category: String @search(by: [exact,regexp])
+    createdAt: DateTime @search
+	updatedAt: DateTime @search
+}
+
 type ArtifactScanData {
     id: String! @id
     "platform: String! @search(by: [exact]) -> add later"
@@ -684,7 +695,7 @@ type ArtifactScanData {
     tool: String! @search(by: [exact])
     artifactDetails: Artifact @hasInverse(field: scanData)
     lastScannedAt: DateTime
-    createdAt: DateTime
+	createdAt: DateTime @search
     vulnTrackingId: String
     vulnScanState: String @search(by: [exact])
     components: [Component!]
@@ -696,9 +707,9 @@ type ArtifactScanData {
     vulnUnknownCount: Int @search
     vulnNoneCount: Int @search
     vulnTotalCount: Int @search
-    scanFile: [ScanFileResult!]
+    scanFile: [ScanFileResult!] 
     artifactRisk: ArtifactRisk @hasInverse(field: artifactScanResult)
-    artifactRunHistory: [RunHistory!] @hasInverse(field: artifactScan)
+	artifactRunHistory: [RunHistory!] @hasInverse(field: artifactScan)
     artifactTags: [KeyValue!]
     artifactScanTS: [ArtifactScanDataTS!] @hasInverse(field: artifact)
 }
@@ -875,7 +886,60 @@ type ExceptionAffects implements RBAC
     hasSecurityIssues: [SecurityIssueAffectsSummary!] @hasInverse(field: exception)
 }
 
-type Resource @auth(
+
+interface AbstractResource{
+    id: String! @id 
+    organization: Organization! @hasInverse(field: resources)
+    cloudAccountName: String! @search(by: [exact])
+    cloudProvider: String!  @search(by: [exact])
+    resourceId: String  @search(by: [exact, regexp])
+    name: String  @search(by: [exact, regexp])
+    resourceType: String  @search(by: [exact, regexp])
+    childResources: [AbstractResource!] @hasInverse(field: parentResource)
+    parentResource: AbstractResource @hasInverse(field: childResources)
+    associatedResources: [AbstractResource!] @hasInverse(field: associatedResources)
+    enrichedFindings: [EnrichedFinding!] @hasInverse(field: affectedResource)
+}
+
+type CSPMResourceScanGroup implements AbstractResource @auth(
+    query: {
+        or: [
+            { rule: "{$type: {eq: \"internal-account/v1\"}}" },
+{ rule: "query($groups: [String!]) { queryCSPMResourceScanGroup @cascade { organization { roles(filter: {group: {in: $groups}, permission: {in: [admin,write,read]}}) { __typename }}}}"},
+{ rule: "query($groups: [String!]) { queryCSPMResourceScanGroup @cascade { organization { teams { roles(filter: {group: {in: $groups}, permission: {in: [admin,write,read]}}) { __typename }}}}}"},
+{ rule: "query($groups: [String!]) { queryCSPMResourceScanGroup @cascade { organization { teams { applications { roles(filter: {group: {in: $groups}, permission: {in: [admin,write,read]}}) { __typename }}}}}}"},
+    ]},
+    add: {
+        or: [
+            { rule: "{$type: {eq: \"internal-account/v1\"}}" },
+{ rule: "query($groups: [String!]) { queryCSPMResourceScanGroup @cascade { organization { roles(filter: {group: {in: $groups}, permission: {in: [admin]}}) { __typename }}}}"},
+    ]},
+    update: {
+        or: [
+            { rule: "{$type: {eq: \"internal-account/v1\"}}" },
+{ rule: "query($groups: [String!]) { queryCSPMResourceScanGroup @cascade { organization { roles(filter: {group: {in: $groups}, permission: {in: [admin]}}) { __typename }}}}"},
+    ]},
+     delete:
+        { rule: "{$type: {eq: \"internal-account/v1\"}}" },  
+    )
+    {
+    id: String! @id 
+    resourceId: String  @search(by: [exact, regexp])
+    name: String  @search(by: [exact, regexp])
+    organization: Organization! @hasInverse(field: resources)
+    cloudAccountName: String! @search(by: [exact])
+    cloudProvider: String!  @search(by: [exact])
+    resourceType: String  @search(by: [exact, regexp])
+    childResources: [AbstractResource!] @hasInverse(field: parentResource)
+    parentResource: AbstractResource @hasInverse(field: childResources)
+    associatedResources: [AbstractResource!] @hasInverse(field: associatedResources)
+	cspmScan: CSPMScan! @hasInverse(field: associatedResourceScanGroup)
+    enrichedFindings: [EnrichedFinding!] @hasInverse(field: affectedResource)
+}
+
+
+
+type Resource implements AbstractResource @auth(
     query: {
         or: [
             { rule: "{$type: {eq: \"internal-account/v1\"}}" },
@@ -904,21 +968,42 @@ type Resource @auth(
     cloudAccountName: String! @search(by: [exact])
     cloudProvider: String!  @search(by: [exact])
     resourceType: String  @search(by: [exact, regexp])
-    enrichedFindings: [EnrichedFinding] @hasInverse(field: affectedResource)
-    childResources: [Resource] @hasInverse(field: parentResource)
-    parentResource: Resource @hasInverse(field: childResources)
-    associatedResources: [Resource] @hasInverse(field: associatedResources)
-    applicationEnvironments: [ApplicationEnvironment] @hasInverse(field: utilizedResources)
+    childResources: [AbstractResource!] @hasInverse(field: parentResource)
+    parentResource: AbstractResource @hasInverse(field: childResources)
+    associatedResources: [AbstractResource!] @hasInverse(field: associatedResources)
     details: String
+    enrichedFindings: [EnrichedFinding!] @hasInverse(field: affectedResource)
+    applicationEnvironments: [ApplicationEnvironment!] @hasInverse(field: utilizedResources)
 }
 
 type EnrichedFinding  {  
     id: String! @id        
-    affectedResource: Resource @hasInverse(field: enrichedFindings)        
-    finding:  PolicyEvaluationData @hasInverse(field: enrichedaAffectedResources)                            
+    affectedResource: AbstractResource @hasInverse(field: enrichedFindings)        
+    finding:  PolicyEvaluationData @hasInverse(field: enrichedAffectedResources)                            
     affectedAttributes: String  @search(by: [exact, regexp])
+    timestamp: DateTime! @search
+    affected: Boolean! @search
+    scanData: CSPMScan
 }
 
+enum ScanStatus{
+    runnning
+    aborted
+    completed
+}
+
+type CSPMScan implements Scan {
+    id: String! @id
+    status: String @search(by:[exact])
+    detailedStatus: String
+    category: String @search(by: [exact,regexp])
+    tag: String @search(by: [exact,regexp])
+    createdAt: DateTime @search
+    updatedAt: DateTime @search
+    associatedResourceScanGroup: [CSPMResourceScanGroup!] @hasInverse(field: cspmScan)
+}
+
+
 # Dgraph.Allow-Origin "http://localhost:4200"
-# Dgraph.Authorization {"VerificationKey":"","Header":"X-OpsMx-Auth","jwkurl":"http://token-machine:8050/jwk","Namespace":"ssd.opsmx.io","Algo":"","Audience":["ssd.opsmx.io"],"ClosedByDefault":false}
+# Dgraph.Authorization {"VerificationKey":"","Header":"X-OpsMx-Auth","jwkurl":"http://token-machine:8050/jwk","Namespace":"ssd.opsmx.io","Algo":"","Audience":["ssd.opsmx.io"],"ClosedByDefault":false} 
 `
