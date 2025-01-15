@@ -53,3 +53,11 @@ mutation AddIntegratorConfigs($input: AddIntegratorConfigsInput!) {
         }
     }
 }
+
+mutation UpdateIntegratorNotConnectedStatus {
+    updateIntegrator(
+        input: { set: { status: "not-connected" }, filter: { status: { eq: "disabled" } } }
+    ) {
+        numUids
+    }
+}

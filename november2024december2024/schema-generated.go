@@ -9,6 +9,13 @@ import (
 	"github.com/Khan/genqlient/graphql"
 )
 
+type AbstractResourceRef struct {
+	Id string `json:"id"`
+}
+
+// GetId returns AbstractResourceRef.Id, and is useful for accessing the field via an interface.
+func (v *AbstractResourceRef) GetId() string { return v.Id }
+
 // AddIntegratorConfigsAddIntegratorConfigsAddIntegratorConfigsPayload includes the requested fields of the GraphQL type AddIntegratorConfigsPayload.
 type AddIntegratorConfigsAddIntegratorConfigsAddIntegratorConfigsPayload struct {
 	IntegratorConfigs []*AddIntegratorConfigsAddIntegratorConfigsAddIntegratorConfigsPayloadIntegratorConfigs `json:"integratorConfigs"`
@@ -584,6 +591,100 @@ func (v *BuildToolRef) GetCommitMetaData() []*CommitMetaDataRef { return v.Commi
 // GetCreatedAt returns BuildToolRef.CreatedAt, and is useful for accessing the field via an interface.
 func (v *BuildToolRef) GetCreatedAt() *time.Time { return v.CreatedAt }
 
+type CSPMResourceScanGroupRef struct {
+	Id                  string                 `json:"id"`
+	ResourceId          string                 `json:"resourceId"`
+	Name                string                 `json:"name"`
+	Organization        *OrganizationRef       `json:"organization,omitempty"`
+	CloudAccountName    string                 `json:"cloudAccountName"`
+	CloudProvider       string                 `json:"cloudProvider"`
+	ResourceType        string                 `json:"resourceType"`
+	ChildResources      []*AbstractResourceRef `json:"childResources,omitempty"`
+	ParentResource      *AbstractResourceRef   `json:"parentResource,omitempty"`
+	AssociatedResources []*AbstractResourceRef `json:"associatedResources,omitempty"`
+	CspmScan            *CSPMScanRef           `json:"cspmScan,omitempty"`
+	EnrichedFindings    []*EnrichedFindingRef  `json:"enrichedFindings,omitempty"`
+}
+
+// GetId returns CSPMResourceScanGroupRef.Id, and is useful for accessing the field via an interface.
+func (v *CSPMResourceScanGroupRef) GetId() string { return v.Id }
+
+// GetResourceId returns CSPMResourceScanGroupRef.ResourceId, and is useful for accessing the field via an interface.
+func (v *CSPMResourceScanGroupRef) GetResourceId() string { return v.ResourceId }
+
+// GetName returns CSPMResourceScanGroupRef.Name, and is useful for accessing the field via an interface.
+func (v *CSPMResourceScanGroupRef) GetName() string { return v.Name }
+
+// GetOrganization returns CSPMResourceScanGroupRef.Organization, and is useful for accessing the field via an interface.
+func (v *CSPMResourceScanGroupRef) GetOrganization() *OrganizationRef { return v.Organization }
+
+// GetCloudAccountName returns CSPMResourceScanGroupRef.CloudAccountName, and is useful for accessing the field via an interface.
+func (v *CSPMResourceScanGroupRef) GetCloudAccountName() string { return v.CloudAccountName }
+
+// GetCloudProvider returns CSPMResourceScanGroupRef.CloudProvider, and is useful for accessing the field via an interface.
+func (v *CSPMResourceScanGroupRef) GetCloudProvider() string { return v.CloudProvider }
+
+// GetResourceType returns CSPMResourceScanGroupRef.ResourceType, and is useful for accessing the field via an interface.
+func (v *CSPMResourceScanGroupRef) GetResourceType() string { return v.ResourceType }
+
+// GetChildResources returns CSPMResourceScanGroupRef.ChildResources, and is useful for accessing the field via an interface.
+func (v *CSPMResourceScanGroupRef) GetChildResources() []*AbstractResourceRef {
+	return v.ChildResources
+}
+
+// GetParentResource returns CSPMResourceScanGroupRef.ParentResource, and is useful for accessing the field via an interface.
+func (v *CSPMResourceScanGroupRef) GetParentResource() *AbstractResourceRef { return v.ParentResource }
+
+// GetAssociatedResources returns CSPMResourceScanGroupRef.AssociatedResources, and is useful for accessing the field via an interface.
+func (v *CSPMResourceScanGroupRef) GetAssociatedResources() []*AbstractResourceRef {
+	return v.AssociatedResources
+}
+
+// GetCspmScan returns CSPMResourceScanGroupRef.CspmScan, and is useful for accessing the field via an interface.
+func (v *CSPMResourceScanGroupRef) GetCspmScan() *CSPMScanRef { return v.CspmScan }
+
+// GetEnrichedFindings returns CSPMResourceScanGroupRef.EnrichedFindings, and is useful for accessing the field via an interface.
+func (v *CSPMResourceScanGroupRef) GetEnrichedFindings() []*EnrichedFindingRef {
+	return v.EnrichedFindings
+}
+
+type CSPMScanRef struct {
+	Id                          string                      `json:"id"`
+	Status                      string                      `json:"status"`
+	DetailedStatus              string                      `json:"detailedStatus"`
+	Category                    string                      `json:"category"`
+	Tag                         string                      `json:"tag"`
+	CreatedAt                   *time.Time                  `json:"createdAt"`
+	UpdatedAt                   *time.Time                  `json:"updatedAt"`
+	AssociatedResourceScanGroup []*CSPMResourceScanGroupRef `json:"associatedResourceScanGroup,omitempty"`
+}
+
+// GetId returns CSPMScanRef.Id, and is useful for accessing the field via an interface.
+func (v *CSPMScanRef) GetId() string { return v.Id }
+
+// GetStatus returns CSPMScanRef.Status, and is useful for accessing the field via an interface.
+func (v *CSPMScanRef) GetStatus() string { return v.Status }
+
+// GetDetailedStatus returns CSPMScanRef.DetailedStatus, and is useful for accessing the field via an interface.
+func (v *CSPMScanRef) GetDetailedStatus() string { return v.DetailedStatus }
+
+// GetCategory returns CSPMScanRef.Category, and is useful for accessing the field via an interface.
+func (v *CSPMScanRef) GetCategory() string { return v.Category }
+
+// GetTag returns CSPMScanRef.Tag, and is useful for accessing the field via an interface.
+func (v *CSPMScanRef) GetTag() string { return v.Tag }
+
+// GetCreatedAt returns CSPMScanRef.CreatedAt, and is useful for accessing the field via an interface.
+func (v *CSPMScanRef) GetCreatedAt() *time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns CSPMScanRef.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *CSPMScanRef) GetUpdatedAt() *time.Time { return v.UpdatedAt }
+
+// GetAssociatedResourceScanGroup returns CSPMScanRef.AssociatedResourceScanGroup, and is useful for accessing the field via an interface.
+func (v *CSPMScanRef) GetAssociatedResourceScanGroup() []*CSPMResourceScanGroupRef {
+	return v.AssociatedResourceScanGroup
+}
+
 type CWERef struct {
 	Id          string `json:"id"`
 	Name        string `json:"name"`
@@ -830,22 +931,34 @@ func (v *DeploymentTargetRef) GetDefaultEnvironment() *EnvironmentRef { return v
 
 type EnrichedFindingRef struct {
 	Id                 string                   `json:"id"`
-	AffectedResource   *ResourceRef             `json:"affectedResource,omitempty"`
+	AffectedResource   *AbstractResourceRef     `json:"affectedResource,omitempty"`
 	Finding            *PolicyEvaluationDataRef `json:"finding,omitempty"`
 	AffectedAttributes string                   `json:"affectedAttributes"`
+	Timestamp          *time.Time               `json:"timestamp"`
+	Affected           *bool                    `json:"affected"`
+	ScanData           *CSPMScanRef             `json:"scanData,omitempty"`
 }
 
 // GetId returns EnrichedFindingRef.Id, and is useful for accessing the field via an interface.
 func (v *EnrichedFindingRef) GetId() string { return v.Id }
 
 // GetAffectedResource returns EnrichedFindingRef.AffectedResource, and is useful for accessing the field via an interface.
-func (v *EnrichedFindingRef) GetAffectedResource() *ResourceRef { return v.AffectedResource }
+func (v *EnrichedFindingRef) GetAffectedResource() *AbstractResourceRef { return v.AffectedResource }
 
 // GetFinding returns EnrichedFindingRef.Finding, and is useful for accessing the field via an interface.
 func (v *EnrichedFindingRef) GetFinding() *PolicyEvaluationDataRef { return v.Finding }
 
 // GetAffectedAttributes returns EnrichedFindingRef.AffectedAttributes, and is useful for accessing the field via an interface.
 func (v *EnrichedFindingRef) GetAffectedAttributes() string { return v.AffectedAttributes }
+
+// GetTimestamp returns EnrichedFindingRef.Timestamp, and is useful for accessing the field via an interface.
+func (v *EnrichedFindingRef) GetTimestamp() *time.Time { return v.Timestamp }
+
+// GetAffected returns EnrichedFindingRef.Affected, and is useful for accessing the field via an interface.
+func (v *EnrichedFindingRef) GetAffected() *bool { return v.Affected }
+
+// GetScanData returns EnrichedFindingRef.ScanData, and is useful for accessing the field via an interface.
+func (v *EnrichedFindingRef) GetScanData() *CSPMScanRef { return v.ScanData }
 
 type EnvironmentRef struct {
 	Id                string                  `json:"id"`
@@ -1174,6 +1287,7 @@ type JiraRef struct {
 	JiraId                     string            `json:"jiraId"`
 	Url                        string            `json:"url"`
 	Status                     string            `json:"status"`
+	Assignee                   string            `json:"assignee"`
 	CreatedAt                  *time.Time        `json:"createdAt"`
 	UpdatedAt                  *time.Time        `json:"updatedAt"`
 	AffectsIndividualComponent *RunHistoryRef    `json:"affectsIndividualComponent,omitempty"`
@@ -1192,6 +1306,9 @@ func (v *JiraRef) GetUrl() string { return v.Url }
 
 // GetStatus returns JiraRef.Status, and is useful for accessing the field via an interface.
 func (v *JiraRef) GetStatus() string { return v.Status }
+
+// GetAssignee returns JiraRef.Assignee, and is useful for accessing the field via an interface.
+func (v *JiraRef) GetAssignee() string { return v.Assignee }
 
 // GetCreatedAt returns JiraRef.CreatedAt, and is useful for accessing the field via an interface.
 func (v *JiraRef) GetCreatedAt() *time.Time { return v.CreatedAt }
@@ -1239,7 +1356,7 @@ type OrganizationRef struct {
 	Integrators        []*IntegratorRef        `json:"integrators,omitempty"`
 	FeatureModes       []*FeatureModeRef       `json:"featureModes,omitempty"`
 	IntegratorConfigs  []*IntegratorConfigsRef `json:"integratorConfigs,omitempty"`
-	Resources          []*ResourceRef          `json:"resources,omitempty"`
+	Resources          []*AbstractResourceRef  `json:"resources,omitempty"`
 }
 
 // GetId returns OrganizationRef.Id, and is useful for accessing the field via an interface.
@@ -1275,7 +1392,7 @@ func (v *OrganizationRef) GetFeatureModes() []*FeatureModeRef { return v.Feature
 func (v *OrganizationRef) GetIntegratorConfigs() []*IntegratorConfigsRef { return v.IntegratorConfigs }
 
 // GetResources returns OrganizationRef.Resources, and is useful for accessing the field via an interface.
-func (v *OrganizationRef) GetResources() []*ResourceRef { return v.Resources }
+func (v *OrganizationRef) GetResources() []*AbstractResourceRef { return v.Resources }
 
 type PolicyDefinitionRef struct {
 	Id               string           `json:"id"`
@@ -1407,14 +1524,14 @@ type PolicyEvaluationDataRef struct {
 	// data Type is gonna help us identify if a DB record is used to evaluate or a json
 	// current scope json is for generic policies & vuln policies will attach
 	// VulnNode -> pending redis data & other inprogram policies
-	Id                         *string               `json:"Id"`
-	DataType                   string                `json:"dataType"`
-	RawData                    string                `json:"rawData"`
-	VulnNode                   *VulnerabilityRef     `json:"vulnNode,omitempty"`
-	EnrichedaAffectedResources []*EnrichedFindingRef `json:"enrichedaAffectedResources,omitempty"`
-	Affects                    *RunHistoryRef        `json:"affects,omitempty"`
-	CheckedResources           *int                  `json:"checkedResources"`
-	AffectedResources          *int                  `json:"affectedResources"`
+	Id                        *string               `json:"Id"`
+	DataType                  string                `json:"dataType"`
+	RawData                   string                `json:"rawData"`
+	VulnNode                  *VulnerabilityRef     `json:"vulnNode,omitempty"`
+	EnrichedAffectedResources []*EnrichedFindingRef `json:"enrichedAffectedResources,omitempty"`
+	Affects                   *RunHistoryRef        `json:"affects,omitempty"`
+	CheckedResources          *int                  `json:"checkedResources"`
+	AffectedResources         *int                  `json:"affectedResources"`
 }
 
 // GetId returns PolicyEvaluationDataRef.Id, and is useful for accessing the field via an interface.
@@ -1429,9 +1546,9 @@ func (v *PolicyEvaluationDataRef) GetRawData() string { return v.RawData }
 // GetVulnNode returns PolicyEvaluationDataRef.VulnNode, and is useful for accessing the field via an interface.
 func (v *PolicyEvaluationDataRef) GetVulnNode() *VulnerabilityRef { return v.VulnNode }
 
-// GetEnrichedaAffectedResources returns PolicyEvaluationDataRef.EnrichedaAffectedResources, and is useful for accessing the field via an interface.
-func (v *PolicyEvaluationDataRef) GetEnrichedaAffectedResources() []*EnrichedFindingRef {
-	return v.EnrichedaAffectedResources
+// GetEnrichedAffectedResources returns PolicyEvaluationDataRef.EnrichedAffectedResources, and is useful for accessing the field via an interface.
+func (v *PolicyEvaluationDataRef) GetEnrichedAffectedResources() []*EnrichedFindingRef {
+	return v.EnrichedAffectedResources
 }
 
 // GetAffects returns PolicyEvaluationDataRef.Affects, and is useful for accessing the field via an interface.
@@ -1483,12 +1600,12 @@ type ResourceRef struct {
 	CloudAccountName        string                       `json:"cloudAccountName"`
 	CloudProvider           string                       `json:"cloudProvider"`
 	ResourceType            string                       `json:"resourceType"`
-	EnrichedFindings        []*EnrichedFindingRef        `json:"enrichedFindings,omitempty"`
-	ChildResources          []*ResourceRef               `json:"childResources,omitempty"`
-	ParentResource          *ResourceRef                 `json:"parentResource,omitempty"`
-	AssociatedResources     []*ResourceRef               `json:"associatedResources,omitempty"`
-	ApplicationEnvironments []*ApplicationEnvironmentRef `json:"applicationEnvironments,omitempty"`
+	ChildResources          []*AbstractResourceRef       `json:"childResources,omitempty"`
+	ParentResource          *AbstractResourceRef         `json:"parentResource,omitempty"`
+	AssociatedResources     []*AbstractResourceRef       `json:"associatedResources,omitempty"`
 	Details                 string                       `json:"details"`
+	EnrichedFindings        []*EnrichedFindingRef        `json:"enrichedFindings,omitempty"`
+	ApplicationEnvironments []*ApplicationEnvironmentRef `json:"applicationEnvironments,omitempty"`
 }
 
 // GetId returns ResourceRef.Id, and is useful for accessing the field via an interface.
@@ -1512,25 +1629,25 @@ func (v *ResourceRef) GetCloudProvider() string { return v.CloudProvider }
 // GetResourceType returns ResourceRef.ResourceType, and is useful for accessing the field via an interface.
 func (v *ResourceRef) GetResourceType() string { return v.ResourceType }
 
-// GetEnrichedFindings returns ResourceRef.EnrichedFindings, and is useful for accessing the field via an interface.
-func (v *ResourceRef) GetEnrichedFindings() []*EnrichedFindingRef { return v.EnrichedFindings }
-
 // GetChildResources returns ResourceRef.ChildResources, and is useful for accessing the field via an interface.
-func (v *ResourceRef) GetChildResources() []*ResourceRef { return v.ChildResources }
+func (v *ResourceRef) GetChildResources() []*AbstractResourceRef { return v.ChildResources }
 
 // GetParentResource returns ResourceRef.ParentResource, and is useful for accessing the field via an interface.
-func (v *ResourceRef) GetParentResource() *ResourceRef { return v.ParentResource }
+func (v *ResourceRef) GetParentResource() *AbstractResourceRef { return v.ParentResource }
 
 // GetAssociatedResources returns ResourceRef.AssociatedResources, and is useful for accessing the field via an interface.
-func (v *ResourceRef) GetAssociatedResources() []*ResourceRef { return v.AssociatedResources }
+func (v *ResourceRef) GetAssociatedResources() []*AbstractResourceRef { return v.AssociatedResources }
+
+// GetDetails returns ResourceRef.Details, and is useful for accessing the field via an interface.
+func (v *ResourceRef) GetDetails() string { return v.Details }
+
+// GetEnrichedFindings returns ResourceRef.EnrichedFindings, and is useful for accessing the field via an interface.
+func (v *ResourceRef) GetEnrichedFindings() []*EnrichedFindingRef { return v.EnrichedFindings }
 
 // GetApplicationEnvironments returns ResourceRef.ApplicationEnvironments, and is useful for accessing the field via an interface.
 func (v *ResourceRef) GetApplicationEnvironments() []*ApplicationEnvironmentRef {
 	return v.ApplicationEnvironments
 }
-
-// GetDetails returns ResourceRef.Details, and is useful for accessing the field via an interface.
-func (v *ResourceRef) GetDetails() string { return v.Details }
 
 // RiskStatus tells us what risk a current application instance or a deployment is at.
 type RiskStatus string
@@ -2056,6 +2173,26 @@ type UpdateArtifactTypeUpdateArtifactUpdateArtifactPayload struct {
 // GetNumUids returns UpdateArtifactTypeUpdateArtifactUpdateArtifactPayload.NumUids, and is useful for accessing the field via an interface.
 func (v *UpdateArtifactTypeUpdateArtifactUpdateArtifactPayload) GetNumUids() *int { return v.NumUids }
 
+// UpdateIntegratorNotConnectedStatusResponse is returned by UpdateIntegratorNotConnectedStatus on success.
+type UpdateIntegratorNotConnectedStatusResponse struct {
+	UpdateIntegrator *UpdateIntegratorNotConnectedStatusUpdateIntegratorUpdateIntegratorPayload `json:"updateIntegrator"`
+}
+
+// GetUpdateIntegrator returns UpdateIntegratorNotConnectedStatusResponse.UpdateIntegrator, and is useful for accessing the field via an interface.
+func (v *UpdateIntegratorNotConnectedStatusResponse) GetUpdateIntegrator() *UpdateIntegratorNotConnectedStatusUpdateIntegratorUpdateIntegratorPayload {
+	return v.UpdateIntegrator
+}
+
+// UpdateIntegratorNotConnectedStatusUpdateIntegratorUpdateIntegratorPayload includes the requested fields of the GraphQL type UpdateIntegratorPayload.
+type UpdateIntegratorNotConnectedStatusUpdateIntegratorUpdateIntegratorPayload struct {
+	NumUids *int `json:"numUids"`
+}
+
+// GetNumUids returns UpdateIntegratorNotConnectedStatusUpdateIntegratorUpdateIntegratorPayload.NumUids, and is useful for accessing the field via an interface.
+func (v *UpdateIntegratorNotConnectedStatusUpdateIntegratorUpdateIntegratorPayload) GetNumUids() *int {
+	return v.NumUids
+}
+
 type VulnerabilityRef struct {
 	Id               string                     `json:"id"`
 	Parent           string                     `json:"parent"`
@@ -2354,6 +2491,37 @@ func UpdateArtifactType(
 	var err_ error
 
 	var data_ UpdateArtifactTypeResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by UpdateIntegratorNotConnectedStatus.
+const UpdateIntegratorNotConnectedStatus_Operation = `
+mutation UpdateIntegratorNotConnectedStatus {
+	updateIntegrator(input: {set:{status:"not-connected"},filter:{status:{eq:"disabled"}}}) {
+		numUids
+	}
+}
+`
+
+func UpdateIntegratorNotConnectedStatus(
+	ctx_ context.Context,
+	client_ graphql.Client,
+) (*UpdateIntegratorNotConnectedStatusResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "UpdateIntegratorNotConnectedStatus",
+		Query:  UpdateIntegratorNotConnectedStatus_Operation,
+	}
+	var err_ error
+
+	var data_ UpdateIntegratorNotConnectedStatusResponse
 	resp_ := &graphql.Response{Data: &data_}
 
 	err_ = client_.MakeRequest(
