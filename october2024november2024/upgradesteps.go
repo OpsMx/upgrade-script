@@ -10,7 +10,7 @@ import (
 	"github.com/Khan/genqlient/graphql"
 )
 
-func UpgradeToNovember2024(prodGraphUrl, prodToken, restoreServiceUrl string, prodDgraphClient graphql.Client) error {
+func UpgradeToNovember2024(prodGraphUrl, prodToken string, prodDgraphClient graphql.Client) error {
 
 	logger.Logger.Info("--------------Starting UpgradeToNovember2024------------------")
 

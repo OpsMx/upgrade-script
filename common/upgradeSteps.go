@@ -13,6 +13,7 @@ import (
 	"upgradationScript/july2024august2024"
 	"upgradationScript/june2024june2024v2"
 	"upgradationScript/june2024v2july2024"
+	"upgradationScript/november2024december2024"
 	"upgradationScript/october2024november2024"
 	"upgradationScript/september2024october2024"
 
@@ -158,16 +159,19 @@ func beginProcessOfUpgrade(upgradeTo SchemaOrder, isSecondDgraphRequired, isLast
 
 	case September2024Version:
 
-		return august2024v2september2024.UpgradeToSeptember2024(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, "", prodGraphqlClient)
+		return august2024v2september2024.UpgradeToSeptember2024(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, prodGraphqlClient)
 
 	case October2024Version:
 
-		return september2024october2024.UpgradeToOctober2024(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, "", prodGraphqlClient)
+		return september2024october2024.UpgradeToOctober2024(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, prodGraphqlClient)
 
 	case November2024Version:
 
-		return october2024november2024.UpgradeToNovember2024(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, "", prodGraphqlClient)
+		return october2024november2024.UpgradeToNovember2024(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, prodGraphqlClient)
 
+	case December2024Version:
+
+		return november2024december2024.UpgradeToDecember2024(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, prodGraphqlClient)
 	}
 
 	logger.Sl.Debugf("no upgrade steps for %s", upgradeTo.NameOfSchema())

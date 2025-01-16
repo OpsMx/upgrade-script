@@ -6179,56 +6179,49 @@ var scriptMap = map[int]string{
 	policy_category = replace(input.metadata.policyCategory, " ", "_")
 	exception_list = input.metadata.exception[policy_category]
 
-	default high_severities = []
+	severity = "high"
+	default findings_count = 0
 
-	default multi_alert = false
-	default exists_alert = false
+	chart_name = input.metadata.chartName
+	chart_version = input.metadata.chartVersion
+	helm_tool = input.metadata.helmTool
 
-	exists_alert = check_if_high_alert_exists
-	multi_alert = check_if_multi_alert
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=findings_", chart_name, "_", chart_version, "_", helm_tool, "_", severity, ".json&scanOperation=helmscan"]	)
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=findings_", chart_name, "_", chart_version, "_", helm_tool, "_", severity, ".json&scanOperation=helmscan"])
 
-	check_if_high_alert_exists = exists_flag {
-		high_severities_counter = count(input.metadata.results[0].HighSeverity)
-		high_severities_counter > 0
-		exists_flag = true
+	request = {	
+			"method": "GET",
+			"url": complete_url
 	}
 
-	check_if_multi_alert() = multi_flag {
-		high_severities_counter = count(input.metadata.results[0].HighSeverity)
-		high_severities_counter > 1
-		multi_flag = true
-	}
+	response = http.send(request)
+	findings = response.body.helmAnalysis
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		check_if_high_alert_exists
-		check_if_multi_alert
-		
+	findings_count = count(findings)
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+		findings_count > 0
 		some i
-		rule = input.metadata.results[0].HighSeverity[i].RuleID
-		title = input.metadata.results[0].HighSeverity[i].Title
-		targets = concat(",\n", input.metadata.results[0].HighSeverity[i].TargetResources)
-		resolution = input.metadata.results[0].HighSeverity[i].Resolution
-		not policy_name in exception_list
-		msg := sprintf("Rule ID: %v,\nTitle: %v. \nBelow are the sources of High severity:\n %v", [rule, title, targets])
-		sugg := resolution
+		rule_id := findings[i].RuleID
+		not rule_id in exception_list
+		tite := sprintf("Rule %v: %v found violated in helm chart %v:%v", [findings[i].Title, findings[i].RuleID, chart_name, chart_version])
+		msg := sprintf("Rule %v: %v found violated in helm chart %v:%v with following impacted resources: %v", [findings[i].Title, findings[i].RuleID, chart_name, chart_version, findings[i].TargetResources])
 		error := ""
+		sugg := findings[i].Resolution
 		alertStatus := "active"
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		check_if_high_alert_exists
-		check_if_multi_alert
-		
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
+		findings_count > 0
 		some i
-		rule = input.metadata.results[0].HighSeverity[i].RuleID
-		title = input.metadata.results[0].HighSeverity[i].Title
-		targets = concat(",\n", input.metadata.results[0].HighSeverity[i].TargetResources)
-		resolution = input.metadata.results[0].HighSeverity[i].Resolution
-		policy_name in exception_list
-		msg := sprintf("Rule ID: %v,\nTitle: %v. \nBelow are the sources of High severity:\n %v", [rule, title, targets])
-		sugg := resolution
+		rule_id := findings[i].RuleID
+		rule_id in exception_list
+		tite := sprintf("Rule %v: %v found violated in helm chart %v:%v", [findings[i].Title, findings[i].RuleID, chart_name, chart_version])
+		msg := sprintf("Rule %v: %v found violated in helm chart %v:%v with following impacted resources: %v", [findings[i].Title, findings[i].RuleID, chart_name, chart_version, findings[i].TargetResources])
 		error := ""
-		alertStatus := exception
+		sugg := findings[i].Resolution
+		exception_cause := findings[i].rule_name
+		alertStatus := "exception"
 	}`,
 
 	283: `
@@ -6242,56 +6235,49 @@ var scriptMap = map[int]string{
 	policy_category = replace(input.metadata.policyCategory, " ", "_")
 	exception_list = input.metadata.exception[policy_category]
 
-	default critical_severities = []
+	severity = "critical"
+	default findings_count = 0
 
-	default multi_alert = false
-	default exists_alert = false
+	chart_name = input.metadata.chartName
+	chart_version = input.metadata.chartVersion
+	helm_tool = input.metadata.helmTool
 
-	exists_alert = check_if_critical_alert_exists
-	multi_alert = check_if_multi_alert
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=findings_", chart_name, "_", chart_version, "_", helm_tool, "_", severity, ".json&scanOperation=helmscan"]	)
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=findings_", chart_name, "_", chart_version, "_", helm_tool, "_", severity, ".json&scanOperation=helmscan"])
 
-	check_if_critical_alert_exists = exists_flag {
-		critical_severities_counter = count(input.metadata.results[0].CriticalSeverity)
-		critical_severities_counter > 0
-		exists_flag = true
+	request = {	
+			"method": "GET",
+			"url": complete_url
 	}
 
-	check_if_multi_alert() = multi_flag {
-		critical_severities_counter = count(input.metadata.results[0].CriticalSeverity)
-		critical_severities_counter > 1
-		multi_flag = true
-	}
+	response = http.send(request)
+	findings = response.body.helmAnalysis
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		check_if_critical_alert_exists
-		check_if_multi_alert
-		
+	findings_count = count(findings)
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+		findings_count > 0
 		some i
-		rule = input.metadata.results[0].CriticalSeverity[i].RuleID
-		title = input.metadata.results[0].CriticalSeverity[i].Title
-		targets = concat(",\n", input.metadata.results[0].CriticalSeverity[i].TargetResources)
-		resolution = input.metadata.results[0].CriticalSeverity[i].Resolution
-		not policy_name in exception_list
-		msg := sprintf("Rule ID: %v,\nTitle: %v. \nBelow are the sources of Critical severity:\n %v", [rule, title, targets])
-		sugg := resolution
+		rule_id := findings[i].RuleID
+		not rule_id in exception_list
+		tite := sprintf("Rule %v: %v found violated in helm chart %v:%v", [findings[i].Title, findings[i].RuleID, chart_name, chart_version])
+		msg := sprintf("Rule %v: %v found violated in helm chart %v:%v with following impacted resources: %v", [findings[i].Title, findings[i].RuleID, chart_name, chart_version, findings[i].TargetResources])
 		error := ""
+		sugg := findings[i].Resolution
 		alertStatus := "active"
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		check_if_critical_alert_exists
-		check_if_multi_alert
-		
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
+		findings_count > 0
 		some i
-		rule = input.metadata.results[0].CriticalSeverity[i].RuleID
-		title = input.metadata.results[0].CriticalSeverity[i].Title
-		targets = concat(",\n", input.metadata.results[0].CriticalSeverity[i].TargetResources)
-		resolution = input.metadata.results[0].CriticalSeverity[i].Resolution
-		policy_name in exception_list
-		msg := sprintf("Rule ID: %v,\nTitle: %v. \nBelow are the sources of Critical severity:\n %v", [rule, title, targets])
-		sugg := resolution
+		rule_id := findings[i].RuleID
+		rule_id in exception_list
+		tite := sprintf("Rule %v: %v found violated in helm chart %v:%v", [findings[i].Title, findings[i].RuleID, chart_name, chart_version])
+		msg := sprintf("Rule %v: %v found violated in helm chart %v:%v with following impacted resources: %v", [findings[i].Title, findings[i].RuleID, chart_name, chart_version, findings[i].TargetResources])
 		error := ""
-		alertStatus := exception
+		sugg := findings[i].Resolution
+		exception_cause := findings[i].rule_name
+		alertStatus := "exception"
 	}`,
 
 	284: `
@@ -6305,56 +6291,49 @@ var scriptMap = map[int]string{
 	policy_category = replace(input.metadata.policyCategory, " ", "_")
 	exception_list = input.metadata.exception[policy_category]
 
-	default medium_severities = []
+	severity = "medium"
+	default findings_count = 0
 
-	default multi_alert = false
-	default exists_alert = false
+	chart_name = input.metadata.chartName
+	chart_version = input.metadata.chartVersion
+	helm_tool = input.metadata.helmTool
 
-	exists_alert = check_if_medium_alert_exists
-	multi_alert = check_if_multi_alert
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=findings_", chart_name, "_", chart_version, "_", helm_tool, "_", severity, ".json&scanOperation=helmscan"]	)
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=findings_", chart_name, "_", chart_version, "_", helm_tool, "_", severity, ".json&scanOperation=helmscan"])
 
-	check_if_medium_alert_exists = exists_flag {
-		medium_severities_counter = count(input.metadata.results[0].MediumSeverity)
-		medium_severities_counter > 0
-		exists_flag = true
+	request = {	
+			"method": "GET",
+			"url": complete_url
 	}
 
-	check_if_multi_alert() = multi_flag {
-		medium_severities_counter = count(input.metadata.results[0].MediumSeverity)
-		medium_severities_counter > 1
-		multi_flag = true
-	}
+	response = http.send(request)
+	findings = response.body.helmAnalysis
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		check_if_medium_alert_exists
-		check_if_multi_alert
-		
+	findings_count = count(findings)
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+		findings_count > 0
 		some i
-		rule = input.metadata.results[0].MediumSeverity[i].RuleID
-		title = input.metadata.results[0].MediumSeverity[i].Title
-		targets = concat(",\n", input.metadata.results[0].MediumSeverity[i].TargetResources)
-		resolution = input.metadata.results[0].MediumSeverity[i].Resolution
-		not policy_name in exception_list
-		msg := sprintf("Rule ID: %v,\nTitle: %v. \nBelow are the sources of Medium severity:\n %v", [rule, title, targets])
-		sugg := resolution
+		rule_id := findings[i].RuleID
+		not rule_id in exception_list
+		tite := sprintf("Rule %v: %v found violated in helm chart %v:%v", [findings[i].Title, findings[i].RuleID, chart_name, chart_version])
+		msg := sprintf("Rule %v: %v found violated in helm chart %v:%v with following impacted resources: %v", [findings[i].Title, findings[i].RuleID, chart_name, chart_version, findings[i].TargetResources])
 		error := ""
+		sugg := findings[i].Resolution
 		alertStatus := "active"
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		check_if_medium_alert_exists
-		check_if_multi_alert
-		
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
+		findings_count > 0
 		some i
-		rule = input.metadata.results[0].MediumSeverity[i].RuleID
-		title = input.metadata.results[0].MediumSeverity[i].Title
-		targets = concat(",\n", input.metadata.results[0].MediumSeverity[i].TargetResources)
-		resolution = input.metadata.results[0].MediumSeverity[i].Resolution
-		policy_name in exception_list
-		msg := sprintf("Rule ID: %v,\nTitle: %v. \nBelow are the sources of Medium severity:\n %v", [rule, title, targets])
-		sugg := resolution
+		rule_id := findings[i].RuleID
+		rule_id in exception_list
+		tite := sprintf("Rule %v: %v found violated in helm chart %v:%v", [findings[i].Title, findings[i].RuleID, chart_name, chart_version])
+		msg := sprintf("Rule %v: %v found violated in helm chart %v:%v with following impacted resources: %v", [findings[i].Title, findings[i].RuleID, chart_name, chart_version, findings[i].TargetResources])
 		error := ""
-		alertStatus := exception
+		sugg := findings[i].Resolution
+		exception_cause := findings[i].rule_name
+		alertStatus := "exception"
 	}`,
 
 	285: `
@@ -6368,56 +6347,49 @@ var scriptMap = map[int]string{
 	policy_category = replace(input.metadata.policyCategory, " ", "_")
 	exception_list = input.metadata.exception[policy_category]
 
-	default low_severities = []
+	severity = "low"
+	default findings_count = 0
 
-	default multi_alert = false
-	default exists_alert = false
+	chart_name = input.metadata.chartName
+	chart_version = input.metadata.chartVersion
+	helm_tool = input.metadata.helmTool
 
-	exists_alert = check_if_low_alert_exists
-	multi_alert = check_if_multi_alert
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=findings_", chart_name, "_", chart_version, "_", helm_tool, "_", severity, ".json&scanOperation=helmscan"]	)
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=findings_", chart_name, "_", chart_version, "_", helm_tool, "_", severity, ".json&scanOperation=helmscan"])
 
-	check_if_low_alert_exists = exists_flag {
-		low_severities_counter = count(input.metadata.results[0].LowSeverity)
-		low_severities_counter > 0
-		exists_flag = true
+	request = {	
+			"method": "GET",
+			"url": complete_url
 	}
 
-	check_if_multi_alert() = multi_flag {
-		low_severities_counter = count(input.metadata.results[0].LowSeverity)
-		low_severities_counter > 1
-		multi_flag = true
-	}
+	response = http.send(request)
+	findings = response.body.helmAnalysis
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
-		check_if_low_alert_exists
-		check_if_multi_alert
-		
+	findings_count = count(findings)
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+		findings_count > 0
 		some i
-		rule = input.metadata.results[0].LowSeverity[i].RuleID
-		title = input.metadata.results[0].LowSeverity[i].Title
-		targets = concat(",\n", input.metadata.results[0].LowSeverity[i].TargetResources)
-		resolution = input.metadata.results[0].LowSeverity[i].Resolution
-		not policy_name in exception_list
-		msg := sprintf("Rule ID: %v,\nTitle: %v. \nBelow are the sources of Low severity:\n %v", [rule, title, targets])
-		sugg := resolution
+		rule_id := findings[i].RuleID
+		not rule_id in exception_list
+		tite := sprintf("Rule %v: %v found violated in helm chart %v:%v", [findings[i].Title, findings[i].RuleID, chart_name, chart_version])
+		msg := sprintf("Rule %v: %v found violated in helm chart %v:%v with following impacted resources: %v", [findings[i].Title, findings[i].RuleID, chart_name, chart_version, findings[i].TargetResources])
 		error := ""
+		sugg := findings[i].Resolution
 		alertStatus := "active"
 	}
 
-	deny[{"alertMsg": msg, "suggestion": sugg, "error": error, "exception": policy_name, "alertStatus": alertStatus}]{
-		check_if_low_alert_exists
-		check_if_multi_alert
-		
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
+		findings_count > 0
 		some i
-		rule = input.metadata.results[0].LowSeverity[i].RuleID
-		title = input.metadata.results[0].LowSeverity[i].Title
-		targets = concat(",\n", input.metadata.results[0].LowSeverity[i].TargetResources)
-		resolution = input.metadata.results[0].LowSeverity[i].Resolution
-		policy_name in exception_list
-		msg := sprintf("Rule ID: %v,\nTitle: %v. \nBelow are the sources of Low severity:\n %v", [rule, title, targets])
-		sugg := resolution
+		rule_id := findings[i].RuleID
+		rule_id in exception_list
+		tite := sprintf("Rule %v: %v found violated in helm chart %v:%v", [findings[i].Title, findings[i].RuleID, chart_name, chart_version])
+		msg := sprintf("Rule %v: %v found violated in helm chart %v:%v with following impacted resources: %v", [findings[i].Title, findings[i].RuleID, chart_name, chart_version, findings[i].TargetResources])
 		error := ""
-		alertStatus := exception
+		sugg := findings[i].Resolution
+		exception_cause := findings[i].rule_name
+		alertStatus := "exception"
 	}`,
 
 	286: `
@@ -10782,8 +10754,10 @@ var scriptMap = map[int]string{
 	default issues = []
 	default count_issues = -1
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", input.metadata.service, "_", input.metadata.deploymentId, "_zapScan.json&scanOperation=zapDastScan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", input.metadata.service, "_", input.metadata.deploymentId, "_zapScan.json&scanOperation=zapDastScan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", image_sha, "_", input.metadata.deploymentId, "_zapScan.json&scanOperation=zapDastScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", image_sha, "_", input.metadata.deploymentId, "_zapScan.json&scanOperation=zapDastScan"] )
 
 
 	request = {
@@ -10840,8 +10814,10 @@ var scriptMap = map[int]string{
 	default issues = []
 	default count_issues = -1
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", input.metadata.service, "_", input.metadata.deploymentId, "_zapScan.json&scanOperation=zapDastScan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", input.metadata.service, "_", input.metadata.deploymentId, "_zapScan.json&scanOperation=zapDastScan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", image_sha, "_", input.metadata.deploymentId, "_zapScan.json&scanOperation=zapDastScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", image_sha, "_", input.metadata.deploymentId, "_zapScan.json&scanOperation=zapDastScan"] )
 
 
 	request = {
@@ -10898,8 +10874,11 @@ var scriptMap = map[int]string{
 	default issues = []
 	default count_issues = -1
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", input.metadata.service, "_", input.metadata.deploymentId, "_zapScan.json&scanOperation=zapDastScan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", input.metadata.service, "_", input.metadata.deploymentId, "_zapScan.json&scanOperation=zapDastScan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", image_sha, "_", input.metadata.deploymentId, "_zapScan.json&scanOperation=zapDastScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", image_sha, "_", input.metadata.deploymentId, "_zapScan.json&scanOperation=zapDastScan"] )
 
 
 	request = {
@@ -10956,8 +10935,11 @@ var scriptMap = map[int]string{
 	default issues = []
 	default count_issues = -1
 
-	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", input.metadata.service, "_", input.metadata.deploymentId, "_zapScan.json&scanOperation=zapDastScan"])
-	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", input.metadata.service, "_", input.metadata.deploymentId, "_zapScan.json&scanOperation=zapDastScan"] )
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", image_sha, "_", input.metadata.deploymentId, "_zapScan.json&scanOperation=zapDastScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", image_sha, "_", input.metadata.deploymentId, "_zapScan.json&scanOperation=zapDastScan"] )
 
 
 	request = {
@@ -11053,6 +11035,2177 @@ var scriptMap = map[int]string{
 		msg:= sprintf("%v Criticality Vulnerability : %v found in plugin: %v", [inputSeverity, vuln_id, input.metadata.plugin_name])
 	}
 	`,
+
+	345: `
+	package opsmx
+	import future.keywords.in
+
+	default exception_list = []
+	default exception_count = 0
+
+	policy_name = input.metadata.policyName
+	policy_category = replace(input.metadata.policyCategory, " ", "_")
+	exception_list = input.metadata.exception[policy_category]
+
+	default findings_count = 0
+
+	cloud_account_name := input.metadata.cloudAccountName
+	results := input.metadata.cspmFindings
+
+	flagged_items = results.flagged_items
+	rule_description := results.description
+	rule_name := results.name
+	rule_rationale = results.rationale
+	references = concat(" \n", results.references)
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
+			flagged_items > 0
+			not rule_name in exception_list
+			some i
+			violated_resource := results.affectedResources[i].name
+			service_type := results.service
+
+			title := sprintf("Rule: %v violated for %v resource %v", [rule_name, service_type, violated_resource])
+			msg := sprintf("Rule: %v violated for %v resource %v. \nRule Description: %v. \n Detailed Description: %v.", [rule_name, service_type, violated_resource, rule_description, rule_rationale])
+			error := ""
+			sugg := sprintf("%v \n %v", [results.remediation, references])
+			alertStatus := "active"
+	}
+
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "exception": exception_cause, "alertStatus": alertStatus}]{
+			flagged_items > 0
+			rule_name in exception_list
+			some i
+			violated_resource := results.affectedResources[i].name
+			service_type := results.service
+
+			title := sprintf("Rule: %v violated for %v resource %v", [rule_name, service_type, violated_resource])
+			msg := sprintf("Rule: %v violated for %v resource %v. \nRule Description: %v. \n Detailed Description: %v.", [rule_name, service_type, violated_resource, rule_description, rule_rationale])
+			error := ""
+			sugg := sprintf("%v \n %v", [results.remediation, references])
+			exception_cause := rule_name
+			alertStatus := "exception"
+	}`,
+
+	383:`
+	package opsmx
+	import future.keywords.in
+
+	default exception_list = []
+	default exception_count = 0
+
+	policy_name = input.metadata.policyName
+	policy_category = replace(input.metadata.policyCategory, " ", "_")
+	exception_list = input.metadata.exception[policy_category]
+
+	file_name = concat("", [input.metadata.mobileBuild, "_", input.metadata.image_sha, "_virustotal-mobapp-scan.json"])
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=virusTotalMobAppScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=virusTotalMobAppScan"])
+
+	request = {	
+		"method": "GET",
+		"url": complete_url
+	}
+
+	response = http.send(request)
+
+	deny [{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+		some rule in response.body.data.attributes.results
+		rule.category == "malicious"
+		engine = rule.engine_name
+		engine_version = rule.engine_version
+		result = rule.result
+
+		exception_str=concat(":", [engine, result])
+		not exception_str in exception_list
+	
+		title := sprintf("APK/IPA %v scan for rule engine: %v/%v failed with malicious finding: %v.", [response.body.artifact, engine, engine_version, result])
+		msg := sprintf("APK/IPA %v scan for rule engine: %v/%v failed with malicious finding: %v.", [response.body.artifact, engine, engine_version, result])
+		sugg := ""
+		error := ""
+		alertStatus := "active"
+	}
+
+	deny [{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
+		some rule in response.body.data.attributes.results
+		rule.category == "malicious"
+		engine = rule.engine_name
+		engine_version = rule.engine_version
+		result = rule.result
+
+		exception_str=concat(":", [engine, result])
+		exception_str in exception_list
+
+		title := sprintf("APK/IPA %v scan for rule engine: %v/%v failed with malicious finding: %v.", [response.body.artifact, engine, engine_version, result])
+		msg := sprintf("APK/IPA %v scan for rule engine: %v/%v failed with malicious finding: %v.", [response.body.artifact, engine, engine_version, result])
+		sugg := ""
+		error := ""
+		exception_cause := exception_str
+		alertStatus := "exception"
+	}
+	`,
+
+	384:`
+	package opsmx
+	import future.keywords.in
+
+	default exception_list = []
+	default exception_count = 0
+
+	policy_name = input.metadata.policyName
+	policy_category = replace(input.metadata.policyCategory, " ", "_")
+	exception_list = input.metadata.exception[policy_category]
+
+	file_name = concat("", [input.metadata.mobileBuild, "_", input.metadata.image_sha, "_virustotal-mobapp-scan.json"])
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=virusTotalMobAppScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=virusTotalMobAppScan"])
+
+	request = {	
+		"method": "GET",
+		"url": complete_url
+	}
+
+	response = http.send(request)
+
+	deny [{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+		some rule in response.body.data.attributes.results
+		rule.category == "suspicious"
+		engine = rule.engine_name
+		engine_version = rule.engine_version
+		result = rule.result
+
+		exception_str=concat(":", [engine, result])
+		not exception_str in exception_list
+	
+		title := sprintf("APK/IPA %v scan for rule engine: %v/%v failed with suspicious finding: %v.", [response.body.artifact, engine, engine_version, result])
+		msg := sprintf("APK/IPA %v scan for rule engine: %v/%v failed with suspicious finding: %v.", [response.body.artifact, engine, engine_version, result])
+		sugg := ""
+		error := ""
+		alertStatus := "active"
+	}
+
+	deny [{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
+		some rule in response.body.data.attributes.results
+		rule.category == "suspicious"
+		engine = rule.engine_name
+		engine_version = rule.engine_version
+		result = rule.result
+
+		exception_str=concat(":", [engine, result])
+		exception_str in exception_list
+
+		title := sprintf("APK/IPA %v scan for rule engine: %v/%v failed with suspicious finding: %v.", [response.body.artifact, engine, engine_version, result])
+		msg := sprintf("APK/IPA %v scan for rule engine: %v/%v failed with suspicious finding: %v.", [response.body.artifact, engine, engine_version, result])
+		sugg := ""
+		error := ""
+		exception_cause := exception_str
+		alertStatus := "exception"
+	}
+	`,
+
+	385: `
+	package opsmx
+	import future.keywords.in
+
+	default exception_list = []
+	default exception_count = 0
+
+	policy_name = input.metadata.policyName
+	policy_category = replace(input.metadata.policyCategory, " ", "_")
+	exception_list = input.metadata.exception[policy_category]
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.mobileBuild, "_", image_sha, "_mobsfscan.json"]) 
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=mobsfScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=mobsfScan"])
+
+	request = {	
+		"method": "GET",
+		"url": complete_url
+	}
+
+	response = http.send(request)
+
+	artifact_name := response.body.artifactName
+
+	low_severity_certificate_findings := [response.body.certificate_analysis.certificate_findings[i] | response.body.certificate_analysis.certificate_findings[i][0] == "Low"]
+	low_severity_certificate_issue_count := count(low_severity_certificate_findings)
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+		low_severity_certificate_issue_count > 0
+		some idx in low_severity_certificate_findings
+		not idx[2] in exception_list
+	
+		title := sprintf("Mobile Application Package Certificate Issue: %v.", [idx[2]])
+		msg := idx[1]
+		sugg := ""
+		error := ""
+		alertStatus := "active"
+	}
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
+		low_severity_certificate_issue_count > 0
+		some idx in low_severity_certificate_findings
+		idx[2] in exception_list
+	
+		title := sprintf("Mobile Application Package Certificate Issue: %v.", [idx[2]])
+		msg := idx[1]
+		sugg := ""
+		error := ""
+		exception_cause := idx[2]
+		alertStatus := "exception"
+	}`,
+
+	386: `
+	package opsmx
+	import future.keywords.in
+
+	default exception_list = []
+	default exception_count = 0
+
+	policy_name = input.metadata.policyName
+	policy_category = replace(input.metadata.policyCategory, " ", "_")
+	exception_list = input.metadata.exception[policy_category]
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.mobileBuild, "_", image_sha, "_mobsfscan.json"]) 
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=mobsfScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=mobsfScan"])
+
+	request = {	
+		"method": "GET",
+		"url": complete_url
+	}
+
+	response = http.send(request)
+
+	artifact_name := response.body.artifactName
+
+	medium_severity_certificate_findings := [response.body.certificate_analysis.certificate_findings[i] | response.body.certificate_analysis.certificate_findings[i][0] == "Medium"]
+	medium_severity_certificate_issue_count := count(medium_severity_certificate_findings)
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+		medium_severity_certificate_issue_count > 0
+		some idx in medium_severity_certificate_findings
+		not idx[2] in exception_list
+	
+		title := sprintf("Mobile Application Package Certificate Issue: %v.", [idx[2]])
+		msg := idx[1]
+		sugg := ""
+		error := ""
+		alertStatus := "active"
+	}
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
+		medium_severity_certificate_issue_count > 0
+		some idx in medium_severity_certificate_findings
+		idx[2] in exception_list
+	
+		title := sprintf("Mobile Application Package Certificate Issue: %v.", [idx[2]])
+		msg := idx[1]
+		sugg := ""
+		error := ""
+		exception_cause := idx[2]
+		alertStatus := "exception"
+	}`,
+
+	387: `
+	package opsmx
+	import future.keywords.in
+
+	default exception_list = []
+	default exception_count = 0
+
+	policy_name = input.metadata.policyName
+	policy_category = replace(input.metadata.policyCategory, " ", "_")
+	exception_list = input.metadata.exception[policy_category]
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.mobileBuild, "_", image_sha, "_mobsfscan.json"]) 
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=mobsfScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=mobsfScan"])
+
+	request = {	
+		"method": "GET",
+		"url": complete_url
+	}
+
+	response = http.send(request)
+
+	artifact_name := response.body.artifactName
+
+	high_severity_certificate_findings := [response.body.certificate_analysis.certificate_findings[i] | response.body.certificate_analysis.certificate_findings[i][0] == "High"]
+	high_severity_certificate_issue_count := count(high_severity_certificate_findings)
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+		high_severity_certificate_issue_count > 0
+		some idx in high_severity_certificate_findings
+		not idx[2] in exception_list
+	
+		title := sprintf("Mobile Application Package Certificate Issue: %v.", [idx[2]])
+		msg := idx[1]
+		sugg := ""
+		error := ""
+		alertStatus := "active"
+	}
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
+		high_severity_certificate_issue_count > 0
+		some idx in high_severity_certificate_findings
+		idx[2] in exception_list
+	
+		title := sprintf("Mobile Application Package Certificate Issue: %v.", [idx[2]])
+		msg := idx[1]
+		sugg := ""
+		error := ""
+		exception_cause := idx[2]
+		alertStatus := "exception"
+	}`,
+
+	388:`
+	package opsmx
+	import future.keywords.in
+
+	default exception_list = []
+	default exception_count = 0
+
+	policy_name = input.metadata.policyName
+	policy_category = replace(input.metadata.policyCategory, " ", "_")
+	exception_list = input.metadata.exception[policy_category]
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.mobileBuild, "_", image_sha, "_mobsfscan.json"])
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=mobsfScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=mobsfScan"])
+
+	request = {
+			"method": "GET",
+			"url": complete_url
+	}
+
+	response = http.send(request)
+
+	artifact_name := response.body.artifactName
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+		some key
+		permission := response.body.permissions[key]
+		permission.status == "Low"
+		not key in exception_list
+		info := permission.info
+		desc := permission.description
+		title := sprintf("Permission: %v assigned to Mobile Application Package: %v", [key, artifact_name])
+		msg := sprintf("Permission: %v assigned to Mobile Application Package: %v. \n Permission: %v \n Info: %v \n Description: %v", [key, artifact_name, key, info, desc])
+		sugg := ""
+		error := ""
+		alertStatus := "active"
+	}
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
+		some key
+		permission := response.body.permissions[key]
+		permission.status == "Low"
+		key in exception_list
+		info := permission.info
+		desc := permission.description
+		title := sprintf("Permission: %v assigned to Mobile Application Package: %v", [key, artifact_name])
+		msg := sprintf("Permission: %v assigned to Mobile Application Package: %v. \n Permission: %v \n Info: %v \n Description: %v", [key, artifact_name, key, info, desc])
+		sugg := ""
+		error := ""
+		exception_cause := key
+		alertStatus := "exception"
+	}`,
+
+	389:`
+	package opsmx
+	import future.keywords.in
+
+	default exception_list = []
+	default exception_count = 0
+
+	policy_name = input.metadata.policyName
+	policy_category = replace(input.metadata.policyCategory, " ", "_")
+	exception_list = input.metadata.exception[policy_category]
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.mobileBuild, "_", image_sha, "_mobsfscan.json"])
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=mobsfScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=mobsfScan"])
+
+	request = {
+			"method": "GET",
+			"url": complete_url
+	}
+
+	response = http.send(request)
+
+	artifact_name := response.body.artifactName
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+		some key
+		permission := response.body.permissions[key]
+		permission.status == "Medium"
+		not key in exception_list
+		info := permission.info
+		desc := permission.description
+		title := sprintf("Permission: %v assigned to Mobile Application Package: %v", [key, artifact_name])
+		msg := sprintf("Permission: %v assigned to Mobile Application Package: %v. \n Permission: %v \n Info: %v \n Description: %v", [key, artifact_name, key, info, desc])
+		sugg := ""
+		error := ""
+		alertStatus := "active"
+	}
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
+		some key
+		permission := response.body.permissions[key]
+		permission.status == "Medium"
+		key in exception_list
+		info := permission.info
+		desc := permission.description
+		title := sprintf("Permission: %v assigned to Mobile Application Package: %v", [key, artifact_name])
+		msg := sprintf("Permission: %v assigned to Mobile Application Package: %v. \n Permission: %v \n Info: %v \n Description: %v", [key, artifact_name, key, info, desc])
+		sugg := ""
+		error := ""
+		exception_cause := key
+		alertStatus := "exception"
+	}`,
+
+	390:`
+	package opsmx
+	import future.keywords.in
+
+	default exception_list = []
+	default exception_count = 0
+
+	policy_name = input.metadata.policyName
+	policy_category = replace(input.metadata.policyCategory, " ", "_")
+	exception_list = input.metadata.exception[policy_category]
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.mobileBuild, "_", image_sha, "_mobsfscan.json"])
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=mobsfScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=mobsfScan"])
+
+	request = {
+			"method": "GET",
+			"url": complete_url
+	}
+
+	response = http.send(request)
+
+	artifact_name := response.body.artifactName
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+		some key
+		permission := response.body.permissions[key]
+		permission.status == "High"
+		not key in exception_list
+		info := permission.info
+		desc := permission.description
+		title := sprintf("Permission: %v assigned to Mobile Application Package: %v", [key, artifact_name])
+		msg := sprintf("Permission: %v assigned to Mobile Application Package: %v. \n Permission: %v \n Info: %v \n Description: %v", [key, artifact_name, key, info, desc])
+		sugg := ""
+		error := ""
+		alertStatus := "active"
+	}
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
+		some key
+		permission := response.body.permissions[key]
+		permission.status == "High"
+		key in exception_list
+		info := permission.info
+		desc := permission.description
+		title := sprintf("Permission: %v assigned to Mobile Application Package: %v", [key, artifact_name])
+		msg := sprintf("Permission: %v assigned to Mobile Application Package: %v. \n Permission: %v \n Info: %v \n Description: %v", [key, artifact_name, key, info, desc])
+		sugg := ""
+		error := ""
+		exception_cause := key
+		alertStatus := "exception"
+	}`,
+
+	391:`
+	package opsmx
+	import future.keywords.in
+
+	default exception_list = []
+	default exception_count = 0
+	default low_severity_manifest_issue_count := 0
+
+	policy_name = input.metadata.policyName
+	policy_category = replace(input.metadata.policyCategory, " ", "_")
+	exception_list = input.metadata.exception[policy_category]
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.mobileBuild, "_", image_sha, "_mobsfscan.json"])
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=mobsfScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=mobsfScan"])
+
+	request = {
+			"method": "GET",
+			"url": complete_url
+	}
+
+	response = http.send(request)
+
+
+	low_severity_manifest_findings = [response.body.manifest_analysis.manifest_findings[idx] | response.body.manifest_analysis.manifest_findings[idx].severity == "Low"]
+	low_severity_manifest_issue_count = count(low_severity_manifest_findings)
+	artifact_name := response.body.artifactName
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+		some finding in low_severity_manifest_findings
+		rule := finding.rule
+		rule_title := finding.title
+		description := finding.description
+		components := concat(",", finding.component)
+
+		not rule in exception_list
+		
+		title := sprintf("Mobile Application Package Manifest Issue: %v found in %v", [rule, artifact_name])
+		msg := sprintf("Mobile Application Package Manifest Issue: %v found in %v. \n Info: %v \n Description: %v \n Components: %v", [rule, artifact_name, rule_title, description, components])
+		sugg := ""
+		error := ""
+		alertStatus := "active"
+	}
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": rule, "alertStatus": alertStatus}]{
+		some finding in low_severity_manifest_findings
+		rule := finding.rule
+		rule_title := finding.title
+		description := finding.description
+		components := concat(",", finding.component)
+
+		rule in exception_list
+		
+		title := sprintf("Mobile Application Package Manifest Issue: %v found in %v", [rule, artifact_name])
+		msg := sprintf("Mobile Application Package Manifest Issue: %v found in %v. \n Info: %v \n Description: %v \n Components: %v", [rule, artifact_name, rule_title, description, components])
+		sugg := ""
+		error := ""
+		alertStatus := "exception"
+	}`,
+
+	392:`
+	package opsmx
+	import future.keywords.in
+
+	default exception_list = []
+	default exception_count = 0
+	default medium_severity_manifest_issue_count := 0
+
+	policy_name = input.metadata.policyName
+	policy_category = replace(input.metadata.policyCategory, " ", "_")
+	exception_list = input.metadata.exception[policy_category]
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.mobileBuild, "_", image_sha, "_mobsfscan.json"])
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=mobsfScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=mobsfScan"])
+
+	request = {
+			"method": "GET",
+			"url": complete_url
+	}
+
+	response = http.send(request)
+
+
+	medium_severity_manifest_findings = [response.body.manifest_analysis.manifest_findings[idx] | response.body.manifest_analysis.manifest_findings[idx].severity == "Medium"]
+	medium_severity_manifest_issue_count = count(medium_severity_manifest_findings)
+	artifact_name := response.body.artifactName
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+		some finding in medium_severity_manifest_findings
+		rule := finding.rule
+		rule_title := finding.title
+		description := finding.description
+		components := concat(",", finding.component)
+
+		not rule in exception_list
+		
+		title := sprintf("Mobile Application Package Manifest Issue: %v found in %v", [rule, artifact_name])
+		msg := sprintf("Mobile Application Package Manifest Issue: %v found in %v. \n Info: %v \n Description: %v \n Components: %v", [rule, artifact_name, rule_title, description, components])
+		sugg := ""
+		error := ""
+		alertStatus := "active"
+	}
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": rule, "alertStatus": alertStatus}]{
+		some finding in medium_severity_manifest_findings
+		rule := finding.rule
+		rule_title := finding.title
+		description := finding.description
+		components := concat(",", finding.component)
+
+		rule in exception_list
+		
+		title := sprintf("Mobile Application Package Manifest Issue: %v found in %v", [rule, artifact_name])
+		msg := sprintf("Mobile Application Package Manifest Issue: %v found in %v. \n Info: %v \n Description: %v \n Components: %v", [rule, artifact_name, rule_title, description, components])
+		sugg := ""
+		error := ""
+		alertStatus := "exception"
+	}`,
+
+	393:`
+	package opsmx
+	import future.keywords.in
+
+	default exception_list = []
+	default exception_count = 0
+	default high_severity_manifest_issue_count := 0
+
+	policy_name = input.metadata.policyName
+	policy_category = replace(input.metadata.policyCategory, " ", "_")
+	exception_list = input.metadata.exception[policy_category]
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.mobileBuild, "_", image_sha, "_mobsfscan.json"])
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=mobsfScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=mobsfScan"])
+
+	request = {
+			"method": "GET",
+			"url": complete_url
+	}
+
+	response = http.send(request)
+
+
+	high_severity_manifest_findings = [response.body.manifest_analysis.manifest_findings[idx] | response.body.manifest_analysis.manifest_findings[idx].severity == "High"]
+	high_severity_manifest_issue_count = count(high_severity_manifest_findings)
+	artifact_name := response.body.artifactName
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+		some finding in high_severity_manifest_findings
+		rule := finding.rule
+		rule_title := finding.title
+		description := finding.description
+		components := concat(",", finding.component)
+
+		not rule in exception_list
+		
+		title := sprintf("Mobile Application Package Manifest Issue: %v found in %v", [rule, artifact_name])
+		msg := sprintf("Mobile Application Package Manifest Issue: %v found in %v. \n Info: %v \n Description: %v \n Components: %v", [rule, artifact_name, rule_title, description, components])
+		sugg := ""
+		error := ""
+		alertStatus := "active"
+	}
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": rule, "alertStatus": alertStatus}]{
+		some finding in high_severity_manifest_findings
+		rule := finding.rule
+		rule_title := finding.title
+		description := finding.description
+		components := concat(",", finding.component)
+
+		rule in exception_list
+		
+		title := sprintf("Mobile Application Package Manifest Issue: %v found in %v", [rule, artifact_name])
+		msg := sprintf("Mobile Application Package Manifest Issue: %v found in %v. \n Info: %v \n Description: %v \n Components: %v", [rule, artifact_name, rule_title, description, components])
+		sugg := ""
+		error := ""
+		alertStatus := "exception"
+	}`,
+
+	394:`
+	package opsmx
+	import future.keywords.in
+
+	default exception_list = []
+	default exception_count = 0
+	default low_severity_network_issue_count := 0
+
+	policy_name = input.metadata.policyName
+	policy_category = replace(input.metadata.policyCategory, " ", "_")
+	exception_list = input.metadata.exception[policy_category]
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.mobileBuild, "_", image_sha, "_mobsfscan.json"])
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=mobsfScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=mobsfScan"])
+
+	request = {
+			"method": "GET",
+			"url": complete_url
+	}
+
+	response = http.send(request)
+
+	low_severity_network_findings = [response.body.network_security.network_findings[idx] | response.body.network_security.network_findings[idx].severity == "Low"]
+	low_severity_network_issue_count = count(low_severity_network_findings)
+	artifact_name := response.body.artifactName
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+		some finding in low_severity_network_findings
+		scope := concat(",", finding.scope)
+		description := finding.description
+		
+		not description in exception_list
+
+		title := sprintf("Mobile Application Package Network Issue found in %v", [artifact_name])
+		msg := sprintf("Mobile Application Package Manifest Issue found in %v. \n Description: %v \n Components: %v", [artifact_name, description, scope])
+		sugg := ""
+		error := ""
+		alertStatus := "active"
+	}
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": description, "alertStatus": alertStatus}]{
+		some finding in low_severity_network_findings
+		scope := concat(",", finding.scope)
+		description := finding.description
+		
+		description in exception_list
+
+		title := sprintf("Mobile Application Package Network Issue found in %v", [artifact_name])
+		msg := sprintf("Mobile Application Package Manifest Issue found in %v. \n Description: %v \n Components: %v", [artifact_name, description, scope])
+		sugg := ""
+		error := ""
+		alertStatus := "exception"
+	}`,
+
+	395:`
+	package opsmx
+	import future.keywords.in
+
+	default exception_list = []
+	default exception_count = 0
+	default medium_severity_network_issue_count := 0
+
+	policy_name = input.metadata.policyName
+	policy_category = replace(input.metadata.policyCategory, " ", "_")
+	exception_list = input.metadata.exception[policy_category]
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.mobileBuild, "_", image_sha, "_mobsfscan.json"])
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=mobsfScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=mobsfScan"])
+
+	request = {
+			"method": "GET",
+			"url": complete_url
+	}
+
+	response = http.send(request)
+
+	medium_severity_network_findings = [response.body.network_security.network_findings[idx] | response.body.network_security.network_findings[idx].severity == "Medium"]
+	medium_severity_network_issue_count = count(medium_severity_network_findings)
+	artifact_name := response.body.artifactName
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+		some finding in medium_severity_network_findings
+		scope := concat(",", finding.scope)
+		description := finding.description
+		
+		not description in exception_list
+
+		title := sprintf("Mobile Application Package Network Issue found in %v", [artifact_name])
+		msg := sprintf("Mobile Application Package Manifest Issue found in %v. \n Description: %v \n Components: %v", [artifact_name, description, scope])
+		sugg := ""
+		error := ""
+		alertStatus := "active"
+	}
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": description, "alertStatus": alertStatus}]{
+		some finding in medium_severity_network_findings
+		scope := concat(",", finding.scope)
+		description := finding.description
+		
+		description in exception_list
+
+		title := sprintf("Mobile Application Package Network Issue found in %v", [artifact_name])
+		msg := sprintf("Mobile Application Package Manifest Issue found in %v. \n Description: %v \n Components: %v", [artifact_name, description, scope])
+		sugg := ""
+		error := ""
+		alertStatus := "exception"
+	}`,
+
+	396:`
+	package opsmx
+	import future.keywords.in
+
+	default exception_list = []
+	default exception_count = 0
+	default high_severity_network_issue_count := 0
+
+	policy_name = input.metadata.policyName
+	policy_category = replace(input.metadata.policyCategory, " ", "_")
+	exception_list = input.metadata.exception[policy_category]
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.mobileBuild, "_", image_sha, "_mobsfscan.json"])
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=mobsfScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=mobsfScan"])
+
+	request = {
+			"method": "GET",
+			"url": complete_url
+	}
+
+	response = http.send(request)
+
+	high_severity_network_findings = [response.body.network_security.network_findings[idx] | response.body.network_security.network_findings[idx].severity == "High"]
+	high_severity_network_issue_count = count(high_severity_network_findings)
+	artifact_name := response.body.artifactName
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+		some finding in high_severity_network_findings
+		scope := concat(",", finding.scope)
+		description := finding.description
+		
+		not description in exception_list
+
+		title := sprintf("Mobile Application Package Network Issue found in %v", [artifact_name])
+		msg := sprintf("Mobile Application Package Manifest Issue found in %v. \n Description: %v \n Components: %v", [artifact_name, description, scope])
+		sugg := ""
+		error := ""
+		alertStatus := "active"
+	}
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": description, "alertStatus": alertStatus}]{
+		some finding in high_severity_network_findings
+		scope := concat(",", finding.scope)
+		description := finding.description
+		
+		description in exception_list
+
+		title := sprintf("Mobile Application Package Network Issue found in %v", [artifact_name])
+		msg := sprintf("Mobile Application Package Manifest Issue found in %v. \n Description: %v \n Components: %v", [artifact_name, description, scope])
+		sugg := ""
+		error := ""
+		alertStatus := "exception"
+	}`,
+
+	397:`
+	package opsmx
+	import future.keywords.in
+
+	default exception_list = []
+	default exception_count = 0
+
+	policy_name = input.metadata.policyName
+	policy_category = replace(input.metadata.policyCategory, " ", "_")
+	exception_list = input.metadata.exception[policy_category]
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.mobileBuild, "_", image_sha, "_mobsfscan.json"])
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=mobsfScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=mobsfScan"])
+
+	request = {
+			"method": "GET",
+			"url": complete_url
+	}
+
+	response = http.send(request)
+
+
+	artifact_name = response.body.artifactName
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+		some key
+		finding := response.body.binary_analysis.findings[key]
+		finding.severity == "Low"
+
+		not key in exception_list
+
+		desc := finding.detailed_desc
+		title := key
+		msg := sprintf("Binary Analysis Failure in artifact: %v \n Description: %v \n CVSS: %v \n CWE: %v \n MASVS: %v", [artifact_name, desc, finding.cvss, finding.cwe, finding.masvs])
+		sugg := ""
+		error := ""
+		alertStatus := "active"
+	}
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
+		some key
+		finding := response.body.binary_analysis.findings[key]
+		finding.severity == "Low"
+
+		key in exception_list
+
+		desc := finding.detailed_desc
+		title := key
+		msg := sprintf("Binary Analysis Failure in artifact: %v \n Description: %v \n CVSS: %v \n CWE: %v \n MASVS: %v", [artifact_name, desc, finding.cvss, finding.cwe, finding.masvs])
+		sugg := ""
+		error := ""
+		exception_cause := key
+		alertStatus := "exception"
+	}`,
+
+	398:`
+	package opsmx
+	import future.keywords.in
+
+	default exception_list = []
+	default exception_count = 0
+
+	policy_name = input.metadata.policyName
+	policy_category = replace(input.metadata.policyCategory, " ", "_")
+	exception_list = input.metadata.exception[policy_category]
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.mobileBuild, "_", image_sha, "_mobsfscan.json"])
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=mobsfScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=mobsfScan"])
+
+	request = {
+			"method": "GET",
+			"url": complete_url
+	}
+
+	response = http.send(request)
+
+
+	artifact_name = response.body.artifactName
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+		some key
+		finding := response.body.binary_analysis.findings[key]
+		finding.severity == "Medium"
+
+		not key in exception_list
+
+		desc := finding.detailed_desc
+		title := key
+		msg := sprintf("Binary Analysis Failure in artifact: %v \n Description: %v \n CVSS: %v \n CWE: %v \n MASVS: %v", [artifact_name, desc, finding.cvss, finding.cwe, finding.masvs])
+		sugg := ""
+		error := ""
+		alertStatus := "active"
+	}
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
+		some key
+		finding := response.body.binary_analysis.findings[key]
+		finding.severity == "Medium"
+
+		key in exception_list
+
+		desc := finding.detailed_desc
+		title := key
+		msg := sprintf("Binary Analysis Failure in artifact: %v \n Description: %v \n CVSS: %v \n CWE: %v \n MASVS: %v", [artifact_name, desc, finding.cvss, finding.cwe, finding.masvs])
+		sugg := ""
+		error := ""
+		exception_cause := key
+		alertStatus := "exception"
+	}`,
+
+	399:`
+	package opsmx
+	import future.keywords.in
+
+	default exception_list = []
+	default exception_count = 0
+
+	policy_name = input.metadata.policyName
+	policy_category = replace(input.metadata.policyCategory, " ", "_")
+	exception_list = input.metadata.exception[policy_category]
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.mobileBuild, "_", image_sha, "_mobsfscan.json"])
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=mobsfScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=mobsfScan"])
+
+	request = {
+			"method": "GET",
+			"url": complete_url
+	}
+
+	response = http.send(request)
+
+
+	artifact_name = response.body.artifactName
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+		some key
+		finding := response.body.binary_analysis.findings[key]
+		finding.severity == "High"
+
+		not key in exception_list
+
+		desc := finding.detailed_desc
+		title := key
+		msg := sprintf("Binary Analysis Failure in artifact: %v \n Description: %v \n CVSS: %v \n CWE: %v \n MASVS: %v", [artifact_name, desc, finding.cvss, finding.cwe, finding.masvs])
+		sugg := ""
+		error := ""
+		alertStatus := "active"
+	}
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
+		some key
+		finding := response.body.binary_analysis.findings[key]
+		finding.severity == "High"
+
+		key in exception_list
+
+		desc := finding.detailed_desc
+		title := key
+		msg := sprintf("Binary Analysis Failure in artifact: %v \n Description: %v \n CVSS: %v \n CWE: %v \n MASVS: %v", [artifact_name, desc, finding.cvss, finding.cwe, finding.masvs])
+		sugg := ""
+		error := ""
+		exception_cause := key
+		alertStatus := "exception"
+	}`,
+
+	400:`
+	package opsmx
+	import future.keywords.in
+
+	default exception_list = []
+	default exception_count = 0
+
+	policy_name = input.metadata.policyName
+	policy_category = replace(input.metadata.policyCategory, " ", "_")
+	exception_list = input.metadata.exception[policy_category]
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.mobileBuild, "_", image_sha, "_mobsfscan.json"])
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=mobsfScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=mobsfScan"])
+
+	request = {
+			"method": "GET",
+			"url": complete_url
+	}
+
+	response = http.send(request)
+
+
+	artifact_name = response.body.artifactName
+
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+		some key
+		finding := response.body.macho_analysis[key]
+		key != "name"
+		finding.severity == "Low"
+
+		not key in exception_list
+
+		desc := finding.description
+		title := sprintf("Macho Analysis Failure in artifact: %v for rule: %v", [artifact_name, key])
+		msg := sprintf("Macho Analysis Failure in artifact: %v \n Description: %v", [artifact_name, desc])
+		sugg := ""
+		error := ""
+		alertStatus := "active"
+	}
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
+		some key
+		finding := response.body.macho_analysis[key]
+		key != "name"
+		finding.severity == "Low"
+
+		key in exception_list
+
+		desc := finding.description
+		title := sprintf("Macho Analysis Failure in artifact: %v for rule: %v", [artifact_name, key])
+		msg := sprintf("Macho Analysis Failure in artifact: %v \n Description: %v", [artifact_name, desc])
+		sugg := ""
+		error := ""
+		exception_cause := key
+		alertStatus := "active"
+	}`,
+
+	401:`
+	package opsmx
+	import future.keywords.in
+
+	default exception_list = []
+	default exception_count = 0
+
+	policy_name = input.metadata.policyName
+	policy_category = replace(input.metadata.policyCategory, " ", "_")
+	exception_list = input.metadata.exception[policy_category]
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.mobileBuild, "_", image_sha, "_mobsfscan.json"])
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=mobsfScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=mobsfScan"])
+
+	request = {
+			"method": "GET",
+			"url": complete_url
+	}
+
+	response = http.send(request)
+
+
+	artifact_name = response.body.artifactName
+
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+		some key
+		finding := response.body.macho_analysis[key]
+		key != "name"
+		finding.severity == "Medium"
+
+		not key in exception_list
+
+		desc := finding.description
+		title := sprintf("Macho Analysis Failure in artifact: %v for rule: %v", [artifact_name, key])
+		msg := sprintf("Macho Analysis Failure in artifact: %v \n Description: %v", [artifact_name, desc])
+		sugg := ""
+		error := ""
+		alertStatus := "active"
+	}
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
+		some key
+		finding := response.body.macho_analysis[key]
+		key != "name"
+		finding.severity == "Medium"
+
+		key in exception_list
+
+		desc := finding.description
+		title := sprintf("Macho Analysis Failure in artifact: %v for rule: %v", [artifact_name, key])
+		msg := sprintf("Macho Analysis Failure in artifact: %v \n Description: %v", [artifact_name, desc])
+		sugg := ""
+		error := ""
+		exception_cause := key
+		alertStatus := "active"
+	}`,
+
+	402:`
+	package opsmx
+	import future.keywords.in
+
+	default exception_list = []
+	default exception_count = 0
+
+	policy_name = input.metadata.policyName
+	policy_category = replace(input.metadata.policyCategory, " ", "_")
+	exception_list = input.metadata.exception[policy_category]
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.mobileBuild, "_", image_sha, "_mobsfscan.json"])
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=mobsfScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=mobsfScan"])
+
+	request = {
+			"method": "GET",
+			"url": complete_url
+	}
+
+	response = http.send(request)
+
+
+	artifact_name = response.body.artifactName
+
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+		some key
+		finding := response.body.macho_analysis[key]
+		key != "name"
+		finding.severity == "High"
+
+		not key in exception_list
+
+		desc := finding.description
+		title := sprintf("Macho Analysis Failure in artifact: %v for rule: %v", [artifact_name, key])
+		msg := sprintf("Macho Analysis Failure in artifact: %v \n Description: %v", [artifact_name, desc])
+		sugg := ""
+		error := ""
+		alertStatus := "active"
+	}
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
+		some key
+		finding := response.body.macho_analysis[key]
+		key != "name"
+		finding.severity == "High"
+
+		key in exception_list
+
+		desc := finding.description
+		title := sprintf("Macho Analysis Failure in artifact: %v for rule: %v", [artifact_name, key])
+		msg := sprintf("Macho Analysis Failure in artifact: %v \n Description: %v", [artifact_name, desc])
+		sugg := ""
+		error := ""
+		exception_cause := key
+		alertStatus := "active"
+	}`,
+
+	403:`
+	package opsmx
+	import future.keywords.in
+
+	default exception_list = []
+	default exception_count = 0
+
+	policy_name = input.metadata.policyName
+	policy_category = replace(input.metadata.policyCategory, " ", "_")
+	exception_list = input.metadata.exception[policy_category]
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.mobileBuild, "_", image_sha, "_mobsfscan.json"])
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=mobsfScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=mobsfScan"])
+
+	request = {
+			"method": "GET",
+			"url": complete_url
+	}
+
+	response = http.send(request)
+
+	artifact_name := response.body.artifactName
+
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}] {	
+		some key
+		finding := response.body.code_analysis.findings[key]
+		finding.metadata.severity == "Low"
+
+		not key in exception_list
+
+		files := concat_keys(finding.files)
+		title := sprintf("Code Analysis Failure in artifact: %v for rule: %v", [artifact_name, key])
+		desc := finding.metadata.description    
+		msg := sprintf("Code Analysis Failure in artifact: %v \n Description: %v \n CVSS: %v \n CWE: %v \n MASVS: %v \n Impacted Files: %v", [artifact_name, desc, finding.metadata.cvss, finding.metadata.cwe, finding.metadata.masvs, files])
+		sugg := finding.metadata.ref
+		error := ""
+		alertStatus := "active"
+	}
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}] {	
+		some key
+		finding := response.body.code_analysis.findings[key]
+		finding.metadata.severity == "Low"
+
+		key in exception_list
+
+		files := concat_keys(finding.files)
+		title := sprintf("Code Analysis Failure in artifact: %v for rule: %v", [artifact_name, key])
+		desc := finding.metadata.description    
+		msg := sprintf("Code Analysis Failure in artifact: %v \n Description: %v \n CVSS: %v \n CWE: %v \n MASVS: %v \n Impacted Files: %v", [artifact_name, desc, finding.metadata.cvss, finding.metadata.cwe, finding.metadata.masvs, files])
+		sugg := finding.metadata.ref
+		error := ""
+		exception_cause := key
+		alertStatus := "exception"
+	}
+
+
+	concat_keys(files) = result {
+		keys := {k | files[k]}   # Extract the keys from the input object
+		result := concat("\n", keys)  # Join the keys with newline characters
+	}`,
+
+	404:`
+	package opsmx
+	import future.keywords.in
+
+	default exception_list = []
+	default exception_count = 0
+
+	policy_name = input.metadata.policyName
+	policy_category = replace(input.metadata.policyCategory, " ", "_")
+	exception_list = input.metadata.exception[policy_category]
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.mobileBuild, "_", image_sha, "_mobsfscan.json"])
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=mobsfScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=mobsfScan"])
+
+	request = {
+			"method": "GET",
+			"url": complete_url
+	}
+
+	response = http.send(request)
+
+	artifact_name := response.body.artifactName
+
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}] {	
+		some key
+		finding := response.body.code_analysis.findings[key]
+		finding.metadata.severity == "Medium"
+
+		not key in exception_list
+
+		files := concat_keys(finding.files)
+		title := sprintf("Code Analysis Failure in artifact: %v for rule: %v", [artifact_name, key])
+		desc := finding.metadata.description    
+		msg := sprintf("Code Analysis Failure in artifact: %v \n Description: %v \n CVSS: %v \n CWE: %v \n MASVS: %v \n Impacted Files: %v", [artifact_name, desc, finding.metadata.cvss, finding.metadata.cwe, finding.metadata.masvs, files])
+		sugg := finding.metadata.ref
+		error := ""
+		alertStatus := "active"
+	}
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}] {	
+		some key
+		finding := response.body.code_analysis.findings[key]
+		finding.metadata.severity == "Medium"
+
+		key in exception_list
+
+		files := concat_keys(finding.files)
+		title := sprintf("Code Analysis Failure in artifact: %v for rule: %v", [artifact_name, key])
+		desc := finding.metadata.description    
+		msg := sprintf("Code Analysis Failure in artifact: %v \n Description: %v \n CVSS: %v \n CWE: %v \n MASVS: %v \n Impacted Files: %v", [artifact_name, desc, finding.metadata.cvss, finding.metadata.cwe, finding.metadata.masvs, files])
+		sugg := finding.metadata.ref
+		error := ""
+		exception_cause := key
+		alertStatus := "exception"
+	}
+
+
+	concat_keys(files) = result {
+		keys := {k | files[k]}   # Extract the keys from the input object
+		result := concat("\n", keys)  # Join the keys with newline characters
+	}`,
+
+	405:`
+	package opsmx
+	import future.keywords.in
+
+	default exception_list = []
+	default exception_count = 0
+
+	policy_name = input.metadata.policyName
+	policy_category = replace(input.metadata.policyCategory, " ", "_")
+	exception_list = input.metadata.exception[policy_category]
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.mobileBuild, "_", image_sha, "_mobsfscan.json"])
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=mobsfScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=mobsfScan"])
+
+	request = {
+			"method": "GET",
+			"url": complete_url
+	}
+
+	response = http.send(request)
+
+	artifact_name := response.body.artifactName
+
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}] {	
+		some key
+		finding := response.body.code_analysis.findings[key]
+		finding.metadata.severity == "High"
+
+		not key in exception_list
+
+		files := concat_keys(finding.files)
+		title := sprintf("Code Analysis Failure in artifact: %v for rule: %v", [artifact_name, key])
+		desc := finding.metadata.description    
+		msg := sprintf("Code Analysis Failure in artifact: %v \n Description: %v \n CVSS: %v \n CWE: %v \n MASVS: %v \n Impacted Files: %v", [artifact_name, desc, finding.metadata.cvss, finding.metadata.cwe, finding.metadata.masvs, files])
+		sugg := finding.metadata.ref
+		error := ""
+		alertStatus := "active"
+	}
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}] {	
+		some key
+		finding := response.body.code_analysis.findings[key]
+		finding.metadata.severity == "High"
+
+		key in exception_list
+
+		files := concat_keys(finding.files)
+		title := sprintf("Code Analysis Failure in artifact: %v for rule: %v", [artifact_name, key])
+		desc := finding.metadata.description    
+		msg := sprintf("Code Analysis Failure in artifact: %v \n Description: %v \n CVSS: %v \n CWE: %v \n MASVS: %v \n Impacted Files: %v", [artifact_name, desc, finding.metadata.cvss, finding.metadata.cwe, finding.metadata.masvs, files])
+		sugg := finding.metadata.ref
+		error := ""
+		exception_cause := key
+		alertStatus := "exception"
+	}
+
+
+	concat_keys(files) = result {
+		keys := {k | files[k]}   # Extract the keys from the input object
+		result := concat("\n", keys)  # Join the keys with newline characters
+	}`,
+
+	406:`
+	package opsmx
+	import future.keywords.in
+
+	default exception_list = []
+	default exception_count = 0
+
+	policy_name = input.metadata.policyName
+	policy_category = replace(input.metadata.policyCategory, " ", "_")
+	exception_list = input.metadata.exception[policy_category]
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.mobileBuild, "_", image_sha, "_mobsfscan.json"])
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=mobsfScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=mobsfScan"])
+
+	request = {
+			"method": "GET",
+			"url": complete_url
+	}
+
+	response = http.send(request)
+
+	artifact_name := response.body.artifactName
+
+	low_severity_findings := response.body.appsec.Low
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}] {	
+		some finding in low_severity_findings
+
+		not finding.title in exception_list
+
+		title := finding.title
+		msg := sprintf("Section: %v \n Description: %v", [finding.section, finding.description])
+		sugg := ""
+		error := ""
+		alertStatus := "active"
+	}
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": title, "alertStatus": alertStatus}] {
+		some finding in low_severity_findings
+
+		finding.title in exception_list
+		
+		title := finding.title
+		msg := sprintf("Section: %v \n Description: %v", [finding.section, finding.description])
+		sugg := ""
+		error := ""
+		alertStatus := "exception"
+	}`,
+
+	407:`
+	package opsmx
+	import future.keywords.in
+
+	default exception_list = []
+	default exception_count = 0
+
+	policy_name = input.metadata.policyName
+	policy_category = replace(input.metadata.policyCategory, " ", "_")
+	exception_list = input.metadata.exception[policy_category]
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.mobileBuild, "_", image_sha, "_mobsfscan.json"])
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=mobsfScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=mobsfScan"])
+
+	request = {
+			"method": "GET",
+			"url": complete_url
+	}
+
+	response = http.send(request)
+
+	artifact_name := response.body.artifactName
+
+	medium_severity_findings := response.body.appsec.Medium
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}] {	
+		some finding in medium_severity_findings
+
+		not finding.title in exception_list
+
+		title := finding.title
+		msg := sprintf("Section: %v \n Description: %v", [finding.section, finding.description])
+		sugg := ""
+		error := ""
+		alertStatus := "active"
+	}
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": title, "alertStatus": alertStatus}] {
+		some finding in medium_severity_findings
+
+		finding.title in exception_list
+		
+		title := finding.title
+		msg := sprintf("Section: %v \n Description: %v", [finding.section, finding.description])
+		sugg := ""
+		error := ""
+		alertStatus := "exception"
+	}`,
+
+	408:`
+	package opsmx
+	import future.keywords.in
+
+	default exception_list = []
+	default exception_count = 0
+
+	policy_name = input.metadata.policyName
+	policy_category = replace(input.metadata.policyCategory, " ", "_")
+	exception_list = input.metadata.exception[policy_category]
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.mobileBuild, "_", image_sha, "_mobsfscan.json"])
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=mobsfScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=mobsfScan"])
+
+	request = {
+			"method": "GET",
+			"url": complete_url
+	}
+
+	response = http.send(request)
+
+	artifact_name := response.body.artifactName
+
+	high_severity_findings := response.body.appsec.High
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}] {	
+		some finding in high_severity_findings
+
+		not finding.title in exception_list
+
+		title := finding.title
+		msg := sprintf("Section: %v \n Description: %v", [finding.section, finding.description])
+		sugg := ""
+		error := ""
+		alertStatus := "active"
+	}
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": title, "alertStatus": alertStatus}] {
+		some finding in high_severity_findings
+
+		finding.title in exception_list
+		
+		title := finding.title
+		msg := sprintf("Section: %v \n Description: %v", [finding.section, finding.description])
+		sugg := ""
+		error := ""
+		alertStatus := "exception"
+	}`,
+
+	409:`
+	package opsmx
+	import future.keywords.in
+
+	default exception_list = []
+	default exception_count = 0
+
+	policy_name = input.metadata.policyName
+	policy_category = replace(input.metadata.policyCategory, " ", "_")
+	exception_list = input.metadata.exception[policy_category]
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.mobileBuild, "_", image_sha, "_mobsfscan.json"])
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=mobsfScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=mobsfScan"])
+
+	request = {
+			"method": "GET",
+			"url": complete_url
+	}
+
+	response = http.send(request)
+
+
+	artifact_name := response.body.artifactName
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}] {
+		some key
+		finding := response.body.android_api[key]
+
+		finding.metadata.severity == "Low"
+		
+		not key in exception_list
+
+		files := concat_keys(finding.files)
+		title := sprintf("Android API Analysis Failure in artifact: %v for rule: %v", [artifact_name, key])
+		desc := finding.metadata.description
+		msg := sprintf("Android API Analysis Failure in artifact: %v \n Description: %v \n Impacted Files: %v", [artifact_name, desc, files])
+		sugg := ""
+		error := ""
+		alertStatus := "active"
+	}
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}] {
+		some key
+		finding := response.body.android_api[key]
+
+		finding.metadata.severity == "Low"
+		
+		key in exception_list
+
+		files := concat_keys(finding.files)
+		title := sprintf("Android API Analysis Failure in artifact: %v for rule: %v", [artifact_name, key])
+		desc := finding.metadata.description
+		msg := sprintf("Android API Analysis Failure in artifact: %v \n Description: %v \n Impacted Files: %v", [artifact_name, desc, files])
+		sugg := ""
+		error := ""
+		exception_cause := key
+		alertStatus := "exception"
+	}
+
+	concat_keys(files) = result {
+		keys := {k | files[k]}   # Extract the keys from the input object
+		result := concat(" \n", keys)  # Join the keys with newline characters
+	}`,
+
+	410:`
+	package opsmx
+	import future.keywords.in
+
+	default exception_list = []
+	default exception_count = 0
+
+	policy_name = input.metadata.policyName
+	policy_category = replace(input.metadata.policyCategory, " ", "_")
+	exception_list = input.metadata.exception[policy_category]
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.mobileBuild, "_", image_sha, "_mobsfscan.json"])
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=mobsfScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=mobsfScan"])
+
+	request = {
+			"method": "GET",
+			"url": complete_url
+	}
+
+	response = http.send(request)
+
+
+	artifact_name := response.body.artifactName
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}] {
+		some key
+		finding := response.body.android_api[key]
+
+		finding.metadata.severity == "Medium"
+		
+		not key in exception_list
+
+		files := concat_keys(finding.files)
+		title := sprintf("Android API Analysis Failure in artifact: %v for rule: %v", [artifact_name, key])
+		desc := finding.metadata.description
+		msg := sprintf("Android API Analysis Failure in artifact: %v \n Description: %v \n Impacted Files: %v", [artifact_name, desc, files])
+		sugg := ""
+		error := ""
+		alertStatus := "active"
+	}
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}] {
+		some key
+		finding := response.body.android_api[key]
+
+		finding.metadata.severity == "Medium"
+		
+		key in exception_list
+
+		files := concat_keys(finding.files)
+		title := sprintf("Android API Analysis Failure in artifact: %v for rule: %v", [artifact_name, key])
+		desc := finding.metadata.description
+		msg := sprintf("Android API Analysis Failure in artifact: %v \n Description: %v \n Impacted Files: %v", [artifact_name, desc, files])
+		sugg := ""
+		error := ""
+		exception_cause := key
+		alertStatus := "exception"
+	}
+
+	concat_keys(files) = result {
+		keys := {k | files[k]}   # Extract the keys from the input object
+		result := concat(" \n", keys)  # Join the keys with newline characters
+	}`,
+
+	411:`
+	package opsmx
+	import future.keywords.in
+
+	default exception_list = []
+	default exception_count = 0
+
+	policy_name = input.metadata.policyName
+	policy_category = replace(input.metadata.policyCategory, " ", "_")
+	exception_list = input.metadata.exception[policy_category]
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.mobileBuild, "_", image_sha, "_mobsfscan.json"])
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=mobsfScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=mobsfScan"])
+
+	request = {
+			"method": "GET",
+			"url": complete_url
+	}
+
+	response = http.send(request)
+
+
+	artifact_name := response.body.artifactName
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}] {
+		some key
+		finding := response.body.android_api[key]
+
+		finding.metadata.severity == "High"
+		
+		not key in exception_list
+
+		files := concat_keys(finding.files)
+		title := sprintf("Android API Analysis Failure in artifact: %v for rule: %v", [artifact_name, key])
+		desc := finding.metadata.description
+		msg := sprintf("Android API Analysis Failure in artifact: %v \n Description: %v \n Impacted Files: %v", [artifact_name, desc, files])
+		sugg := ""
+		error := ""
+		alertStatus := "active"
+	}
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}] {
+		some key
+		finding := response.body.android_api[key]
+
+		finding.metadata.severity == "High"
+		
+		key in exception_list
+
+		files := concat_keys(finding.files)
+		title := sprintf("Android API Analysis Failure in artifact: %v for rule: %v", [artifact_name, key])
+		desc := finding.metadata.description
+		msg := sprintf("Android API Analysis Failure in artifact: %v \n Description: %v \n Impacted Files: %v", [artifact_name, desc, files])
+		sugg := ""
+		error := ""
+		exception_cause := key
+		alertStatus := "exception"
+	}
+
+	concat_keys(files) = result {
+		keys := {k | files[k]}   # Extract the keys from the input object
+		result := concat(" \n", keys)  # Join the keys with newline characters
+	}`,
+
+	412:`
+	package opsmx
+	import future.keywords.in
+
+	default exception_list = []
+	default exception_count = 0
+
+	policy_name = input.metadata.policyName
+	policy_category = replace(input.metadata.policyCategory, " ", "_")
+	exception_list = input.metadata.exception[policy_category]
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.mobileBuild, "_", image_sha, "_mobsfscan.json"])
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=mobsfScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=mobsfScan"])
+
+	request = {
+			"method": "GET",
+			"url": complete_url
+	}
+
+	response = http.send(request)
+
+
+	artifact_name := response.body.artifactName
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}] {
+		some key
+		finding := response.body.ios_api[key]
+
+		finding.metadata.severity == "Low"
+		
+		not key in exception_list
+
+		files := concat_keys(finding.files)
+		title := sprintf("IOS API Analysis Failure in artifact: %v for rule: %v", [artifact_name, key])
+		desc := finding.metadata.description
+		msg := sprintf("IOS API Analysis Failure in artifact: %v \n Description: %v \n Impacted Files: %v", [artifact_name, desc, files])
+		sugg := ""
+		error := ""
+		alertStatus := "active"
+	}
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}] {
+		some key
+		finding := response.body.ios_api[key]
+
+		finding.metadata.severity == "Low"
+		
+		key in exception_list
+
+		files := concat_keys(finding.files)
+		title := sprintf("IOS API Analysis Failure in artifact: %v for rule: %v", [artifact_name, key])
+		desc := finding.metadata.description
+		msg := sprintf("IOS API Analysis Failure in artifact: %v \n Description: %v \n Impacted Files: %v", [artifact_name, desc, files])
+		sugg := ""
+		error := ""
+		exception_cause := key
+		alertStatus := "exception"
+	}
+
+	concat_keys(files) = result {
+		keys := {k | files[k]}   # Extract the keys from the input object
+		result := concat(" \n", keys)  # Join the keys with newline characters
+	}`,
+
+	413:`
+	package opsmx
+	import future.keywords.in
+
+	default exception_list = []
+	default exception_count = 0
+
+	policy_name = input.metadata.policyName
+	policy_category = replace(input.metadata.policyCategory, " ", "_")
+	exception_list = input.metadata.exception[policy_category]
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.mobileBuild, "_", image_sha, "_mobsfscan.json"])
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=mobsfScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=mobsfScan"])
+
+	request = {
+			"method": "GET",
+			"url": complete_url
+	}
+
+	response = http.send(request)
+
+
+	artifact_name := response.body.artifactName
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}] {
+		some key
+		finding := response.body.ios_api[key]
+
+		finding.metadata.severity == "Medium"
+		
+		not key in exception_list
+
+		files := concat_keys(finding.files)
+		title := sprintf("IOS API Analysis Failure in artifact: %v for rule: %v", [artifact_name, key])
+		desc := finding.metadata.description
+		msg := sprintf("IOS API Analysis Failure in artifact: %v \n Description: %v \n Impacted Files: %v", [artifact_name, desc, files])
+		sugg := ""
+		error := ""
+		alertStatus := "active"
+	}
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}] {
+		some key
+		finding := response.body.ios_api[key]
+
+		finding.metadata.severity == "Medium"
+		
+		key in exception_list
+
+		files := concat_keys(finding.files)
+		title := sprintf("IOS API Analysis Failure in artifact: %v for rule: %v", [artifact_name, key])
+		desc := finding.metadata.description
+		msg := sprintf("IOS API Analysis Failure in artifact: %v \n Description: %v \n Impacted Files: %v", [artifact_name, desc, files])
+		sugg := ""
+		error := ""
+		exception_cause := key
+		alertStatus := "exception"
+	}
+
+	concat_keys(files) = result {
+		keys := {k | files[k]}   # Extract the keys from the input object
+		result := concat(" \n", keys)  # Join the keys with newline characters
+	}`,
+
+	414:`
+	package opsmx
+	import future.keywords.in
+
+	default exception_list = []
+	default exception_count = 0
+
+	policy_name = input.metadata.policyName
+	policy_category = replace(input.metadata.policyCategory, " ", "_")
+	exception_list = input.metadata.exception[policy_category]
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [input.metadata.mobileBuild, "_", image_sha, "_mobsfscan.json"])
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=mobsfScan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=mobsfScan"])
+
+	request = {
+			"method": "GET",
+			"url": complete_url
+	}
+
+	response = http.send(request)
+
+
+	artifact_name := response.body.artifactName
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}] {
+		some key
+		finding := response.body.ios_api[key]
+
+		finding.metadata.severity == "High"
+		
+		not key in exception_list
+
+		files := concat_keys(finding.files)
+		title := sprintf("IOS API Analysis Failure in artifact: %v for rule: %v", [artifact_name, key])
+		desc := finding.metadata.description
+		msg := sprintf("IOS API Analysis Failure in artifact: %v \n Description: %v \n Impacted Files: %v", [artifact_name, desc, files])
+		sugg := ""
+		error := ""
+		alertStatus := "active"
+	}
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}] {
+		some key
+		finding := response.body.ios_api[key]
+
+		finding.metadata.severity == "High"
+		
+		key in exception_list
+
+		files := concat_keys(finding.files)
+		title := sprintf("IOS API Analysis Failure in artifact: %v for rule: %v", [artifact_name, key])
+		desc := finding.metadata.description
+		msg := sprintf("IOS API Analysis Failure in artifact: %v \n Description: %v \n Impacted Files: %v", [artifact_name, desc, files])
+		sugg := ""
+		error := ""
+		exception_cause := key
+		alertStatus := "exception"
+	}
+
+	concat_keys(files) = result {
+		keys := {k | files[k]}   # Extract the keys from the input object
+		result := concat(" \n", keys)  # Join the keys with newline characters
+	}`,
+
+	415:`
+	package opsmx
+	import future.keywords.in
+
+	default exception_list = []
+	default exception_count = 0
+
+	policy_name = input.metadata.policyName
+	policy_category = replace(input.metadata.policyCategory, " ", "_")
+	exception_list = input.metadata.exception[policy_category]
+
+	terraform_repo_url_arr = split(input.metadata.ssd_secret.tfsec.url, "/")
+	terraform_repo_name = split(terraform_repo_url_arr[count(terraform_repo_url_arr)-1], ".")[0]
+
+	deployment_id = input.metadata.deploymentId
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [terraform_repo_name, "_", deployment_id, "_", image_sha, "_tfsecscan.json"])
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=tfsecscan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=tfsecscan"])
+
+	request = {
+			"method": "GET",
+			"url": complete_url
+	}
+
+	response = http.send(request)
+
+
+	issues := [response.body.results[idx] |response.body.results[idx].severity == "Low"]
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+		some issue in issues
+		title = issue.rule_description
+
+		not issue.long_id in exception_list
+
+		msg = sprintf("Rule: %v failed during terraform scan of directory %v in Repository %v and Branch %v. Details are: \n Rule ID: %v \n Long Rule ID: %v \n Rule Provider: %v \n Rule Service: %v \n Rule Description: %v \n Impact: %v \n Location: %v:%v:%v", [issue.rule_id, response.body.tfCodeScanDirectory, response.body.repositoryUrl, response.body.branch, issue.rule_id, issue.long_id, issue.rule_provider, issue.rule_service, issue.rule_description, issue.impact, issue.location.filename, issue.location.start_line, issue.location.end_line])
+		sugg = sprintf("%v \n Useful Links: %v", [issue.resolution, concat("\n", issue.links)])
+		error = ""
+		alertStatus = "active"
+	}
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
+		some issue in issues
+		title = issue.rule_description
+
+		issue.long_id in exception_list
+
+		msg = sprintf("Rule: %v failed during terraform scan of directory %v in Repository %v and Branch %v. Details are: \n Rule ID: %v \n Long Rule ID: %v \n Rule Provider: %v \n Rule Service: %v \n Rule Description: %v \n Impact: %v \n Location: %v:%v:%v", [issue.rule_id, response.body.tfCodeScanDirectory, response.body.repositoryUrl, response.body.branch, issue.rule_id, issue.long_id, issue.rule_provider, issue.rule_service, issue.rule_description, issue.impact, issue.location.filename, issue.location.start_line, issue.location.end_line])
+		sugg = sprintf("%v \n Useful Links: %v", [issue.resolution, concat("\n", issue.links)])
+		error = ""
+		exception_cause = issue.long_id
+		alertStatus = "exception"
+	}`,
+
+	416:`
+	package opsmx
+	import future.keywords.in
+
+	default exception_list = []
+	default exception_count = 0
+
+	policy_name = input.metadata.policyName
+	policy_category = replace(input.metadata.policyCategory, " ", "_")
+	exception_list = input.metadata.exception[policy_category]
+
+	terraform_repo_url_arr = split(input.metadata.ssd_secret.tfsec.url, "/")
+	terraform_repo_name = split(terraform_repo_url_arr[count(terraform_repo_url_arr)-1], ".")[0]
+
+	deployment_id = input.metadata.deploymentId
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [terraform_repo_name, "_", deployment_id, "_", image_sha, "_tfsecscan.json"])
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=tfsecscan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=tfsecscan"])
+
+	request = {
+			"method": "GET",
+			"url": complete_url
+	}
+
+	response = http.send(request)
+
+
+	issues := [response.body.results[idx] |response.body.results[idx].severity == "Medium"]
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+		some issue in issues
+		title = issue.rule_description
+
+		not issue.long_id in exception_list
+
+		msg = sprintf("Rule: %v failed during terraform scan of directory %v in Repository %v and Branch %v. Details are: \n Rule ID: %v \n Long Rule ID: %v \n Rule Provider: %v \n Rule Service: %v \n Rule Description: %v \n Impact: %v \n Location: %v:%v:%v", [issue.rule_id, response.body.tfCodeScanDirectory, response.body.repositoryUrl, response.body.branch, issue.rule_id, issue.long_id, issue.rule_provider, issue.rule_service, issue.rule_description, issue.impact, issue.location.filename, issue.location.start_line, issue.location.end_line])
+		sugg = sprintf("%v \n Useful Links: %v", [issue.resolution, concat("\n", issue.links)])
+		error = ""
+		alertStatus = "active"
+	}
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
+		some issue in issues
+		title = issue.rule_description
+
+		issue.long_id in exception_list
+
+		msg = sprintf("Rule: %v failed during terraform scan of directory %v in Repository %v and Branch %v. Details are: \n Rule ID: %v \n Long Rule ID: %v \n Rule Provider: %v \n Rule Service: %v \n Rule Description: %v \n Impact: %v \n Location: %v:%v:%v", [issue.rule_id, response.body.tfCodeScanDirectory, response.body.repositoryUrl, response.body.branch, issue.rule_id, issue.long_id, issue.rule_provider, issue.rule_service, issue.rule_description, issue.impact, issue.location.filename, issue.location.start_line, issue.location.end_line])
+		sugg = sprintf("%v \n Useful Links: %v", [issue.resolution, concat("\n", issue.links)])
+		error = ""
+		exception_cause = issue.long_id
+		alertStatus = "exception"
+	}`,
+
+	417:`
+	package opsmx
+	import future.keywords.in
+
+	default exception_list = []
+	default exception_count = 0
+
+	policy_name = input.metadata.policyName
+	policy_category = replace(input.metadata.policyCategory, " ", "_")
+	exception_list = input.metadata.exception[policy_category]
+
+	terraform_repo_url_arr = split(input.metadata.ssd_secret.tfsec.url, "/")
+	terraform_repo_name = split(terraform_repo_url_arr[count(terraform_repo_url_arr)-1], ".")[0]
+
+	deployment_id = input.metadata.deploymentId
+
+	image_sha = replace(input.metadata.image_sha, ":", "-")
+
+	file_name = concat("", [terraform_repo_name, "_", deployment_id, "_", image_sha, "_tfsecscan.json"])
+
+	complete_url = concat("",[input.metadata.toolchain_addr,"api/v1/scanResult?fileName=", file_name , "&scanOperation=tfsecscan"])
+	download_url = concat("",["tool-chain/api/v1/scanResult?fileName=", file_name, "&scanOperation=tfsecscan"])
+
+	request = {
+			"method": "GET",
+			"url": complete_url
+	}
+
+	response = http.send(request)
+
+
+	issues := [response.body.results[idx] |response.body.results[idx].severity == "High"]
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
+		some issue in issues
+		title = issue.rule_description
+
+		not issue.long_id in exception_list
+
+		msg = sprintf("Rule: %v failed during terraform scan of directory %v in Repository %v and Branch %v. Details are: \n Rule ID: %v \n Long Rule ID: %v \n Rule Provider: %v \n Rule Service: %v \n Rule Description: %v \n Impact: %v \n Location: %v:%v:%v", [issue.rule_id, response.body.tfCodeScanDirectory, response.body.repositoryUrl, response.body.branch, issue.rule_id, issue.long_id, issue.rule_provider, issue.rule_service, issue.rule_description, issue.impact, issue.location.filename, issue.location.start_line, issue.location.end_line])
+		sugg = sprintf("%v \n Useful Links: %v", [issue.resolution, concat("\n", issue.links)])
+		error = ""
+		alertStatus = "active"
+	}
+
+	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": exception_cause, "alertStatus": alertStatus}]{
+		some issue in issues
+		title = issue.rule_description
+
+		issue.long_id in exception_list
+
+		msg = sprintf("Rule: %v failed during terraform scan of directory %v in Repository %v and Branch %v. Details are: \n Rule ID: %v \n Long Rule ID: %v \n Rule Provider: %v \n Rule Service: %v \n Rule Description: %v \n Impact: %v \n Location: %v:%v:%v", [issue.rule_id, response.body.tfCodeScanDirectory, response.body.repositoryUrl, response.body.branch, issue.rule_id, issue.long_id, issue.rule_provider, issue.rule_service, issue.rule_description, issue.impact, issue.location.filename, issue.location.start_line, issue.location.end_line])
+		sugg = sprintf("%v \n Useful Links: %v", [issue.resolution, concat("\n", issue.links)])
+		error = ""
+		exception_cause = issue.long_id
+		alertStatus = "exception"
+	}`,
 }
 
 var policyDefinition = []string{
@@ -15274,10 +17427,10 @@ var policyDefinition = []string{
 	{
 		 "policyId":"282",
 		 "orgId":"1",
-		 "policyName":"High severity secret detection in helm",
+		 "policyName":"High severity rule violation in helm",
 		 "category":"Secret Scan",
 		 "stage":"deploy",
-		 "description":"High Severity secrets must not be exposed in helm.",
+		 "description":"High Severity rule violations in helm.",
 		 "scheduled_policy":false,
 		 "scriptId":"282",
 		 "variables":"",
@@ -15289,10 +17442,10 @@ var policyDefinition = []string{
 	{
 		 "policyId":"283",
 		 "orgId":"1",
-		 "policyName":"Critical severity secret detection in helm",
+		 "policyName":"Critical severity rule violation in helm",
 		 "category":"Secret Scan",
 		 "stage":"deploy",
-		 "description":"Critical Severity secrets must not be exposed in helm.",
+		 "description":"Critical Severity rule violations in helm.",
 		 "scheduled_policy":false,
 		 "scriptId":"283",
 		 "variables":"",
@@ -15304,10 +17457,10 @@ var policyDefinition = []string{
 	{
 		 "policyId":"284",
 		 "orgId":"1",
-		 "policyName":"Medium severity secret detection in helm",
+		 "policyName":"Medium severity rule violation in helm",
 		 "category":"Secret Scan",
 		 "stage":"deploy",
-		 "description":"Medium Severity secrets must not be exposed in helm.",
+		 "description":"Medium Severity rule violations in helm.",
 		 "scheduled_policy":false,
 		 "scriptId":"284",
 		 "variables":"",
@@ -15319,10 +17472,10 @@ var policyDefinition = []string{
 	{
 		 "policyId":"285",
 		 "orgId":"1",
-		 "policyName":"Low severity secret detection in helm",
+		 "policyName":"Low severity rule violation in helm",
 		 "category":"Secret Scan",
 		 "stage":"deploy",
-		 "description":"Low Severity secrets must not be exposed in helm.",
+		 "description":"Low Severity rule violations in helm.",
 		 "scheduled_policy":false,
 		 "scriptId":"285",
 		 "variables":"",
@@ -16185,6 +18338,1866 @@ var policyDefinition = []string{
 		 "suggestion":""
 	}
 	`,
+	`
+       {
+                "policyId":"345",
+                "orgId":"1",
+                "policyName":"AWS:EC2:unused-security-group",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Unused Security Group",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"346",
+                "orgId":"1",
+                "policyName":"AWS:EC2:security-group-whitelists-aws",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Security Group Whitelists AWS CIDRs",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"347",
+                "orgId":"1",
+                "policyName":"AWS:EC2:security-group-opens-UDP-port-to-all",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Security Group Opens UDP Port to All",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"348",
+                "orgId":"1",
+                "policyName":"AWS:EC2:security-group-opens-TCP-port-to-all",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Security Group Opens TCP Port to All",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"349",
+                "orgId":"1",
+                "policyName":"AWS:EC2:security-group-opens-SSH-port-to-all",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Security Group Opens SSH Port to All",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"350",
+                "orgId":"1",
+                "policyName":"AWS:EC2:security-group-opens-SMTP-port-to-all",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Security Group Opens SMTP Port to All",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"351",
+                "orgId":"1",
+                "policyName":"AWS:EC2:security-group-opens-RDP-port-to-all",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Security Group Opens RDP Port to All",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"352",
+                "orgId":"1",
+                "policyName":"AWS:EC2:security-group-opens-PostgreSQL-port-to-all",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Security Group Opens PostgreSQL Port to All",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"353",
+                "orgId":"1",
+                "policyName":"AWS:EC2:security-group-opens-port-range",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Security Group Uses Port Range",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"354",
+                "orgId":"1",
+                "policyName":"AWS:EC2:security-group-opens-plaintext-port-Telnet",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Security Group Opens Telnet Port",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"355",
+                "orgId":"1",
+                "policyName":"AWS:EC2:security-group-opens-plaintext-port-FTP",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Security Group Opens FTP Port",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"356",
+                "orgId":"1",
+                "policyName":"AWS:EC2:security-group-opens-oracle-db-port-to-all",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Security Group Opens Oracle DB Port to All",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"357",
+                "orgId":"1",
+                "policyName":"AWS:EC2:security-group-opens-NFS-port-to-all",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Security Group Opens NFS Port to All",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"358",
+                "orgId":"1",
+                "policyName":"AWS:EC2:security-group-opens-MySQL-port-to-all",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Security Group Opens MySQL Port to All",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"359",
+                "orgId":"1",
+                "policyName":"AWS:EC2:security-group-opens-MsSQL-port-to-all",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Security Group Opens MsSQL Port to All",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"360",
+                "orgId":"1",
+                "policyName":"AWS:EC2:security-group-opens-MongoDB-port-to-all",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Security Group Opens MongoDB Port to All",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"361",
+                "orgId":"1",
+                "policyName":"AWS:EC2:security-group-opens-icmp-to-all",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Security Group Allows ICMP Traffic to All",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"362",
+                "orgId":"1",
+                "policyName":"AWS:EC2:security-group-opens-DNS-port-to-all",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Security Group Opens DNS Port to All",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"363",
+                "orgId":"1",
+                "policyName":"AWS:EC2:security-group-opens-all-ports-to-self",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Unrestricted Network Traffic within Security Group",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"364",
+                "orgId":"1",
+                "policyName":"AWS:EC2:security-group-opens-all-ports-to-all",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Security Group Opens All Ports to All",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"365",
+                "orgId":"1",
+                "policyName":"AWS:EC2:security-group-opens-all-ports",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Security Group Opens All Ports",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"366",
+                "orgId":"1",
+                "policyName":"AWS:EC2:instance-with-user-data-secrets",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Potential Secret in Instance User Data",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"367",
+                "orgId":"1",
+                "policyName":"AWS:EC2:ebs-volume-not-encrypted",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"EBS Volume Not Encrypted",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"368",
+                "orgId":"1",
+                "policyName":"AWS:EC2:ebs-snapshot-public",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Public EBS Snapshot",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"369",
+                "orgId":"1",
+                "policyName":"AWS:EC2:ebs-snapshot-not-encrypted",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"EBS Snapshot Not Encrypted",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"370",
+                "orgId":"1",
+                "policyName":"AWS:EC2:ebs-default-encryption-disabled",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"EBS Encryption By Default Is Disabled",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"371",
+                "orgId":"1",
+                "policyName":"AWS:EC2:default-security-group-with-rules",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Non-empty Rulesets for Default Security Groups",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"372",
+                "orgId":"1",
+                "policyName":"AWS:EC2:default-security-group-in-use",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Default Security Groups in Use",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"373",
+                "orgId":"1",
+                "policyName":"AWS:EC2:ami-public",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Publicly Accessible AMI",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+       {
+                "policyId":"374",
+                "orgId":"1",
+                "policyName":"AWS:VPC:custom-network-acls-allow-all-egress",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Network ACLs Allow All egress Traffic (custom)",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+       {
+                "policyId":"375",
+                "orgId":"1",
+                "policyName":"AWS:VPC:custom-network-acls-allow-all-ingress",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Network ACLs Allow All ingress Traffic (custom)",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+       {
+                "policyId":"376",
+                "orgId":"1",
+                "policyName":"AWS:VPC:default-network-acls-allow-all-egress",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Network ACLs Allow All egress Traffic (default)",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+       {
+                "policyId":"377",
+                "orgId":"1",
+                "policyName":"AWS:VPC:default-network-acls-allow-all-ingress",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Network ACLs Allow All ingress Traffic (default)",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+       {
+                "policyId":"378",
+                "orgId":"1",
+                "policyName":"AWS:VPC:network-acl-not-used",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Unused Network ACLs",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+       {
+                "policyId":"379",
+                "orgId":"1",
+                "policyName":"AWS:VPC:routing-tables-with-peering",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Routing Table with VPC Peering",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+       {
+                "policyId":"380",
+                "orgId":"1",
+                "policyName":"AWS:VPC:subnet-with-allow-all-egress-acls",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Subnet with Allow All egress NACLs",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+	   {
+                "policyId":"381",
+                "orgId":"1",
+                "policyName":"AWS:VPC:subnet-with-allow-all-ingress-acls",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Subnet with Allow All ingress NACLs",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+	   {
+                "policyId":"382",
+                "orgId":"1",
+                "policyName":"AWS:VPC:subnet-without-flow-log",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Subnet without a Flow Log",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+	   {
+                "policyId":"383",
+                "orgId":"1",
+                "policyName":"Virus Total Malicious Malware Detection Policy",
+                "category":"Mobile Application Security Posture",
+                "stage":"artifact",
+                "description":"Virus Total detects various Malwares that can be attached to an APK or IPA file which can harm hosting device or compromise user data upon installation.",
+                "scheduled_policy":false,
+                "scriptId":"383",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+	   {
+                "policyId":"384",
+                "orgId":"1",
+                "policyName":"Virus Total Suspicious Malware Detection Policy",
+                "category":"Mobile Application Security Posture",
+                "stage":"artifact",
+                "description":"Virus Total detects various Malwares that can be attached to an APK or IPA file which can harm hosting device or compromise user data upon installation.",
+                "scheduled_policy":false,
+                "scriptId":"384",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+	   {
+                "policyId":"385",
+                "orgId":"1",
+                "policyName":"MobSF: Low Severity Certificate Issues Policy",
+                "category":"Mobile Application Security Posture",
+                "stage":"artifact",
+                "description":"MobSF Static Scan checks the authenticity of attached certificates and raises issues in case of rule violations.",
+                "scheduled_policy":false,
+                "scriptId":"385",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+	   {
+                "policyId":"386",
+                "orgId":"1",
+                "policyName":"MobSF: Medium Severity Certificate Issues Policy",
+                "category":"Mobile Application Security Posture",
+                "stage":"artifact",
+                "description":"MobSF Static Scan checks the authenticity of attached certificates and raises issues in case of rule violations.",
+                "scheduled_policy":false,
+                "scriptId":"386",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+	   {
+                "policyId":"387",
+                "orgId":"1",
+                "policyName":"MobSF: High Severity Certificate Issues Policy",
+                "category":"Mobile Application Security Posture",
+                "stage":"artifact",
+                "description":"MobSF Static Scan checks the authenticity of attached certificates and raises issues in case of rule violations.",
+                "scheduled_policy":false,
+                "scriptId":"387",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+	   {
+                "policyId":"388",
+                "orgId":"1",
+                "policyName":"MobSF: Low Severity Permissions Issues Policy",
+                "category":"Mobile Application Security Posture",
+                "stage":"artifact",
+                "description":"MobSF Static Scan checks the permissions assigned to an application and raises issues in case of rule violations.",
+                "scheduled_policy":false,
+                "scriptId":"388",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+	   {
+                "policyId":"389",
+                "orgId":"1",
+                "policyName":"MobSF: Medium Severity Permissions Issues Policy",
+                "category":"Mobile Application Security Posture",
+                "stage":"artifact",
+                "description":"MobSF Static Scan checks the permissions assigned to an application and raises issues in case of rule violations.",
+                "scheduled_policy":false,
+                "scriptId":"389",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+	   {
+                "policyId":"390",
+                "orgId":"1",
+                "policyName":"MobSF: High Severity Permissions Issues Policy",
+                "category":"Mobile Application Security Posture",
+                "stage":"artifact",
+                "description":"MobSF Static Scan checks the permissions assigned to an application and raises issues in case of rule violations.",
+                "scheduled_policy":false,
+                "scriptId":"390",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+	   {
+                "policyId":"391",
+                "orgId":"1",
+                "policyName":"MobSF: Low Severity Manifest Issues Policy",
+                "category":"Mobile Application Security Posture",
+                "stage":"artifact",
+                "description":"MobSF Static Scan checks the manifest of an application and raises issues in case of rule violations.",
+                "scheduled_policy":false,
+                "scriptId":"391",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+	   {
+                "policyId":"392",
+                "orgId":"1",
+                "policyName":"MobSF: Medium Severity Manifest Issues Policy",
+                "category":"Mobile Application Security Posture",
+                "stage":"artifact",
+                "description":"MobSF Static Scan checks the manifest of an application and raises issues in case of rule violations.",
+                "scheduled_policy":false,
+                "scriptId":"392",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+	   {
+                "policyId":"393",
+                "orgId":"1",
+                "policyName":"MobSF: High Severity Manifest Issues Policy",
+                "category":"Mobile Application Security Posture",
+                "stage":"artifact",
+                "description":"MobSF Static Scan checks the manifest of an application and raises issues in case of rule violations.",
+                "scheduled_policy":false,
+                "scriptId":"393",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+	   {
+                "policyId":"394",
+                "orgId":"1",
+                "policyName":"MobSF: Low Severity Network Issues Policy",
+                "category":"Mobile Application Security Posture",
+                "stage":"artifact",
+                "description":"MobSF Static Scan checks the network configuration of an application and raises issues in case of rule violations.",
+                "scheduled_policy":false,
+                "scriptId":"394",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+	   {
+                "policyId":"395",
+                "orgId":"1",
+                "policyName":"MobSF: Medium Severity Network Issues Policy",
+                "category":"Mobile Application Security Posture",
+                "stage":"artifact",
+                "description":"MobSF Static Scan checks the network configuration of an application and raises issues in case of rule violations.",
+                "scheduled_policy":false,
+                "scriptId":"395",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+	   {
+                "policyId":"396",
+                "orgId":"1",
+                "policyName":"MobSF: High Severity Network Issues Policy",
+                "category":"Mobile Application Security Posture",
+                "stage":"artifact",
+                "description":"MobSF Static Scan checks the network configuration of an application and raises issues in case of rule violations.",
+                "scheduled_policy":false,
+                "scriptId":"396",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+	   {
+                "policyId":"397",
+                "orgId":"1",
+                "policyName":"MobSF: Low Severity Binary Issues Policy",
+                "category":"Mobile Application Security Posture",
+                "stage":"artifact",
+                "description":"MobSF Static Scan checks the binary configuration of an application and raises issues in case of rule violations.",
+                "scheduled_policy":false,
+                "scriptId":"397",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+	   {
+                "policyId":"398",
+                "orgId":"1",
+                "policyName":"MobSF: Medium Severity Binary Issues Policy",
+                "category":"Mobile Application Security Posture",
+                "stage":"artifact",
+                "description":"MobSF Static Scan checks the binary configuration of an application and raises issues in case of rule violations.",
+                "scheduled_policy":false,
+                "scriptId":"398",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+	   {
+                "policyId":"399",
+                "orgId":"1",
+                "policyName":"MobSF: High Severity Binary Issues Policy",
+                "category":"Mobile Application Security Posture",
+                "stage":"artifact",
+                "description":"MobSF Static Scan checks the binary configuration of an application and raises issues in case of rule violations.",
+                "scheduled_policy":false,
+                "scriptId":"399",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+	   {
+                "policyId":"400",
+                "orgId":"1",
+                "policyName":"MobSF: Low Severity Mach-O Issues Policy",
+                "category":"Mobile Application Security Posture",
+                "stage":"artifact",
+                "description":"MobSF Static Scan checks the Mach-O configuration of an application and raises issues in case of rule violations.",
+                "scheduled_policy":false,
+                "scriptId":"400",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+	   {
+                "policyId":"401",
+                "orgId":"1",
+                "policyName":"MobSF: Medium Severity Mach-O Issues Policy",
+                "category":"Mobile Application Security Posture",
+                "stage":"artifact",
+                "description":"MobSF Static Scan checks the Mach-O configuration of an application and raises issues in case of rule violations.",
+                "scheduled_policy":false,
+                "scriptId":"401",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+	   {
+                "policyId":"402",
+                "orgId":"1",
+                "policyName":"MobSF: High Severity Mach-O Issues Policy",
+                "category":"Mobile Application Security Posture",
+                "stage":"artifact",
+                "description":"MobSF Static Scan checks the Mach-O configuration of an application and raises issues in case of rule violations.",
+                "scheduled_policy":false,
+                "scriptId":"402",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+	   {
+                "policyId":"403",
+                "orgId":"1",
+                "policyName":"MobSF: Low Severity Code Issues Policy",
+                "category":"Mobile Application Security Posture",
+                "stage":"artifact",
+                "description":"MobSF Static Scan performs Code Analysis on an application and raises issues in case of rule violations.",
+                "scheduled_policy":false,
+                "scriptId":"403",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+	   {
+                "policyId":"404",
+                "orgId":"1",
+                "policyName":"MobSF: Medium Severity Code Issues Policy",
+                "category":"Mobile Application Security Posture",
+                "stage":"artifact",
+                "description":"MobSF Static Scan performs Code Analysis on an application and raises issues in case of rule violations.",
+                "scheduled_policy":false,
+                "scriptId":"404",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+	   {
+                "policyId":"405",
+                "orgId":"1",
+                "policyName":"MobSF: High Severity Code Issues Policy",
+                "category":"Mobile Application Security Posture",
+                "stage":"artifact",
+                "description":"MobSF Static Scan performs Code Analysis on an application and raises issues in case of rule violations.",
+                "scheduled_policy":false,
+                "scriptId":"405",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+	   {
+                "policyId":"406",
+                "orgId":"1",
+                "policyName":"MobSF: Low Severity AppSec Issues Policy",
+                "category":"Mobile Application Security Posture",
+                "stage":"artifact",
+                "description":"MobSF Static Scan performs AppSec Analysis on an application and raises issues in case of rule violations.",
+                "scheduled_policy":false,
+                "scriptId":"406",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+	   {
+                "policyId":"407",
+                "orgId":"1",
+                "policyName":"MobSF: Medium Severity AppSec Issues Policy",
+                "category":"Mobile Application Security Posture",
+                "stage":"artifact",
+                "description":"MobSF Static Scan performs AppSec Analysis on an application and raises issues in case of rule violations.",
+                "scheduled_policy":false,
+                "scriptId":"407",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+	   {
+                "policyId":"408",
+                "orgId":"1",
+                "policyName":"MobSF: High Severity AppSec Issues Policy",
+                "category":"Mobile Application Security Posture",
+                "stage":"artifact",
+                "description":"MobSF Static Scan performs AppSec Analysis on an application and raises issues in case of rule violations.",
+                "scheduled_policy":false,
+                "scriptId":"408",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+	   {
+                "policyId":"409",
+                "orgId":"1",
+                "policyName":"MobSF: Low Severity Android API Issues Policy",
+                "category":"Mobile Application Security Posture",
+                "stage":"artifact",
+                "description":"MobSF Static Scan performs Android API Analysis on an application and raises issues in case of rule violations.",
+                "scheduled_policy":false,
+                "scriptId":"409",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+	   {
+                "policyId":"410",
+                "orgId":"1",
+                "policyName":"MobSF: Medium Severity Android API Issues Policy",
+                "category":"Mobile Application Security Posture",
+                "stage":"artifact",
+                "description":"MobSF Static Scan performs Android API Analysis on an application and raises issues in case of rule violations.",
+                "scheduled_policy":false,
+                "scriptId":"410",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+	   {
+                "policyId":"411",
+                "orgId":"1",
+                "policyName":"MobSF: High Severity Android API Issues Policy",
+                "category":"Mobile Application Security Posture",
+                "stage":"artifact",
+                "description":"MobSF Static Scan performs Android API Analysis on an application and raises issues in case of rule violations.",
+                "scheduled_policy":false,
+                "scriptId":"411",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+	   {
+                "policyId":"412",
+                "orgId":"1",
+                "policyName":"MobSF: Low Severity IOS API Issues Policy",
+                "category":"Mobile Application Security Posture",
+                "stage":"artifact",
+                "description":"MobSF Static Scan performs IOS API Analysis on an application and raises issues in case of rule violations.",
+                "scheduled_policy":false,
+                "scriptId":"412",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+	   {
+                "policyId":"413",
+                "orgId":"1",
+                "policyName":"MobSF: Medium Severity IOS API Issues Policy",
+                "category":"Mobile Application Security Posture",
+                "stage":"artifact",
+                "description":"MobSF Static Scan performs IOS API Analysis on an application and raises issues in case of rule violations.",
+                "scheduled_policy":false,
+                "scriptId":"413",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+	   {
+                "policyId":"414",
+                "orgId":"1",
+                "policyName":"MobSF: High Severity IOS API Issues Policy",
+                "category":"Mobile Application Security Posture",
+                "stage":"artifact",
+                "description":"MobSF Static Scan performs IOS API Analysis on an application and raises issues in case of rule violations.",
+                "scheduled_policy":false,
+                "scriptId":"414",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+	   {
+                "policyId":"415",
+                "orgId":"1",
+                "policyName":"TfSec: IaC Scan Low Severity Issues Policy",
+                "category":"Mobile Application Security Posture",
+                "stage":"deploy",
+                "description":"TfSec Scan checks for security violations in terraform scripts.",
+                "scheduled_policy":false,
+                "scriptId":"415",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+	   {
+                "policyId":"416",
+                "orgId":"1",
+                "policyName":"TfSec: IaC Scan Medium Severity Issues Policy",
+                "category":"Mobile Application Security Posture",
+                "stage":"deploy",
+                "description":"TfSec Scan checks for security violations in terraform scripts.",
+                "scheduled_policy":false,
+                "scriptId":"416",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+	   {
+                "policyId":"417",
+                "orgId":"1",
+                "policyName":"TfSec: IaC Scan High Severity Issues Policy",
+                "category":"Mobile Application Security Posture",
+                "stage":"deploy",
+                "description":"TfSec Scan checks for security violations in terraform scripts.",
+                "scheduled_policy":false,
+                "scriptId":"417",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+	   `
+       {
+                "policyId":"418",
+                "orgId":"1",
+                "policyName":"AWS:IAM:user-with-password-and-key",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"User with Password and Keys Enabled",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"419",
+                "orgId":"1",
+                "policyName":"AWS:IAM:user-without-mfa",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"User without MFA",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"420",
+                "orgId":"1",
+                "policyName":"AWS:IAM:user-with-multiple-access-keys",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"User with Multiple API Keys",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"421",
+                "orgId":"1",
+                "policyName":"AWS:IAM:user-with-inline-policies",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"User with inline Policies",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"422",
+                "orgId":"1",
+                "policyName":"AWS:IAM:user-no-inactive-key-rotation",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Lack of Key Rotation for 90 Days (Key Status: Inactive)",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"423",
+                "orgId":"1",
+                "policyName":"AWS:IAM:user-no-Active-key-rotation",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Lack of Key Rotation for 90 Days (Key Status: Active)",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"424",
+                "orgId":"1",
+                "policyName":"AWS:IAM:unused-credentials-not-disabled",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Credentials Unused for 90 Days or Greater Are Not Disabled",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"425",
+                "orgId":"1",
+                "policyName":"AWS:IAM:root-account-with-active-keys",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Root Account Has Active Keys",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"426",
+                "orgId":"1",
+                "policyName":"AWS:IAM:root-account-with-active-certs",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Root Account Has Active X.509 Certs",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"427",
+                "orgId":"1",
+                "policyName":"AWS:IAM:root-account-used-recently",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Root Account Used Recently",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"428",
+                "orgId":"1",
+                "policyName":"AWS:IAM:root-account-no-mfa",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Root Account without MFA",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"429",
+                "orgId":"1",
+                "policyName":"AWS:IAM:root-account-no-hardware-mfa",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Root Account without Hardware MFA",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"430",
+                "orgId":"1",
+                "policyName":"AWS:IAM:role-with-inline-policies",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Role with Inline Policies",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"431",
+                "orgId":"1",
+                "policyName":"AWS:IAM:password-policy-reuse-enabled",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Password Policy Allows the Reuse of Passwords",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"432",
+                "orgId":"1",
+                "policyName":"AWS:IAM:password-policy-no-expiration",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Password Expiration Disabled",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"433",
+                "orgId":"1",
+                "policyName":"AWS:IAM:password-policy-minimum-length",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Minimum Password Length Too Short",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"434",
+                "orgId":"1",
+                "policyName":"AWS:IAM:password-policy-expiration-threshold",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Passwords Expire after 90 Days",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"435",
+                "orgId":"1",
+                "policyName":"AWS:IAM:managed-policy-no-attachments",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Managed Policy Not Attached to Any Entity",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"436",
+                "orgId":"1",
+                "policyName":"AWS:IAM:managed-policy-allows-sts-AssumeRole",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Managed Policy Allows sts:AssumeRole For All Resources",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"437",
+                "orgId":"1",
+                "policyName":"AWS:IAM:managed-policy-allows-NotActions",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Managed Policy Allows NotActions",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"438",
+                "orgId":"1",
+                "policyName":"AWS:IAM:managed-policy-allows-iam-PassRole",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Managed Policy Allows iam:PassRole For All Resources",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"439",
+                "orgId":"1",
+                "policyName":"AWS:IAM:managed-policy-allows-full-privileges",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Managed Policy Allows All Actions",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"440",
+                "orgId":"1",
+                "policyName":"AWS:IAM:lightspin-user-action-denied-for-group",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Policy with Denied User Actions for Group Objects",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"441",
+                "orgId":"1",
+                "policyName":"AWS:IAM:inline-user-policy-allows-sts-AssumeRole",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Inline user Policy Allows sts:AssumeRole For All Resources",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"442",
+                "orgId":"1",
+                "policyName":"AWS:IAM:inline-user-policy-allows-NotActions",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Inline user Policy Allows NotActions",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"443",
+                "orgId":"1",
+                "policyName":"AWS:IAM:inline-user-policy-allows-iam-PassRole",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Inline user Policy Allows iam:PassRole For All Resources",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"444",
+                "orgId":"1",
+                "policyName":"AWS:IAM:inline-role-policy-allows-sts-AssumeRole",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Inline role Policy Allows sts:AssumeRole For All Resources",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"445",
+                "orgId":"1",
+                "policyName":"AWS:IAM:inline-role-policy-allows-NotActions",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Inline role Policy Allows NotActions",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"446",
+                "orgId":"1",
+                "policyName":"AWS:IAM:inline-role-policy-allows-iam-PassRole",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Inline role Policy Allows iam:PassRole For All Resources",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"447",
+                "orgId":"1",
+                "policyName":"AWS:IAM:inline-group-policy-allows-sts-AssumeRole",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Inline group Policy Allows sts:AssumeRole For All Resources",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"448",
+                "orgId":"1",
+                "policyName":"AWS:IAM:inline-group-policy-allows-sts-AssumeRole",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Inline group Policy Allows sts:AssumeRole For All Resources",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"449",
+                "orgId":"1",
+                "policyName":"AWS:IAM:inline-group-policy-allows-NotActions",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Inline group Policy Allows NotActions",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"450",
+                "orgId":"1",
+                "policyName":"AWS:IAM:inline-group-policy-allows-NotActions",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Inline group Policy Allows NotActions",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"451",
+                "orgId":"1",
+                "policyName":"AWS:IAM:inline-group-policy-allows-iam-PassRole",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Inline group Policy Allows iam:PassRole For All Resources",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"452",
+                "orgId":"1",
+                "policyName":"AWS:IAM:inline-group-policy-allows-iam-PassRole",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Inline group Policy Allows iam:PassRole For All Resources",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"453",
+                "orgId":"1",
+                "policyName":"AWS:IAM:group-with-no-users",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Group with No Users",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"454",
+                "orgId":"1",
+                "policyName":"AWS:IAM:group-with-inline-policies",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Group with Inline Policies",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"455",
+                "orgId":"1",
+                "policyName":"AWS:IAM:ec2-role-without-instances",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Unused Role for EC2 Service",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"456",
+                "orgId":"1",
+                "policyName":"AWS:IAM:assume-role-policy-allows-all",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"AssumeRole Policy Allows All Principals",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"457",
+                "orgId":"1",
+                "policyName":"AWS:IAM:assume-role-lacks-external-id-and-mfa",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Cross-Account AssumeRole Policy Lacks External ID and MFA",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"458",
+                "orgId":"1",
+                "policyName":"AWS:IAM:user-no-Inactive-key-rotation",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Lack of Key Rotation for 90 Days (Key Status: Inactive)",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"459",
+                "orgId":"1",
+                "policyName":"AWS:IAM:user-no-Active-key-rotation",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Lack of Key Rotation for 90 Days (Key Status: Active)",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"460",
+                "orgId":"1",
+                "policyName":"AWS:IAM:managed-policy-allows-sts-AssumeRole",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Managed Policy Allows sts:AssumeRole For All Resources",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"461",
+                "orgId":"1",
+                "policyName":"AWS:IAM:managed-policy-allows-NotActions",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Managed Policy Allows NotActions",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"462",
+                "orgId":"1",
+                "policyName":"AWS:IAM:managed-policy-allows-iam-PassRole",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Managed Policy Allows iam:PassRole For All Resources",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"463",
+                "orgId":"1",
+                "policyName":"AWS:IAM:inline-user-policy-allows-sts-AssumeRole",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Inline user Policy Allows sts:AssumeRole For All Resources",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"464",
+                "orgId":"1",
+                "policyName":"AWS:IAM:inline-user-policy-allows-NotActions",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Inline user Policy Allows NotActions",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"465",
+                "orgId":"1",
+                "policyName":"AWS:IAM:inline-user-policy-allows-iam-PassRole",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Inline user Policy Allows iam:PassRole For All Resources",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"466",
+                "orgId":"1",
+                "policyName":"AWS:IAM:inline-role-policy-allows-sts-AssumeRole",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Inline role Policy Allows sts:AssumeRole For All Resources",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"467",
+                "orgId":"1",
+                "policyName":"AWS:IAM:inline-role-policy-allows-NotActions",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Inline role Policy Allows NotActions",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
+       `
+       {
+                "policyId":"468",
+                "orgId":"1",
+                "policyName":"AWS:IAM:inline-role-policy-allows-iam-PassRole",
+                "category":"CSPM",
+                "stage":"deploy",
+                "description":"Inline role Policy Allows iam:PassRole For All Resources",
+                "scheduled_policy":false,
+                "scriptId":"345",
+                "variables":"",
+                "conditionName":"",
+                "suggestion":""
+       }
+       `,
 }
 
 var policyEnforcement = []string{
@@ -16648,7 +20661,7 @@ var policyEnforcement = []string{
 	   "2"
 	]
   }`,
-	`{
+  `{
 	"policyId": "38",
 	"severity": "Critical",
 	"action": "Alert",
@@ -16657,7 +20670,7 @@ var policyEnforcement = []string{
 	"tags": [
 	   "2"
 	]
-}`,
+	}`,
 	`{
 	"policyId": "38",
 	"severity": "Critical",
@@ -16667,7 +20680,7 @@ var policyEnforcement = []string{
 	"tags": [
 	   "2"
 	]
-}`,
+	}`,
 	`{
       "policyId": "39",
       "severity": "Critical",
@@ -16708,7 +20721,7 @@ var policyEnforcement = []string{
 	   "2"
 	]
   }`,
-	`{
+  `{
 	"policyId": "39",
 	"severity": "Critical",
 	"action": "Alert",
@@ -19267,7 +23280,7 @@ var policyEnforcement = []string{
 	   "2"
 	]
   }`,
-	`{
+  `{
 	"policyId": "271",
 	"severity": "Medium",
 	"action": "Alert",
@@ -19344,7 +23357,7 @@ var policyEnforcement = []string{
 	   "22"
 	]
   }`,
-	`{
+  `{
 	"policyId": "273",
 	"severity": "Critical",
 	"action": "Alert",
@@ -19454,33 +23467,90 @@ var policyEnforcement = []string{
       "policyId": "282",
       "severity": "High",
       "action": "Alert",
-      "status": false,
-	  "datasourceTool": "helm",
+      "status": true,
+	  "datasourceTool": "snyk",
       "tags": [
-         "21",
-		 "19"
+         "21"
+      ]
+  }`,
+  `{
+      "policyId": "282",
+      "severity": "High",
+      "action": "Alert",
+      "status": true,
+	  "datasourceTool": "kubescape",
+      "tags": [
+         "21"
+      ]
+  }`,
+  `{
+      "policyId": "282",
+      "severity": "High",
+      "action": "Alert",
+      "status": true,
+	  "datasourceTool": "trivy",
+      "tags": [
+         "21"
       ]
   }`,
 	`{
       "policyId": "283",
       "severity": "Critical",
       "action": "Alert",
-      "status": false,
-	  "datasourceTool": "helm",
+      "status": true,
+	  "datasourceTool": "snyk",
       "tags": [
-         "21",
-		 "19"
+         "21"
+      ]
+  }`,
+  `{
+      "policyId": "283",
+      "severity": "Critical",
+      "action": "Alert",
+      "status": true,
+	  "datasourceTool": "kubescape",
+      "tags": [
+         "21"
+      ]
+  }`,
+  `{
+      "policyId": "283",
+      "severity": "Critical",
+      "action": "Alert",
+      "status": true,
+	  "datasourceTool": "trivy",
+      "tags": [
+         "21"
       ]
   }`,
 	`{
       "policyId": "284",
       "severity": "Medium",
       "action": "Alert",
-      "status": false,
-	  "datasourceTool": "helm",
+      "status": true,
+	  "datasourceTool": "snyk",
       "tags": [
-         "21",
-		 "19"
+         "21"
+      ]
+  }`,
+  `{
+      "policyId": "284",
+      "severity": "Medium",
+      "action": "Alert",
+      "status": true,
+	  "datasourceTool": "kubescape",
+      "tags": [
+         "21"
+      ]
+  }`,
+  `{
+      "policyId": "284",
+      "severity": "Medium",
+      "action": "Alert",
+      "status": true,
+	  "datasourceTool": "trivy",
+      "tags": [
+         "21"
       ]
   }`,
 	`{
@@ -19488,10 +23558,29 @@ var policyEnforcement = []string{
       "severity": "Low",
       "action": "Alert",
       "status": true,
-	  "datasourceTool": "helm",
+	  "datasourceTool": "snyk",
       "tags": [
-         "21",
-		 "19"
+         "21"
+      ]
+  }`,
+  `{
+      "policyId": "285",
+      "severity": "Low",
+      "action": "Alert",
+      "status": true,
+	  "datasourceTool": "kubescape",
+      "tags": [
+         "21"
+      ]
+  }`,
+  `{
+      "policyId": "285",
+      "severity": "Low",
+      "action": "Alert",
+      "status": true,
+	  "datasourceTool": "trivy",
+      "tags": [
+         "21"
       ]
   }`,
 	`{
@@ -20127,7 +24216,7 @@ var policyEnforcement = []string{
          "3"
       ]
   }`,
-	`{
+  `{
       "policyId": "343",
       "severity": "Medium",
       "action": "Alert",
@@ -20138,7 +24227,7 @@ var policyEnforcement = []string{
          "3"
       ]
   }`,
-	`{
+  `{
       "policyId": "344",
       "severity": "High",
       "action": "Alert",
@@ -20148,7 +24237,1371 @@ var policyEnforcement = []string{
       "tags": [
          "3"
       ]
-  }`,
+	}`,
+	`{
+		"policyId": "345",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "346",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "347",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "348",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "349",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "350",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "351",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "352",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "353",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "354",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "355",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "356",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "357",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "358",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "359",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "360",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "361",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "362",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "363",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "364",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "365",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "366",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "367",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "368",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "369",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "370",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "371",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "372",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "373",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "374",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "375",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "376",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "377",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "378",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "379",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "380",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "381",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "382",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "383",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "virustotal",
+		"tags": [
+			"32"
+		]
+	}`,
+	`{
+		"policyId": "384",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "virustotal",
+		"tags": [
+			"32"
+		]
+	}`,
+	`{
+		"policyId": "385",
+		"severity": "Low",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "mobsf",
+		"tags": [
+			"32"
+		]
+	}`,
+	`{
+		"policyId": "386",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "mobsf",
+		"tags": [
+			"32"
+		]
+	}`,
+	`{
+		"policyId": "387",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "mobsf",
+		"tags": [
+			"32"
+		]
+	}`,
+	`{
+		"policyId": "388",
+		"severity": "Low",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "mobsf",
+		"tags": [
+			"32"
+		]
+	}`,
+	`{
+		"policyId": "389",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "mobsf",
+		"tags": [
+			"32"
+		]
+	}`,
+	`{
+		"policyId": "390",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "mobsf",
+		"tags": [
+			"32"
+		]
+	}`,
+	`{
+		"policyId": "391",
+		"severity": "Low",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "mobsf",
+		"tags": [
+			"32"
+		]
+	}`,
+	`{
+		"policyId": "392",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "mobsf",
+		"tags": [
+			"32"
+		]
+	}`,
+	`{
+		"policyId": "393",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "mobsf",
+		"tags": [
+			"32"
+		]
+	}`,
+	`{
+		"policyId": "394",
+		"severity": "Low",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "mobsf",
+		"tags": [
+			"32"
+		]
+	}`,
+	`{
+		"policyId": "395",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "mobsf",
+		"tags": [
+			"32"
+		]
+	}`,
+	`{
+		"policyId": "396",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "mobsf",
+		"tags": [
+			"32"
+		]
+	}`,
+	`{
+		"policyId": "397",
+		"severity": "Low",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "mobsf",
+		"tags": [
+			"32"
+		]
+	}`,
+	`{
+		"policyId": "398",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "mobsf",
+		"tags": [
+			"32"
+		]
+	}`,
+	`{
+		"policyId": "399",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "mobsf",
+		"tags": [
+			"32"
+		]
+	}`,
+	`{
+		"policyId": "400",
+		"severity": "Low",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "mobsf",
+		"tags": [
+			"32"
+		]
+	}`,
+	`{
+		"policyId": "401",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "mobsf",
+		"tags": [
+			"32"
+		]
+	}`,
+	`{
+		"policyId": "402",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "mobsf",
+		"tags": [
+			"32"
+		]
+	}`,
+	`{
+		"policyId": "403",
+		"severity": "Low",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "mobsf",
+		"tags": [
+			"32"
+		]
+	}`,
+	`{
+		"policyId": "404",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "mobsf",
+		"tags": [
+			"32"
+		]
+	}`,
+	`{
+		"policyId": "405",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "mobsf",
+		"tags": [
+			"32"
+		]
+	}`,
+	`{
+		"policyId": "406",
+		"severity": "Low",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "mobsf",
+		"tags": [
+			"32"
+		]
+	}`,
+	`{
+		"policyId": "407",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "mobsf",
+		"tags": [
+			"32"
+		]
+	}`,
+	`{
+		"policyId": "408",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "mobsf",
+		"tags": [
+			"32"
+		]
+	}`,
+	`{
+		"policyId": "409",
+		"severity": "Low",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "mobsf",
+		"tags": [
+			"32"
+		]
+	}`,
+	`{
+		"policyId": "410",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "mobsf",
+		"tags": [
+			"32"
+		]
+	}`,
+	`{
+		"policyId": "411",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "mobsf",
+		"tags": [
+			"32"
+		]
+	}`,
+	`{
+		"policyId": "412",
+		"severity": "Low",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "mobsf",
+		"tags": [
+			"32"
+		]
+	}`,
+	`{
+		"policyId": "413",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "mobsf",
+		"tags": [
+			"32"
+		]
+	}`,
+	`{
+		"policyId": "414",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "mobsf",
+		"tags": [
+			"32"
+		]
+	}`,
+	`{
+		"policyId": "415",
+		"severity": "Low",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "tfsec",
+		"tags": [
+			"33"
+		]
+	}`,
+	`{
+		"policyId": "416",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "tfsec",
+		"tags": [
+			"33"
+		]
+	}`,
+	`{
+		"policyId": "417",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "tfsec",
+		"tags": [
+			"33"
+		]
+	}`,
+	`{
+		"policyId": "418",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "419",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "420",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "421",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "422",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "423",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "424",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "425",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "426",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "427",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "428",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "429",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "430",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "431",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "432",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "433",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "434",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "435",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "436",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "437",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "438",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "439",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "440",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "441",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "442",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "443",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "444",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "445",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "446",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "447",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "448",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "449",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "450",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "451",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "452",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "453",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "454",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "455",
+		"severity": "Medium",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "456",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "457",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "458",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "459",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "460",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "461",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "462",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "463",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "464",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "465",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "466",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "467",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
+	`{
+		"policyId": "468",
+		"severity": "High",
+		"action": "Alert",
+		"conditionValue": "",
+		"status": true,
+		"dataSourceTool": "scoutsuite",
+		"tags": [
+			"31"
+		]
+	}`,
 }
 
 var tagPolicy = []string{
@@ -20424,6 +25877,33 @@ var tagPolicy = []string{
 		"id": "30",
 		"tagName": "policyCategory",
 		"tagValue": "DAST",
+		"tagDescription": "",
+		"createdBy": "system"
+	}
+	`,
+	`
+	{
+		"id": "31",
+		"tagName": "policyCategory",
+		"tagValue": "CSPM",
+		"tagDescription": "",
+		"createdBy": "system"
+	}
+	`,
+	`
+	{
+		"id": "32",
+		"tagName": "policyCategory",
+		"tagValue": "Mobile Application Security Posture",
+		"tagDescription": "",
+		"createdBy": "system"
+	}
+	`,
+	`
+	{
+		"id": "33",
+		"tagName": "policyCategory",
+		"tagValue": "IaC Security Posture",
 		"tagDescription": "",
 		"createdBy": "system"
 	}

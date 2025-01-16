@@ -9,7 +9,7 @@ import (
 	"github.com/Khan/genqlient/graphql"
 )
 
-func UpgradeToOctober2024(prodGraphUrl, prodToken, restoreServiceUrl string, prodDgraphClient graphql.Client) error {
+func UpgradeToOctober2024(prodGraphUrl, prodToken string, prodDgraphClient graphql.Client) error {
 
 	logger.Logger.Info("--------------Starting UpgradeToOctober2024------------------")
 
@@ -20,7 +20,7 @@ func UpgradeToOctober2024(prodGraphUrl, prodToken, restoreServiceUrl string, pro
 	logger.Logger.Info("--------------Added Oct Translate Schema------------------")
 
 	if err := migrateBuildToSourceNode(prodDgraphClient); err != nil {
-		return fmt.Errorf("UpgradeToSeptember2024: migrateBuildToSourceNode: %s", err.Error())
+		return fmt.Errorf("UpgradeToOctober2024: migrateBuildToSourceNode: %s", err.Error())
 	}
 
 	if err := graphqlfunc.UpdateSchema(prodGraphUrl, prodToken, []byte(schemas.October2024Schema)); err != nil {
@@ -28,17 +28,11 @@ func UpgradeToOctober2024(prodGraphUrl, prodToken, restoreServiceUrl string, pro
 	}
 
 	if err := updateComponent(prodDgraphClient); err != nil {
-		return fmt.Errorf("UpgradeToSeptember2024: updateComponent: %s", err.Error())
+		return fmt.Errorf("UpgradeToOctober2024: UpdateComponent: %s", err.Error())
 	}
 
 	if err := ingestLicenses(prodDgraphClient); err != nil {
-		return fmt.Errorf("UpgradeToSeptember2024: %s", err.Error())
-	}
-
-	if restoreServiceUrl != "" {
-		if err := graphqlfunc.BackupAndRestoreDgraph(prodGraphUrl, restoreServiceUrl); err != nil {
-			return fmt.Errorf("UpgradeToOctober2024: BackupAndRestoreDgraph: %s", err.Error())
-		}
+		return fmt.Errorf("UpgradeToOctober2024: %s", err.Error())
 	}
 
 	logger.Logger.Info("--------------Completed UpgradeToOctober2024------------------")

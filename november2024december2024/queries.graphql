@@ -1,0 +1,79 @@
+query QueryAllBuildPlugins {
+    queryBuildTool @cascade {
+        buildPlugins {
+            id
+        }
+    }
+}
+
+mutation UpdateArtifactType($ids: [String!]!) {
+    updateArtifact(
+        input: { set: { artifactType: "plugin" }, filter: { id: { in: $ids } } }
+    ) {
+        numUids
+    }
+}
+
+query FetchFeatureConfigsWithIntegratorConfigID {
+    queryFeatureMode @cascade(fields:"integrator"){
+        key
+        value
+        organization {
+            id
+        }
+        integrator {
+            id
+            type
+            integratorConfigs {
+                id
+            }
+        }
+    }
+}
+
+mutation SetIntegratorConfigStatusAndUpdateKeyValues(
+    $id: ID!
+    $orgID: String!
+    $configs: [IntegratorKeyValuesRef!]
+) {
+    updateIntegratorConfigs(
+        input: {
+            filter: { id: [$id] }
+            set: { configs: $configs, status: "active", organization: { id: $orgID } }
+        }
+    ) {
+        numUids
+    }
+}
+
+mutation AddIntegratorConfigs($input: AddIntegratorConfigsInput!) {
+    addIntegratorConfigs(input: [$input]) {
+        integratorConfigs {
+            id
+        }
+    }
+}
+
+mutation UpdateIntegratorNotConnectedStatus {
+    updateIntegrator(
+        input: { set: { status: "not-connected" }, filter: { status: { eq: "disabled" } } }
+    ) {
+        numUids
+    }
+}
+
+mutation UpdateIntegratorConfigStatusAsActive {
+    updateIntegratorConfigs(
+        input: { set: { status: "active" }, filter: { not: { status: { eq: "active" } } } }
+    ) {
+        numUids
+    }
+}
+
+mutation UpdateIntegratorKeyValueFeatFalse {
+    updateIntegratorKeyValues(
+        input: { set: { feat: false }, filter: { not: { feat: true } } }
+    ) {
+        numUids
+    }
+}
