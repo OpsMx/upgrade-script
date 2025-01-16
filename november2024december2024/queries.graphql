@@ -61,3 +61,22 @@ mutation UpdateIntegratorNotConnectedStatus {
         numUids
     }
 }
+
+mutation UpdateIntegratorConfigStatusAsActive {
+    updateIntegratorConfigs(
+        input: {
+            set: { status: "active" }
+            filter: { status: { eq: null }, or: { status: { eq: "" } } }
+        }
+    ) {
+        numUids
+    }
+}
+
+mutation UpdateIntegratorKeyValueFeatFalse {
+    updateIntegratorKeyValues(
+        input: { set: { feat: false }, filter: { feat: null } }
+    ) {
+        numUids
+    }
+}

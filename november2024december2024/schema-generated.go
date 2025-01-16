@@ -2173,6 +2173,46 @@ type UpdateArtifactTypeUpdateArtifactUpdateArtifactPayload struct {
 // GetNumUids returns UpdateArtifactTypeUpdateArtifactUpdateArtifactPayload.NumUids, and is useful for accessing the field via an interface.
 func (v *UpdateArtifactTypeUpdateArtifactUpdateArtifactPayload) GetNumUids() *int { return v.NumUids }
 
+// UpdateIntegratorConfigStatusAsActiveResponse is returned by UpdateIntegratorConfigStatusAsActive on success.
+type UpdateIntegratorConfigStatusAsActiveResponse struct {
+	UpdateIntegratorConfigs *UpdateIntegratorConfigStatusAsActiveUpdateIntegratorConfigsUpdateIntegratorConfigsPayload `json:"updateIntegratorConfigs"`
+}
+
+// GetUpdateIntegratorConfigs returns UpdateIntegratorConfigStatusAsActiveResponse.UpdateIntegratorConfigs, and is useful for accessing the field via an interface.
+func (v *UpdateIntegratorConfigStatusAsActiveResponse) GetUpdateIntegratorConfigs() *UpdateIntegratorConfigStatusAsActiveUpdateIntegratorConfigsUpdateIntegratorConfigsPayload {
+	return v.UpdateIntegratorConfigs
+}
+
+// UpdateIntegratorConfigStatusAsActiveUpdateIntegratorConfigsUpdateIntegratorConfigsPayload includes the requested fields of the GraphQL type UpdateIntegratorConfigsPayload.
+type UpdateIntegratorConfigStatusAsActiveUpdateIntegratorConfigsUpdateIntegratorConfigsPayload struct {
+	NumUids *int `json:"numUids"`
+}
+
+// GetNumUids returns UpdateIntegratorConfigStatusAsActiveUpdateIntegratorConfigsUpdateIntegratorConfigsPayload.NumUids, and is useful for accessing the field via an interface.
+func (v *UpdateIntegratorConfigStatusAsActiveUpdateIntegratorConfigsUpdateIntegratorConfigsPayload) GetNumUids() *int {
+	return v.NumUids
+}
+
+// UpdateIntegratorKeyValueFeatFalseResponse is returned by UpdateIntegratorKeyValueFeatFalse on success.
+type UpdateIntegratorKeyValueFeatFalseResponse struct {
+	UpdateIntegratorKeyValues *UpdateIntegratorKeyValueFeatFalseUpdateIntegratorKeyValuesUpdateIntegratorKeyValuesPayload `json:"updateIntegratorKeyValues"`
+}
+
+// GetUpdateIntegratorKeyValues returns UpdateIntegratorKeyValueFeatFalseResponse.UpdateIntegratorKeyValues, and is useful for accessing the field via an interface.
+func (v *UpdateIntegratorKeyValueFeatFalseResponse) GetUpdateIntegratorKeyValues() *UpdateIntegratorKeyValueFeatFalseUpdateIntegratorKeyValuesUpdateIntegratorKeyValuesPayload {
+	return v.UpdateIntegratorKeyValues
+}
+
+// UpdateIntegratorKeyValueFeatFalseUpdateIntegratorKeyValuesUpdateIntegratorKeyValuesPayload includes the requested fields of the GraphQL type UpdateIntegratorKeyValuesPayload.
+type UpdateIntegratorKeyValueFeatFalseUpdateIntegratorKeyValuesUpdateIntegratorKeyValuesPayload struct {
+	NumUids *int `json:"numUids"`
+}
+
+// GetNumUids returns UpdateIntegratorKeyValueFeatFalseUpdateIntegratorKeyValuesUpdateIntegratorKeyValuesPayload.NumUids, and is useful for accessing the field via an interface.
+func (v *UpdateIntegratorKeyValueFeatFalseUpdateIntegratorKeyValuesUpdateIntegratorKeyValuesPayload) GetNumUids() *int {
+	return v.NumUids
+}
+
 // UpdateIntegratorNotConnectedStatusResponse is returned by UpdateIntegratorNotConnectedStatus on success.
 type UpdateIntegratorNotConnectedStatusResponse struct {
 	UpdateIntegrator *UpdateIntegratorNotConnectedStatusUpdateIntegratorUpdateIntegratorPayload `json:"updateIntegrator"`
@@ -2491,6 +2531,68 @@ func UpdateArtifactType(
 	var err_ error
 
 	var data_ UpdateArtifactTypeResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by UpdateIntegratorConfigStatusAsActive.
+const UpdateIntegratorConfigStatusAsActive_Operation = `
+mutation UpdateIntegratorConfigStatusAsActive {
+	updateIntegratorConfigs(input: {set:{status:"active"},filter:{status:{eq:null},or:{status:{eq:""}}}}) {
+		numUids
+	}
+}
+`
+
+func UpdateIntegratorConfigStatusAsActive(
+	ctx_ context.Context,
+	client_ graphql.Client,
+) (*UpdateIntegratorConfigStatusAsActiveResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "UpdateIntegratorConfigStatusAsActive",
+		Query:  UpdateIntegratorConfigStatusAsActive_Operation,
+	}
+	var err_ error
+
+	var data_ UpdateIntegratorConfigStatusAsActiveResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by UpdateIntegratorKeyValueFeatFalse.
+const UpdateIntegratorKeyValueFeatFalse_Operation = `
+mutation UpdateIntegratorKeyValueFeatFalse {
+	updateIntegratorKeyValues(input: {set:{feat:false},filter:{feat:null}}) {
+		numUids
+	}
+}
+`
+
+func UpdateIntegratorKeyValueFeatFalse(
+	ctx_ context.Context,
+	client_ graphql.Client,
+) (*UpdateIntegratorKeyValueFeatFalseResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "UpdateIntegratorKeyValueFeatFalse",
+		Query:  UpdateIntegratorKeyValueFeatFalse_Operation,
+	}
+	var err_ error
+
+	var data_ UpdateIntegratorKeyValueFeatFalseResponse
 	resp_ := &graphql.Response{Data: &data_}
 
 	err_ = client_.MakeRequest(

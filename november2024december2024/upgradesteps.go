@@ -31,8 +31,8 @@ func UpgradeToDecember2024(prodGraphUrl, prodToken string, prodDgraphClient grap
 		return fmt.Errorf("error: UpgradeToDecember2024: updateArtifactTypeForPlugin: %s", err.Error())
 	}
 
-	if err := updateIntegratorStatus(prodDgraphClient); err != nil {
-		return fmt.Errorf("error: UpgradeToDecember2024: updateIntegratorStatus: %s", err.Error())
+	if err := updateIntegratorMetadata(prodDgraphClient); err != nil {
+		return fmt.Errorf("error: UpgradeToDecember2024: updateIntegratorMetadata: %s", err.Error())
 	}
 
 	logger.Logger.Info("--------------Completed UpgradeToDecember2024------------------")
