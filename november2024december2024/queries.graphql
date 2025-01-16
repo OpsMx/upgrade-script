@@ -15,7 +15,7 @@ mutation UpdateArtifactType($ids: [String!]!) {
 }
 
 query FetchFeatureConfigsWithIntegratorConfigID {
-    queryFeatureMode @cascade{
+    queryFeatureMode @cascade(fields:"integrator"){
         key
         value
         organization {
@@ -64,10 +64,7 @@ mutation UpdateIntegratorNotConnectedStatus {
 
 mutation UpdateIntegratorConfigStatusAsActive {
     updateIntegratorConfigs(
-        input: {
-            set: { status: "active" }
-            filter: { status: { eq: null }, or: { status: { eq: "" } } }
-        }
+        input: { set: { status: "active" }, filter: { not: { status: { eq: "active" } } } }
     ) {
         numUids
     }
@@ -75,7 +72,7 @@ mutation UpdateIntegratorConfigStatusAsActive {
 
 mutation UpdateIntegratorKeyValueFeatFalse {
     updateIntegratorKeyValues(
-        input: { set: { feat: false }, filter: { feat: null } }
+        input: { set: { feat: false }, filter: { not: { feat: true } } }
     ) {
         numUids
     }

@@ -2396,7 +2396,7 @@ func AddIntegratorConfigs(
 // The query or mutation executed by FetchFeatureConfigsWithIntegratorConfigID.
 const FetchFeatureConfigsWithIntegratorConfigID_Operation = `
 query FetchFeatureConfigsWithIntegratorConfigID {
-	queryFeatureMode @cascade {
+	queryFeatureMode @cascade(fields: "integrator") {
 		key
 		value
 		organization {
@@ -2545,7 +2545,7 @@ func UpdateArtifactType(
 // The query or mutation executed by UpdateIntegratorConfigStatusAsActive.
 const UpdateIntegratorConfigStatusAsActive_Operation = `
 mutation UpdateIntegratorConfigStatusAsActive {
-	updateIntegratorConfigs(input: {set:{status:"active"},filter:{status:{eq:null},or:{status:{eq:""}}}}) {
+	updateIntegratorConfigs(input: {set:{status:"active"},filter:{not:{status:{eq:"active"}}}}) {
 		numUids
 	}
 }
@@ -2576,7 +2576,7 @@ func UpdateIntegratorConfigStatusAsActive(
 // The query or mutation executed by UpdateIntegratorKeyValueFeatFalse.
 const UpdateIntegratorKeyValueFeatFalse_Operation = `
 mutation UpdateIntegratorKeyValueFeatFalse {
-	updateIntegratorKeyValues(input: {set:{feat:false},filter:{feat:null}}) {
+	updateIntegratorKeyValues(input: {set:{feat:false},filter:{not:{feat:true}}}) {
 		numUids
 	}
 }
