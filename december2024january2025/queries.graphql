@@ -1,0 +1,5 @@
+mutation SetDefaultValueOfHosting {
+    updateDeploymentTarget(input: { set: { hosting: "self-hosted" }, filter: { has: ip } }) {
+        numUids
+    }
+}
