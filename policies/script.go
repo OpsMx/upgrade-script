@@ -11042,6 +11042,7 @@ var scriptMap = map[int]string{
 
 	default exception_list = []
 	default exception_count = 0
+        default remediation := ""
 
 	policy_name = input.metadata.policyName
 	policy_category = replace(input.metadata.policyCategory, " ", "_")
@@ -11057,6 +11058,7 @@ var scriptMap = map[int]string{
 	rule_name := results.name
 	rule_rationale = results.rationale
 	references = concat(" \n", results.references)
+        remediation = results.remediation
 
 	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "exception": "", "alertStatus": alertStatus}]{
 			flagged_items > 0
@@ -11068,7 +11070,7 @@ var scriptMap = map[int]string{
 			title := sprintf("Rule: %v violated for %v resource %v", [rule_name, service_type, violated_resource])
 			msg := sprintf("Rule: %v violated for %v resource %v. \nRule Description: %v. \n Detailed Description: %v.", [rule_name, service_type, violated_resource, rule_description, rule_rationale])
 			error := ""
-			sugg := sprintf("%v \n %v", [results.remediation, references])
+			sugg := sprintf("%v \n %v", [remediation, references])
 			alertStatus := "active"
 	}
 
@@ -11083,12 +11085,12 @@ var scriptMap = map[int]string{
 			title := sprintf("Rule: %v violated for %v resource %v", [rule_name, service_type, violated_resource])
 			msg := sprintf("Rule: %v violated for %v resource %v. \nRule Description: %v. \n Detailed Description: %v.", [rule_name, service_type, violated_resource, rule_description, rule_rationale])
 			error := ""
-			sugg := sprintf("%v \n %v", [results.remediation, references])
+			sugg := sprintf("%v \n %v", [remediation, references])
 			exception_cause := rule_name
 			alertStatus := "exception"
 	}`,
 
-	383:`
+	383: `
 	package opsmx
 	import future.keywords.in
 
@@ -11147,7 +11149,7 @@ var scriptMap = map[int]string{
 	}
 	`,
 
-	384:`
+	384: `
 	package opsmx
 	import future.keywords.in
 
@@ -11371,7 +11373,7 @@ var scriptMap = map[int]string{
 		alertStatus := "exception"
 	}`,
 
-	388:`
+	388: `
 	package opsmx
 	import future.keywords.in
 
@@ -11427,7 +11429,7 @@ var scriptMap = map[int]string{
 		alertStatus := "exception"
 	}`,
 
-	389:`
+	389: `
 	package opsmx
 	import future.keywords.in
 
@@ -11483,7 +11485,7 @@ var scriptMap = map[int]string{
 		alertStatus := "exception"
 	}`,
 
-	390:`
+	390: `
 	package opsmx
 	import future.keywords.in
 
@@ -11539,7 +11541,7 @@ var scriptMap = map[int]string{
 		alertStatus := "exception"
 	}`,
 
-	391:`
+	391: `
 	package opsmx
 	import future.keywords.in
 
@@ -11602,7 +11604,7 @@ var scriptMap = map[int]string{
 		alertStatus := "exception"
 	}`,
 
-	392:`
+	392: `
 	package opsmx
 	import future.keywords.in
 
@@ -11665,7 +11667,7 @@ var scriptMap = map[int]string{
 		alertStatus := "exception"
 	}`,
 
-	393:`
+	393: `
 	package opsmx
 	import future.keywords.in
 
@@ -11728,7 +11730,7 @@ var scriptMap = map[int]string{
 		alertStatus := "exception"
 	}`,
 
-	394:`
+	394: `
 	package opsmx
 	import future.keywords.in
 
@@ -11786,7 +11788,7 @@ var scriptMap = map[int]string{
 		alertStatus := "exception"
 	}`,
 
-	395:`
+	395: `
 	package opsmx
 	import future.keywords.in
 
@@ -11844,7 +11846,7 @@ var scriptMap = map[int]string{
 		alertStatus := "exception"
 	}`,
 
-	396:`
+	396: `
 	package opsmx
 	import future.keywords.in
 
@@ -11902,7 +11904,7 @@ var scriptMap = map[int]string{
 		alertStatus := "exception"
 	}`,
 
-	397:`
+	397: `
 	package opsmx
 	import future.keywords.in
 
@@ -11961,7 +11963,7 @@ var scriptMap = map[int]string{
 		alertStatus := "exception"
 	}`,
 
-	398:`
+	398: `
 	package opsmx
 	import future.keywords.in
 
@@ -12020,7 +12022,7 @@ var scriptMap = map[int]string{
 		alertStatus := "exception"
 	}`,
 
-	399:`
+	399: `
 	package opsmx
 	import future.keywords.in
 
@@ -12079,7 +12081,7 @@ var scriptMap = map[int]string{
 		alertStatus := "exception"
 	}`,
 
-	400:`
+	400: `
 	package opsmx
 	import future.keywords.in
 
@@ -12141,7 +12143,7 @@ var scriptMap = map[int]string{
 		alertStatus := "active"
 	}`,
 
-	401:`
+	401: `
 	package opsmx
 	import future.keywords.in
 
@@ -12203,7 +12205,7 @@ var scriptMap = map[int]string{
 		alertStatus := "active"
 	}`,
 
-	402:`
+	402: `
 	package opsmx
 	import future.keywords.in
 
@@ -12265,7 +12267,7 @@ var scriptMap = map[int]string{
 		alertStatus := "active"
 	}`,
 
-	403:`
+	403: `
 	package opsmx
 	import future.keywords.in
 
@@ -12332,7 +12334,7 @@ var scriptMap = map[int]string{
 		result := concat("\n", keys)  # Join the keys with newline characters
 	}`,
 
-	404:`
+	404: `
 	package opsmx
 	import future.keywords.in
 
@@ -12399,7 +12401,7 @@ var scriptMap = map[int]string{
 		result := concat("\n", keys)  # Join the keys with newline characters
 	}`,
 
-	405:`
+	405: `
 	package opsmx
 	import future.keywords.in
 
@@ -12466,7 +12468,7 @@ var scriptMap = map[int]string{
 		result := concat("\n", keys)  # Join the keys with newline characters
 	}`,
 
-	406:`
+	406: `
 	package opsmx
 	import future.keywords.in
 
@@ -12519,7 +12521,7 @@ var scriptMap = map[int]string{
 		alertStatus := "exception"
 	}`,
 
-	407:`
+	407: `
 	package opsmx
 	import future.keywords.in
 
@@ -12572,7 +12574,7 @@ var scriptMap = map[int]string{
 		alertStatus := "exception"
 	}`,
 
-	408:`
+	408: `
 	package opsmx
 	import future.keywords.in
 
@@ -12625,7 +12627,7 @@ var scriptMap = map[int]string{
 		alertStatus := "exception"
 	}`,
 
-	409:`
+	409: `
 	package opsmx
 	import future.keywords.in
 
@@ -12693,7 +12695,7 @@ var scriptMap = map[int]string{
 		result := concat(" \n", keys)  # Join the keys with newline characters
 	}`,
 
-	410:`
+	410: `
 	package opsmx
 	import future.keywords.in
 
@@ -12761,7 +12763,7 @@ var scriptMap = map[int]string{
 		result := concat(" \n", keys)  # Join the keys with newline characters
 	}`,
 
-	411:`
+	411: `
 	package opsmx
 	import future.keywords.in
 
@@ -12829,7 +12831,7 @@ var scriptMap = map[int]string{
 		result := concat(" \n", keys)  # Join the keys with newline characters
 	}`,
 
-	412:`
+	412: `
 	package opsmx
 	import future.keywords.in
 
@@ -12897,7 +12899,7 @@ var scriptMap = map[int]string{
 		result := concat(" \n", keys)  # Join the keys with newline characters
 	}`,
 
-	413:`
+	413: `
 	package opsmx
 	import future.keywords.in
 
@@ -12965,7 +12967,7 @@ var scriptMap = map[int]string{
 		result := concat(" \n", keys)  # Join the keys with newline characters
 	}`,
 
-	414:`
+	414: `
 	package opsmx
 	import future.keywords.in
 
@@ -13033,7 +13035,7 @@ var scriptMap = map[int]string{
 		result := concat(" \n", keys)  # Join the keys with newline characters
 	}`,
 
-	415:`
+	415: `
 	package opsmx
 	import future.keywords.in
 
@@ -13091,7 +13093,7 @@ var scriptMap = map[int]string{
 		alertStatus = "exception"
 	}`,
 
-	416:`
+	416: `
 	package opsmx
 	import future.keywords.in
 
@@ -13149,7 +13151,7 @@ var scriptMap = map[int]string{
 		alertStatus = "exception"
 	}`,
 
-	417:`
+	417: `
 	package opsmx
 	import future.keywords.in
 
@@ -17369,7 +17371,7 @@ var policyDefinition = []string{
 		 "orgId":"1",
 		 "policyName":"High severity secret detection in containers",
 		 "category":"Secret Scan",
-		 "stage":"deploy",
+		 "stage":"artifact",
 		 "description":"High Severity secrets must not be exposed in containers.",
 		 "scheduled_policy":false,
 		 "scriptId":"278",
@@ -17384,7 +17386,7 @@ var policyDefinition = []string{
 		 "orgId":"1",
 		 "policyName":"Critical severity secret detection in containers",
 		 "category":"Secret Scan",
-		 "stage":"deploy",
+		 "stage":"artifact",
 		 "description":"Critical Severity secrets must not be exposed in containers.",
 		 "scheduled_policy":false,
 		 "scriptId":"279",
@@ -17399,7 +17401,7 @@ var policyDefinition = []string{
 		 "orgId":"1",
 		 "policyName":"Medium severity secret detection in containers",
 		 "category":"Secret Scan",
-		 "stage":"deploy",
+		 "stage":"artifact",
 		 "description":"Medium Severity secrets must not be exposed in containers.",
 		 "scheduled_policy":false,
 		 "scriptId":"280",
@@ -17414,7 +17416,7 @@ var policyDefinition = []string{
 		 "orgId":"1",
 		 "policyName":"Low severity secret detection in containers",
 		 "category":"Secret Scan",
-		 "stage":"deploy",
+		 "stage":"artifact",
 		 "description":"Low Severity secrets must not be exposed in containers.",
 		 "scheduled_policy":false,
 		 "scriptId":"281",
@@ -17428,7 +17430,7 @@ var policyDefinition = []string{
 		 "policyId":"282",
 		 "orgId":"1",
 		 "policyName":"High severity rule violation in helm",
-		 "category":"Secret Scan",
+		 "category":"Helm Scan",
 		 "stage":"deploy",
 		 "description":"High Severity rule violations in helm.",
 		 "scheduled_policy":false,
@@ -17443,7 +17445,7 @@ var policyDefinition = []string{
 		 "policyId":"283",
 		 "orgId":"1",
 		 "policyName":"Critical severity rule violation in helm",
-		 "category":"Secret Scan",
+		 "category":"Helm Scan",
 		 "stage":"deploy",
 		 "description":"Critical Severity rule violations in helm.",
 		 "scheduled_policy":false,
@@ -17458,7 +17460,7 @@ var policyDefinition = []string{
 		 "policyId":"284",
 		 "orgId":"1",
 		 "policyName":"Medium severity rule violation in helm",
-		 "category":"Secret Scan",
+		 "category":"Helm Scan",
 		 "stage":"deploy",
 		 "description":"Medium Severity rule violations in helm.",
 		 "scheduled_policy":false,
@@ -17473,7 +17475,7 @@ var policyDefinition = []string{
 		 "policyId":"285",
 		 "orgId":"1",
 		 "policyName":"Low severity rule violation in helm",
-		 "category":"Secret Scan",
+		 "category":"Helm Scan",
 		 "stage":"deploy",
 		 "description":"Low Severity rule violations in helm.",
 		 "scheduled_policy":false,
@@ -18353,7 +18355,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"346",
                 "orgId":"1",
@@ -18368,7 +18370,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"347",
                 "orgId":"1",
@@ -18383,7 +18385,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"348",
                 "orgId":"1",
@@ -18398,7 +18400,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"349",
                 "orgId":"1",
@@ -18413,7 +18415,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"350",
                 "orgId":"1",
@@ -18428,7 +18430,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"351",
                 "orgId":"1",
@@ -18443,7 +18445,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"352",
                 "orgId":"1",
@@ -18458,7 +18460,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"353",
                 "orgId":"1",
@@ -18473,7 +18475,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"354",
                 "orgId":"1",
@@ -18488,7 +18490,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"355",
                 "orgId":"1",
@@ -18503,7 +18505,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"356",
                 "orgId":"1",
@@ -18518,7 +18520,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"357",
                 "orgId":"1",
@@ -18533,7 +18535,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"358",
                 "orgId":"1",
@@ -18548,7 +18550,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"359",
                 "orgId":"1",
@@ -18563,7 +18565,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"360",
                 "orgId":"1",
@@ -18578,7 +18580,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"361",
                 "orgId":"1",
@@ -18593,7 +18595,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"362",
                 "orgId":"1",
@@ -18608,7 +18610,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"363",
                 "orgId":"1",
@@ -18623,7 +18625,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"364",
                 "orgId":"1",
@@ -18638,7 +18640,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"365",
                 "orgId":"1",
@@ -18653,7 +18655,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"366",
                 "orgId":"1",
@@ -18668,7 +18670,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"367",
                 "orgId":"1",
@@ -18683,7 +18685,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"368",
                 "orgId":"1",
@@ -18698,7 +18700,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"369",
                 "orgId":"1",
@@ -18713,7 +18715,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"370",
                 "orgId":"1",
@@ -18728,7 +18730,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"371",
                 "orgId":"1",
@@ -18743,7 +18745,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"372",
                 "orgId":"1",
@@ -18758,7 +18760,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"373",
                 "orgId":"1",
@@ -18773,7 +18775,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
        {
                 "policyId":"374",
                 "orgId":"1",
@@ -18788,7 +18790,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
        {
                 "policyId":"375",
                 "orgId":"1",
@@ -18803,7 +18805,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
        {
                 "policyId":"376",
                 "orgId":"1",
@@ -18818,7 +18820,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
        {
                 "policyId":"377",
                 "orgId":"1",
@@ -18833,7 +18835,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
        {
                 "policyId":"378",
                 "orgId":"1",
@@ -18848,7 +18850,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
        {
                 "policyId":"379",
                 "orgId":"1",
@@ -18863,7 +18865,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
        {
                 "policyId":"380",
                 "orgId":"1",
@@ -18878,7 +18880,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
 	   {
                 "policyId":"381",
                 "orgId":"1",
@@ -18893,7 +18895,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
 	   {
                 "policyId":"382",
                 "orgId":"1",
@@ -18908,7 +18910,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
 	   {
                 "policyId":"383",
                 "orgId":"1",
@@ -18923,7 +18925,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
 	   {
                 "policyId":"384",
                 "orgId":"1",
@@ -18938,7 +18940,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
 	   {
                 "policyId":"385",
                 "orgId":"1",
@@ -18953,7 +18955,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
 	   {
                 "policyId":"386",
                 "orgId":"1",
@@ -18968,7 +18970,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
 	   {
                 "policyId":"387",
                 "orgId":"1",
@@ -18983,7 +18985,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
 	   {
                 "policyId":"388",
                 "orgId":"1",
@@ -18998,7 +19000,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
 	   {
                 "policyId":"389",
                 "orgId":"1",
@@ -19013,7 +19015,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
 	   {
                 "policyId":"390",
                 "orgId":"1",
@@ -19028,7 +19030,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
 	   {
                 "policyId":"391",
                 "orgId":"1",
@@ -19043,7 +19045,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
 	   {
                 "policyId":"392",
                 "orgId":"1",
@@ -19058,7 +19060,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
 	   {
                 "policyId":"393",
                 "orgId":"1",
@@ -19073,7 +19075,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
 	   {
                 "policyId":"394",
                 "orgId":"1",
@@ -19088,7 +19090,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
 	   {
                 "policyId":"395",
                 "orgId":"1",
@@ -19103,7 +19105,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
 	   {
                 "policyId":"396",
                 "orgId":"1",
@@ -19118,7 +19120,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
 	   {
                 "policyId":"397",
                 "orgId":"1",
@@ -19133,7 +19135,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
 	   {
                 "policyId":"398",
                 "orgId":"1",
@@ -19148,7 +19150,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
 	   {
                 "policyId":"399",
                 "orgId":"1",
@@ -19163,7 +19165,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
 	   {
                 "policyId":"400",
                 "orgId":"1",
@@ -19178,7 +19180,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
 	   {
                 "policyId":"401",
                 "orgId":"1",
@@ -19193,7 +19195,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
 	   {
                 "policyId":"402",
                 "orgId":"1",
@@ -19208,7 +19210,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
 	   {
                 "policyId":"403",
                 "orgId":"1",
@@ -19223,7 +19225,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
 	   {
                 "policyId":"404",
                 "orgId":"1",
@@ -19238,7 +19240,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
 	   {
                 "policyId":"405",
                 "orgId":"1",
@@ -19253,7 +19255,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
 	   {
                 "policyId":"406",
                 "orgId":"1",
@@ -19268,7 +19270,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
 	   {
                 "policyId":"407",
                 "orgId":"1",
@@ -19283,7 +19285,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
 	   {
                 "policyId":"408",
                 "orgId":"1",
@@ -19298,7 +19300,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
 	   {
                 "policyId":"409",
                 "orgId":"1",
@@ -19313,7 +19315,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
 	   {
                 "policyId":"410",
                 "orgId":"1",
@@ -19328,7 +19330,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
 	   {
                 "policyId":"411",
                 "orgId":"1",
@@ -19343,7 +19345,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
 	   {
                 "policyId":"412",
                 "orgId":"1",
@@ -19358,7 +19360,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
 	   {
                 "policyId":"413",
                 "orgId":"1",
@@ -19373,7 +19375,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
 	   {
                 "policyId":"414",
                 "orgId":"1",
@@ -19388,12 +19390,12 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
 	   {
                 "policyId":"415",
                 "orgId":"1",
                 "policyName":"TfSec: IaC Scan Low Severity Issues Policy",
-                "category":"Mobile Application Security Posture",
+                "category":"IaC Security Posture",
                 "stage":"deploy",
                 "description":"TfSec Scan checks for security violations in terraform scripts.",
                 "scheduled_policy":false,
@@ -19403,12 +19405,12 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
 	   {
                 "policyId":"416",
                 "orgId":"1",
                 "policyName":"TfSec: IaC Scan Medium Severity Issues Policy",
-                "category":"Mobile Application Security Posture",
+                "category":"IaC Security Posture",
                 "stage":"deploy",
                 "description":"TfSec Scan checks for security violations in terraform scripts.",
                 "scheduled_policy":false,
@@ -19418,12 +19420,12 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
 	   {
                 "policyId":"417",
                 "orgId":"1",
                 "policyName":"TfSec: IaC Scan High Severity Issues Policy",
-                "category":"Mobile Application Security Posture",
+                "category":"IaC Security Posture",
                 "stage":"deploy",
                 "description":"TfSec Scan checks for security violations in terraform scripts.",
                 "scheduled_policy":false,
@@ -19433,7 +19435,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-	   `
+	`
        {
                 "policyId":"418",
                 "orgId":"1",
@@ -19448,7 +19450,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"419",
                 "orgId":"1",
@@ -19463,7 +19465,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"420",
                 "orgId":"1",
@@ -19478,7 +19480,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"421",
                 "orgId":"1",
@@ -19493,7 +19495,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"422",
                 "orgId":"1",
@@ -19508,7 +19510,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"423",
                 "orgId":"1",
@@ -19523,7 +19525,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"424",
                 "orgId":"1",
@@ -19538,7 +19540,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"425",
                 "orgId":"1",
@@ -19553,7 +19555,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"426",
                 "orgId":"1",
@@ -19568,7 +19570,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"427",
                 "orgId":"1",
@@ -19583,7 +19585,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"428",
                 "orgId":"1",
@@ -19598,7 +19600,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"429",
                 "orgId":"1",
@@ -19613,7 +19615,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"430",
                 "orgId":"1",
@@ -19628,7 +19630,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"431",
                 "orgId":"1",
@@ -19643,7 +19645,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"432",
                 "orgId":"1",
@@ -19658,7 +19660,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"433",
                 "orgId":"1",
@@ -19673,7 +19675,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"434",
                 "orgId":"1",
@@ -19688,7 +19690,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"435",
                 "orgId":"1",
@@ -19703,7 +19705,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"436",
                 "orgId":"1",
@@ -19718,7 +19720,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"437",
                 "orgId":"1",
@@ -19733,7 +19735,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"438",
                 "orgId":"1",
@@ -19748,7 +19750,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"439",
                 "orgId":"1",
@@ -19763,7 +19765,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"440",
                 "orgId":"1",
@@ -19778,7 +19780,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"441",
                 "orgId":"1",
@@ -19793,7 +19795,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"442",
                 "orgId":"1",
@@ -19808,7 +19810,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"443",
                 "orgId":"1",
@@ -19823,7 +19825,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"444",
                 "orgId":"1",
@@ -19838,7 +19840,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"445",
                 "orgId":"1",
@@ -19853,7 +19855,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"446",
                 "orgId":"1",
@@ -19868,7 +19870,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"447",
                 "orgId":"1",
@@ -19883,7 +19885,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"448",
                 "orgId":"1",
@@ -19898,7 +19900,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"449",
                 "orgId":"1",
@@ -19913,7 +19915,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"450",
                 "orgId":"1",
@@ -19928,7 +19930,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"451",
                 "orgId":"1",
@@ -19943,7 +19945,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"452",
                 "orgId":"1",
@@ -19958,7 +19960,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"453",
                 "orgId":"1",
@@ -19973,7 +19975,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"454",
                 "orgId":"1",
@@ -19988,7 +19990,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"455",
                 "orgId":"1",
@@ -20003,7 +20005,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"456",
                 "orgId":"1",
@@ -20018,7 +20020,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"457",
                 "orgId":"1",
@@ -20033,7 +20035,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"458",
                 "orgId":"1",
@@ -20048,7 +20050,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"459",
                 "orgId":"1",
@@ -20063,7 +20065,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"460",
                 "orgId":"1",
@@ -20078,7 +20080,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"461",
                 "orgId":"1",
@@ -20093,7 +20095,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"462",
                 "orgId":"1",
@@ -20108,7 +20110,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"463",
                 "orgId":"1",
@@ -20123,7 +20125,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"464",
                 "orgId":"1",
@@ -20138,7 +20140,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"465",
                 "orgId":"1",
@@ -20153,7 +20155,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"466",
                 "orgId":"1",
@@ -20168,7 +20170,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"467",
                 "orgId":"1",
@@ -20183,7 +20185,7 @@ var policyDefinition = []string{
                 "suggestion":""
        }
        `,
-       `
+	`
        {
                 "policyId":"468",
                 "orgId":"1",
@@ -20214,7 +20216,7 @@ var policyEnforcement = []string{
   }`,
 	`{
       "policyId": "2",
-      "severity": "Critical",
+      "severity": "High",
       "action": "Alert",
       "conditionValue": "2",
       "status": true,
@@ -20225,7 +20227,7 @@ var policyEnforcement = []string{
   }`,
 	`{
       "policyId": "3",
-      "severity": "Critical",
+      "severity": "High",
       "action": "Alert",
       "conditionValue": "true",
       "status": true, 
@@ -20334,7 +20336,7 @@ var policyEnforcement = []string{
   }`,
 	`{
       "policyId": "12",
-      "severity": "Critical",
+      "severity": "High",
       "action": "Alert",
       "status": true,
 	  "datasourceTool": "jenkins",
@@ -20557,7 +20559,7 @@ var policyEnforcement = []string{
   }`,
 	`{
       "policyId": "32",
-      "severity": "Critical",
+      "severity": "High",
       "action": "Alert",
       "status": true,
 	  "datasourceTool": "github",
@@ -20567,7 +20569,7 @@ var policyEnforcement = []string{
   }`,
 	`{
       "policyId": "33",
-      "severity": "Critical",
+      "severity": "High",
       "action": "Alert",
       "status": true,
 	  "datasourceTool": "github",
@@ -20580,7 +20582,7 @@ var policyEnforcement = []string{
   }`,
 	`{
       "policyId": "34",
-      "severity": "Critical",
+      "severity": "High",
       "action": "Alert",
       "status": true,
 	  "datasourceTool": "github",
@@ -20613,7 +20615,7 @@ var policyEnforcement = []string{
   }`,
 	`{
       "policyId": "37",
-      "severity": "Critical",
+      "severity": "High",
       "action": "Alert",
       "status": true,
 	  "datasourceTool": "jenkins",
@@ -20623,7 +20625,7 @@ var policyEnforcement = []string{
   }`,
 	`{
       "policyId": "38",
-      "severity": "Critical",
+      "severity": "High",
       "action": "Alert",
       "status": true,
 	  "datasourceTool": "docker",
@@ -20633,7 +20635,7 @@ var policyEnforcement = []string{
   }`,
 	`{
 	"policyId": "38",
-	"severity": "Critical",
+	"severity": "High",
 	"action": "Alert",
 	"status": true,
 	"datasourceTool": "quay",
@@ -20643,7 +20645,7 @@ var policyEnforcement = []string{
   }`,
 	`{
 	"policyId": "38",
-	"severity": "Critical",
+	"severity": "High",
 	"action": "Alert",
 	"status": true,
 	"datasourceTool": "jfrog",
@@ -20653,7 +20655,7 @@ var policyEnforcement = []string{
   }`,
 	`{
 	"policyId": "38",
-	"severity": "Critical",
+	"severity": "High",
 	"action": "Alert",
 	"status": true,
 	"datasourceTool": "ecr",
@@ -20661,9 +20663,9 @@ var policyEnforcement = []string{
 	   "2"
 	]
   }`,
-  `{
+	`{
 	"policyId": "38",
-	"severity": "Critical",
+	"severity": "High",
 	"action": "Alert",
 	"status": true,
 	"datasourceTool": "acr",
@@ -20673,7 +20675,7 @@ var policyEnforcement = []string{
 	}`,
 	`{
 	"policyId": "38",
-	"severity": "Critical",
+	"severity": "High",
 	"action": "Alert",
 	"status": true,
 	"datasourceTool": "gcr",
@@ -20683,7 +20685,7 @@ var policyEnforcement = []string{
 	}`,
 	`{
       "policyId": "39",
-      "severity": "Critical",
+      "severity": "High",
       "action": "Alert",
       "status": true,
 	  "datasourceTool": "docker",
@@ -20693,7 +20695,7 @@ var policyEnforcement = []string{
   }`,
 	`{
 	"policyId": "39",
-	"severity": "Critical",
+	"severity": "High",
 	"action": "Alert",
 	"status": true,
 	"datasourceTool": "quay",
@@ -20703,7 +20705,7 @@ var policyEnforcement = []string{
   }`,
 	`{
 	"policyId": "39",
-	"severity": "Critical",
+	"severity": "High",
 	"action": "Alert",
 	"status": true,
 	"datasourceTool": "jfrog",
@@ -20713,7 +20715,7 @@ var policyEnforcement = []string{
   }`,
 	`{
 	"policyId": "39",
-	"severity": "Critical",
+	"severity": "High",
 	"action": "Alert",
 	"status": true,
 	"datasourceTool": "ecr",
@@ -20721,9 +20723,9 @@ var policyEnforcement = []string{
 	   "2"
 	]
   }`,
-  `{
+	`{
 	"policyId": "39",
-	"severity": "Critical",
+	"severity": "High",
 	"action": "Alert",
 	"status": true,
 	"datasourceTool": "acr",
@@ -20733,7 +20735,7 @@ var policyEnforcement = []string{
 	}`,
 	`{
 	"policyId": "39",
-	"severity": "Critical",
+	"severity": "High",
 	"action": "Alert",
 	"status": true,
 	"datasourceTool": "gcr",
@@ -20753,7 +20755,7 @@ var policyEnforcement = []string{
   }`,
 	`{
       "policyId": "41",
-      "severity": "Critical",
+      "severity": "High",
       "action": "Alert",
       "status": true,
 	  "datasourceTool": "docker",
@@ -20763,7 +20765,7 @@ var policyEnforcement = []string{
   }`,
 	`{
       "policyId": "42",
-      "severity": "Critical",
+      "severity": "High",
       "action": "Alert",
       "conditionValue": "5",
       "status": true,
@@ -20775,7 +20777,7 @@ var policyEnforcement = []string{
   }`,
 	`{
       "policyId": "43",
-      "severity": "Critical",
+      "severity": "High",
       "action": "Alert",
       "conditionValue": "2.0",
       "status": true,
@@ -20840,7 +20842,7 @@ var policyEnforcement = []string{
   }`,
 	`{
       "policyId": "48",
-      "severity": "Critical",
+      "severity": "High",
       "action": "Alert",
       "status": true,
 	  "datasourceTool": "semgrep",
@@ -20915,7 +20917,7 @@ var policyEnforcement = []string{
   }`,
 	`{
       "policyId": "53",
-      "severity": "Critical",
+      "severity": "High",
       "action": "Prevent",
       "status": false,
 	  "datasourceTool": "kubernetes",
@@ -20925,7 +20927,7 @@ var policyEnforcement = []string{
   }`,
 	`{
       "policyId": "54",
-      "severity": "Critical",
+      "severity": "High",
       "action": "Prevent",
       "status": false,
 	  "datasourceTool": "kubernetes",
@@ -20935,7 +20937,7 @@ var policyEnforcement = []string{
   }`,
 	`{
       "policyId": "55",
-      "severity": "Critical",
+      "severity": "High",
       "action": "Prevent",
       "status": false,
 	  "datasourceTool": "kubernetes",
@@ -23280,7 +23282,7 @@ var policyEnforcement = []string{
 	   "2"
 	]
   }`,
-  `{
+	`{
 	"policyId": "271",
 	"severity": "Medium",
 	"action": "Alert",
@@ -23357,7 +23359,7 @@ var policyEnforcement = []string{
 	   "22"
 	]
   }`,
-  `{
+	`{
 	"policyId": "273",
 	"severity": "Critical",
 	"action": "Alert",
@@ -23473,7 +23475,7 @@ var policyEnforcement = []string{
          "21"
       ]
   }`,
-  `{
+	`{
       "policyId": "282",
       "severity": "High",
       "action": "Alert",
@@ -23483,7 +23485,7 @@ var policyEnforcement = []string{
          "21"
       ]
   }`,
-  `{
+	`{
       "policyId": "282",
       "severity": "High",
       "action": "Alert",
@@ -23503,7 +23505,7 @@ var policyEnforcement = []string{
          "21"
       ]
   }`,
-  `{
+	`{
       "policyId": "283",
       "severity": "Critical",
       "action": "Alert",
@@ -23513,7 +23515,7 @@ var policyEnforcement = []string{
          "21"
       ]
   }`,
-  `{
+	`{
       "policyId": "283",
       "severity": "Critical",
       "action": "Alert",
@@ -23533,7 +23535,7 @@ var policyEnforcement = []string{
          "21"
       ]
   }`,
-  `{
+	`{
       "policyId": "284",
       "severity": "Medium",
       "action": "Alert",
@@ -23543,7 +23545,7 @@ var policyEnforcement = []string{
          "21"
       ]
   }`,
-  `{
+	`{
       "policyId": "284",
       "severity": "Medium",
       "action": "Alert",
@@ -23563,7 +23565,7 @@ var policyEnforcement = []string{
          "21"
       ]
   }`,
-  `{
+	`{
       "policyId": "285",
       "severity": "Low",
       "action": "Alert",
@@ -23573,7 +23575,7 @@ var policyEnforcement = []string{
          "21"
       ]
   }`,
-  `{
+	`{
       "policyId": "285",
       "severity": "Low",
       "action": "Alert",
@@ -24216,7 +24218,7 @@ var policyEnforcement = []string{
          "3"
       ]
   }`,
-  `{
+	`{
       "policyId": "343",
       "severity": "Medium",
       "action": "Alert",
@@ -24227,7 +24229,7 @@ var policyEnforcement = []string{
          "3"
       ]
   }`,
-  `{
+	`{
       "policyId": "344",
       "severity": "High",
       "action": "Alert",
