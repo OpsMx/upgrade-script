@@ -3,7 +3,7 @@ package april2024june2024
 import (
 	"context"
 	"fmt"
-	"upgradationScript/april2024june2024/june2024"
+	"upgradationScript/2024/april2024june2024/june2024"
 
 	"upgradationScript/logger"
 

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
-	"upgradationScript/july2024august2024/august2024"
-	"upgradationScript/july2024august2024/july2024"
+	"upgradationScript/2024/july2024august2024/august2024"
+	"upgradationScript/2024/july2024august2024/july2024"
 	"upgradationScript/logger"
 
 	"github.com/Khan/genqlient/graphql"
