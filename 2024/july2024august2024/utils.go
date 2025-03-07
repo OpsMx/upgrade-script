@@ -12,7 +12,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
-	"upgradationScript/july2024august2024/july2024"
+	"upgradationScript/2024/july2024august2024/july2024"
 
 	"github.com/Khan/genqlient/graphql"
 )

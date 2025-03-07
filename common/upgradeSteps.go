@@ -5,17 +5,19 @@ import (
 	"fmt"
 	"strings"
 
-	"upgradationScript/april2024june2024"
-	"upgradationScript/august2024august2024v2"
-	"upgradationScript/august2024v2september2024"
+	"upgradationScript/2024/april2024june2024"
+	"upgradationScript/2024/august2024august2024v2"
+	"upgradationScript/2024/august2024v2september2024"
+	"upgradationScript/2024/july2024august2024"
+	"upgradationScript/2024/june2024june2024v2"
+	"upgradationScript/2024/june2024v2july2024"
+	"upgradationScript/2024/november2024december2024"
+	"upgradationScript/2024/october2024november2024"
+	"upgradationScript/2024/september2024october2024"
+	"upgradationScript/2025/december2024january2025"
+	"upgradationScript/2025/january2025february2025"
 	featuretable "upgradationScript/featureTable"
 	graphqlfunc "upgradationScript/graphqlFunc"
-	"upgradationScript/july2024august2024"
-	"upgradationScript/june2024june2024v2"
-	"upgradationScript/june2024v2july2024"
-	"upgradationScript/november2024december2024"
-	"upgradationScript/october2024november2024"
-	"upgradationScript/september2024october2024"
 
 	"upgradationScript/logger"
 	policyingenstionscript "upgradationScript/policies"
@@ -172,6 +174,14 @@ func beginProcessOfUpgrade(upgradeTo SchemaOrder, isSecondDgraphRequired, isLast
 	case December2024Version:
 
 		return november2024december2024.UpgradeToDecember2024(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, prodGraphqlClient)
+
+	case January2025Version:
+
+		return december2024january2025.UpgradeToJanuary2025(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, prodGraphqlClient)
+
+	case February2025Version:
+
+		return january2025february2025.UpgradeToFebruary2025(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, prodGraphqlClient)
 	}
 
 	logger.Sl.Debugf("no upgrade steps for %s", upgradeTo.NameOfSchema())

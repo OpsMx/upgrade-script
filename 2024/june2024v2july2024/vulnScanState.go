@@ -3,7 +3,7 @@ package june2024v2july2024
 import (
 	"context"
 	"fmt"
-	"upgradationScript/june2024v2july2024/july2024"
+	"upgradationScript/2024/june2024v2july2024/july2024"
 	"upgradationScript/logger"
 
 	"github.com/Khan/genqlient/graphql"

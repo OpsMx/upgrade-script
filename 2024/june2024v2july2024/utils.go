@@ -3,8 +3,8 @@ package june2024v2july2024
 import (
 	"encoding/json"
 	"fmt"
-	"upgradationScript/june2024v2july2024/july2024"
-	"upgradationScript/june2024v2july2024/june2024v2"
+	"upgradationScript/2024/june2024v2july2024/july2024"
+	"upgradationScript/2024/june2024v2july2024/june2024v2"
 )
 
 func supportMultipleInsertion(integratorType string) bool {
