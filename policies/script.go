@@ -8322,15 +8322,15 @@ var scriptMap = map[int]string{
 
 	response = http.send(request)
 
-	findings_count = count([response.body.snykAnalysis[idx] | response.body.snykAnalysis[idx].severity == severity])
-	findings = [response.body.snykAnalysis[idx] | response.body.snykAnalysis[idx].severity == severity]
+	findings_count = count([response.body.snykAnalysis[idx] | response.body.snykAnalysis[idx].severity in ["High", "high"]])
+	findings = [response.body.snykAnalysis[idx] | response.body.snykAnalysis[idx].severity in ["High", "high"]]
 
 	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
 		findings_count > 0
 		some i
 		not findings[i].ruleName in exception_list
-		title := sprintf("Snyk Code Scan: %v ",[findings[i].ruleName])
-		msg := sprintf("%v: %v", [findings[i].ruleName, findings[i].ruleMessage])
+		title := sprintf("Snyk Code Scan: %v for entity %v",[findings[i].ruleName, findings[i].ruleMessage])
+		msg := sprintf("Snyk Rule Violation found for following rule \n %v: %v", [findings[i].ruleName, findings[i].ruleMessage])
 		sugg := "Please examine the high severity findings in the Snyk analysis data, available through the View Findings button and proactively review your code for common issues and apply best coding practices during development to prevent such alerts from arising."
 		error := ""
 		alertStatus := "active"
@@ -8340,8 +8340,8 @@ var scriptMap = map[int]string{
 		findings_count > 0
 		some i
 		findings[i].ruleName in exception_list
-		title := sprintf("Snyk Code Scan: %v ",[findings[i].ruleName])
-		msg := sprintf("%v: %v", [findings[i].ruleName, findings[i].ruleMessage])
+		title := sprintf("Snyk Code Scan: %v for entity: %v",[findings[i].ruleName, findings[i].ruleMessage])
+		msg := sprintf("Snyk Rule Violation found for following rule \n %v: %v", [findings[i].ruleName, findings[i].ruleMessage])
 		sugg := "Please examine the high severity findings in the Snyk analysis data, available through the View Findings button and proactively review your code for common issues and apply best coding practices during development to prevent such alerts from arising."
 		error := ""
 		exception_cause := findings[i].ruleName
@@ -8381,15 +8381,15 @@ var scriptMap = map[int]string{
 
 	response = http.send(request)
 
-	findings_count = count([response.body.snykAnalysis[idx] | response.body.snykAnalysis[idx].severity == severity])
-	findings = [response.body.snykAnalysis[idx] | response.body.snykAnalysis[idx].severity == severity]
+	findings_count = count([response.body.snykAnalysis[idx] | response.body.snykAnalysis[idx].severity in ["Medium", "medium"]])
+	findings = [response.body.snykAnalysis[idx] | response.body.snykAnalysis[idx].severity in ["Medium", "medium"]]
 
 	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
 		findings_count > 0
 		some i
 		not findings[i].ruleName in exception_list
-		title := sprintf("Snyk Code Scan: %v ",[findings[i].ruleName])
-		msg := sprintf("%v: %v", [findings[i].ruleName, findings[i].ruleMessage])
+		title := sprintf("Snyk Code Scan: %v for entity: %v",[findings[i].ruleName, findings[i].ruleMessage])
+		msg := sprintf("Snyk Rule Violation found for following rule \n %v: %v", [findings[i].ruleName, findings[i].ruleMessage])
 		sugg := "Please examine the medium severity findings in the Snyk analysis data, available through the View Findings button and proactively review your code for common issues and apply best coding practices during development to prevent such alerts from arising."
 		error := ""
 		alertStatus := "active"
@@ -8399,8 +8399,8 @@ var scriptMap = map[int]string{
 		findings_count > 0
 		some i
 		findings[i].ruleName in exception_list
-		title := sprintf("Snyk Code Scan: %v ",[findings[i].ruleName])
-		msg := sprintf("%v: %v", [findings[i].ruleName, findings[i].ruleMessage])
+		title := sprintf("Snyk Code Scan: %v for entity: %v",[findings[i].ruleName, findings[i].ruleMessage])
+		msg := sprintf("Snyk Rule Violation found for following rule \n %v: %v", [findings[i].ruleName, findings[i].ruleMessage])
 		sugg := "Please examine the medium severity findings in the Snyk analysis data, available through the View Findings button and proactively review your code for common issues and apply best coding practices during development to prevent such alerts from arising."
 		error := ""
 		exception_cause := findings[i].ruleName
@@ -8440,15 +8440,15 @@ var scriptMap = map[int]string{
 
 	response = http.send(request)
 
-	findings_count = count([response.body.snykAnalysis[idx] | response.body.snykAnalysis[idx].severity == severity])
-	findings = [response.body.snykAnalysis[idx] | response.body.snykAnalysis[idx].severity == severity]
+	findings_count = count([response.body.snykAnalysis[idx] | response.body.snykAnalysis[idx].severity in ["Low", "low"]])
+	findings = [response.body.snykAnalysis[idx] | response.body.snykAnalysis[idx].severity in ["Low", "low"]]
 
 	deny[{"alertTitle": title, "alertMsg": msg, "suggestion": sugg, "error": error, "fileApi": download_url, "exception": "", "alertStatus": alertStatus}]{
 		findings_count > 0
 		some i
 		not findings[i].ruleName in exception_list
-		title := sprintf("Snyk Code Scan: %v ",[findings[i].ruleName])
-		msg := sprintf("%v: %v", [findings[i].ruleName, findings[i].ruleMessage])
+		title := sprintf("Snyk Code Scan: %v for entity: %v",[findings[i].ruleName], findings[i].ruleMessage)
+		msg := sprintf("Snyk Rule Violation found for following rule \n %v: %v", [findings[i].ruleName, findings[i].ruleMessage])
 		sugg := "Please examine the medium severity findings in the Snyk analysis data, available through the View Findings button and proactively review your code for common issues and apply best coding practices during development to prevent such alerts from arising."
 		error := ""
 		alertStatus := "active"
@@ -8458,8 +8458,8 @@ var scriptMap = map[int]string{
 		findings_count > 0
 		some i
 		findings[i].ruleName in exception_list
-		title := sprintf("Snyk Code Scan: %v ",[findings[i].ruleName])
-		msg := sprintf("%v: %v", [findings[i].ruleName, findings[i].ruleMessage])
+		title := sprintf("Snyk Code Scan: %v for entity: %v",[findings[i].ruleName, findings[i].ruleMessage])
+		msg := sprintf("Snyk Rule Violation found for following rule \n %v: %v", [findings[i].ruleName, findings[i].ruleMessage])
 		sugg := "Please examine the medium severity findings in the Snyk analysis data, available through the View Findings button and proactively review your code for common issues and apply best coding practices during development to prevent such alerts from arising."
 		error := ""
 		exception_cause := findings[i].ruleName
