@@ -3,3 +3,17 @@ mutation SetDefaultValueOfHosting {
         numUids
     }
 }
+
+query GetGlobalOrgID {
+    queryOrganization {
+        id
+    }
+}
+
+mutation SetIntegratorConfigsOrgID($orgID: String!) {
+    updateIntegratorConfigs(
+        input: { set: { organization: { id: $orgID } }, filter: { has: configs } }
+    ) {
+        numUids
+    }
+}

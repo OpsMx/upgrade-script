@@ -8,6 +8,25 @@ import (
 	"github.com/Khan/genqlient/graphql"
 )
 
+// GetGlobalOrgIDQueryOrganization includes the requested fields of the GraphQL type Organization.
+type GetGlobalOrgIDQueryOrganization struct {
+	// id is randomly assigned
+	Id string `json:"id"`
+}
+
+// GetId returns GetGlobalOrgIDQueryOrganization.Id, and is useful for accessing the field via an interface.
+func (v *GetGlobalOrgIDQueryOrganization) GetId() string { return v.Id }
+
+// GetGlobalOrgIDResponse is returned by GetGlobalOrgID on success.
+type GetGlobalOrgIDResponse struct {
+	QueryOrganization []*GetGlobalOrgIDQueryOrganization `json:"queryOrganization"`
+}
+
+// GetQueryOrganization returns GetGlobalOrgIDResponse.QueryOrganization, and is useful for accessing the field via an interface.
+func (v *GetGlobalOrgIDResponse) GetQueryOrganization() []*GetGlobalOrgIDQueryOrganization {
+	return v.QueryOrganization
+}
+
 // SetDefaultValueOfHostingResponse is returned by SetDefaultValueOfHosting on success.
 type SetDefaultValueOfHostingResponse struct {
 	UpdateDeploymentTarget *SetDefaultValueOfHostingUpdateDeploymentTargetUpdateDeploymentTargetPayload `json:"updateDeploymentTarget"`
@@ -28,7 +47,65 @@ func (v *SetDefaultValueOfHostingUpdateDeploymentTargetUpdateDeploymentTargetPay
 	return v.NumUids
 }
 
-// The query or mutation executed by SetDefaultValueOfHosting.
+// SetIntegratorConfigsOrgIDResponse is returned by SetIntegratorConfigsOrgID on success.
+type SetIntegratorConfigsOrgIDResponse struct {
+	UpdateIntegratorConfigs *SetIntegratorConfigsOrgIDUpdateIntegratorConfigsUpdateIntegratorConfigsPayload `json:"updateIntegratorConfigs"`
+}
+
+// GetUpdateIntegratorConfigs returns SetIntegratorConfigsOrgIDResponse.UpdateIntegratorConfigs, and is useful for accessing the field via an interface.
+func (v *SetIntegratorConfigsOrgIDResponse) GetUpdateIntegratorConfigs() *SetIntegratorConfigsOrgIDUpdateIntegratorConfigsUpdateIntegratorConfigsPayload {
+	return v.UpdateIntegratorConfigs
+}
+
+// SetIntegratorConfigsOrgIDUpdateIntegratorConfigsUpdateIntegratorConfigsPayload includes the requested fields of the GraphQL type UpdateIntegratorConfigsPayload.
+type SetIntegratorConfigsOrgIDUpdateIntegratorConfigsUpdateIntegratorConfigsPayload struct {
+	NumUids *int `json:"numUids"`
+}
+
+// GetNumUids returns SetIntegratorConfigsOrgIDUpdateIntegratorConfigsUpdateIntegratorConfigsPayload.NumUids, and is useful for accessing the field via an interface.
+func (v *SetIntegratorConfigsOrgIDUpdateIntegratorConfigsUpdateIntegratorConfigsPayload) GetNumUids() *int {
+	return v.NumUids
+}
+
+// __SetIntegratorConfigsOrgIDInput is used internally by genqlient
+type __SetIntegratorConfigsOrgIDInput struct {
+	OrgID string `json:"orgID"`
+}
+
+// GetOrgID returns __SetIntegratorConfigsOrgIDInput.OrgID, and is useful for accessing the field via an interface.
+func (v *__SetIntegratorConfigsOrgIDInput) GetOrgID() string { return v.OrgID }
+
+// The query executed by GetGlobalOrgID.
+const GetGlobalOrgID_Operation = `
+query GetGlobalOrgID {
+	queryOrganization {
+		id
+	}
+}
+`
+
+func GetGlobalOrgID(
+	ctx_ context.Context,
+	client_ graphql.Client,
+) (data_ *GetGlobalOrgIDResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "GetGlobalOrgID",
+		Query:  GetGlobalOrgID_Operation,
+	}
+
+	data_ = &GetGlobalOrgIDResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by SetDefaultValueOfHosting.
 const SetDefaultValueOfHosting_Operation = `
 mutation SetDefaultValueOfHosting {
 	updateDeploymentTarget(input: {set:{hosting:"self-hosted"},filter:{has:ip}}) {
@@ -40,15 +117,14 @@ mutation SetDefaultValueOfHosting {
 func SetDefaultValueOfHosting(
 	ctx_ context.Context,
 	client_ graphql.Client,
-) (*SetDefaultValueOfHostingResponse, error) {
+) (data_ *SetDefaultValueOfHostingResponse, err_ error) {
 	req_ := &graphql.Request{
 		OpName: "SetDefaultValueOfHosting",
 		Query:  SetDefaultValueOfHosting_Operation,
 	}
-	var err_ error
 
-	var data_ SetDefaultValueOfHostingResponse
-	resp_ := &graphql.Response{Data: &data_}
+	data_ = &SetDefaultValueOfHostingResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
 		ctx_,
@@ -56,5 +132,39 @@ func SetDefaultValueOfHosting(
 		resp_,
 	)
 
-	return &data_, err_
+	return data_, err_
+}
+
+// The mutation executed by SetIntegratorConfigsOrgID.
+const SetIntegratorConfigsOrgID_Operation = `
+mutation SetIntegratorConfigsOrgID ($orgID: String!) {
+	updateIntegratorConfigs(input: {set:{organization:{id:$orgID}},filter:{has:configs}}) {
+		numUids
+	}
+}
+`
+
+func SetIntegratorConfigsOrgID(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	orgID string,
+) (data_ *SetIntegratorConfigsOrgIDResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "SetIntegratorConfigsOrgID",
+		Query:  SetIntegratorConfigsOrgID_Operation,
+		Variables: &__SetIntegratorConfigsOrgIDInput{
+			OrgID: orgID,
+		},
+	}
+
+	data_ = &SetIntegratorConfigsOrgIDResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
 }
