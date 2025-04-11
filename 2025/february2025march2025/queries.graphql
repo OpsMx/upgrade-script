@@ -52,3 +52,87 @@ mutation UpdateRunHistoryDeploymentFields(
         numUids
     }
 }
+
+query QueryRunHistoryWithArtifactScanData {
+    queryRunHistory @cascade {
+        id
+        artifactScan {
+            tool
+        }
+    }
+}
+
+mutation UpdateArtifactRunHistory(
+    $runHistoryID: ID!
+    $sbomTool: String!
+) {
+    updateRunHistory(input: { filter: { id: [$runHistoryID] }, set: {
+        SbomTool: $sbomTool
+
+    } }) {
+        numUids
+    }
+}
+
+mutation DeletePolicyDefinition {
+    deletePolicyDefinition(
+        filter: {
+            id: {
+                in: [
+                    "422"
+                    "423"
+                    "436"
+                    "437"
+                    "438"
+                    "441"
+                    "442"
+                    "443"
+                    "444"
+                    "445"
+                    "446"
+                    "448"
+                    "450"
+                    "452"
+                ]
+            }
+        }
+    ) {
+        numUids
+    }
+}
+
+query GetPolicyEnforcementWOPolicyDef {
+    queryPolicyEnforcement(filter: { not: { has: policy } }) {
+        id
+    }
+}
+
+mutation DeletePolicyEnforcement($id: ID!) {
+    deletePolicyEnforcement(filter: { id: [$id] }) {
+        msg
+        numUids
+    }
+}
+
+
+mutation UpdateNonBlockedApplicationDeployment {
+    updateApplicationDeployment(
+        input: {
+            set: { firewall: false, deploymentResult: "passed" }
+            filter: { not: { deploymentStage: { eq: blocked } } }
+        }
+    ) {
+        numUids
+    }
+}
+
+mutation UpdateBlockedApplicationDeployment {
+    updateApplicationDeployment(
+        input: {
+            set: { firewall: true, deploymentResult: "blocked" }
+            filter: { deploymentStage: { eq: blocked } }
+        }
+    ) {
+        numUids
+    }
+}

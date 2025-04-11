@@ -63,5 +63,49 @@ func AddDeploymentDetailsToRunHistory(gqlClient graphql.Client) error {
 		}
 	}
 
+	logger.Sl.Debugf("-----updated new deployment fields in run history--------")
+
+	return nil
+}
+
+func AddSbomToolToArtifactRunHistory(gqlClient graphql.Client) error {
+
+	logger.Sl.Debugf("-----updating sbom field in artifact run history--------")
+
+	ctx := context.Background()
+
+	res, err := QueryRunHistoryWithArtifactScanData(ctx, gqlClient)
+	if err != nil {
+		return fmt.Errorf("error in QueryRunHistoryWithArtifactScanData: %s", err.Error())
+	}
+
+	logger.Sl.Debugf("records found for existing run history with artifactscan data: %d", len(res.QueryRunHistory))
+
+	if len(res.QueryRunHistory) == 0 {
+		logger.Sl.Debug("-----no record found for run history where artifactscan data exists--------")
+		return nil
+	}
+
+	var dataToUpdate []deploymentParamsToAdd
+	for _, val := range res.QueryRunHistory {
+
+		if val.Id == nil {
+			continue
+		}
+		dataToUpdate = append(dataToUpdate, deploymentParamsToAdd{
+			runHistoryID: *val.Id,
+			sbomTool:     val.ArtifactScan.Tool,
+		})
+	}
+
+	for _, val := range dataToUpdate {
+		_, err := UpdateArtifactRunHistory(ctx, gqlClient, &val.runHistoryID, val.sbomTool)
+		if err != nil {
+			return fmt.Errorf("error in UpdateArtifactRunHistory for run history id: %s, %s", val.runHistoryID, err.Error())
+		}
+	}
+
+	logger.Sl.Debugf("-----updated sbom field in artifact run history--------")
+
 	return nil
 }

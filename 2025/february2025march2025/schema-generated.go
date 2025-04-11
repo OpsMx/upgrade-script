@@ -8,6 +8,70 @@ import (
 	"github.com/Khan/genqlient/graphql"
 )
 
+// DeletePolicyDefinitionDeletePolicyDefinitionDeletePolicyDefinitionPayload includes the requested fields of the GraphQL type DeletePolicyDefinitionPayload.
+type DeletePolicyDefinitionDeletePolicyDefinitionDeletePolicyDefinitionPayload struct {
+	NumUids *int `json:"numUids"`
+}
+
+// GetNumUids returns DeletePolicyDefinitionDeletePolicyDefinitionDeletePolicyDefinitionPayload.NumUids, and is useful for accessing the field via an interface.
+func (v *DeletePolicyDefinitionDeletePolicyDefinitionDeletePolicyDefinitionPayload) GetNumUids() *int {
+	return v.NumUids
+}
+
+// DeletePolicyDefinitionResponse is returned by DeletePolicyDefinition on success.
+type DeletePolicyDefinitionResponse struct {
+	DeletePolicyDefinition *DeletePolicyDefinitionDeletePolicyDefinitionDeletePolicyDefinitionPayload `json:"deletePolicyDefinition"`
+}
+
+// GetDeletePolicyDefinition returns DeletePolicyDefinitionResponse.DeletePolicyDefinition, and is useful for accessing the field via an interface.
+func (v *DeletePolicyDefinitionResponse) GetDeletePolicyDefinition() *DeletePolicyDefinitionDeletePolicyDefinitionDeletePolicyDefinitionPayload {
+	return v.DeletePolicyDefinition
+}
+
+// DeletePolicyEnforcementDeletePolicyEnforcementDeletePolicyEnforcementPayload includes the requested fields of the GraphQL type DeletePolicyEnforcementPayload.
+type DeletePolicyEnforcementDeletePolicyEnforcementDeletePolicyEnforcementPayload struct {
+	Msg     string `json:"msg"`
+	NumUids *int   `json:"numUids"`
+}
+
+// GetMsg returns DeletePolicyEnforcementDeletePolicyEnforcementDeletePolicyEnforcementPayload.Msg, and is useful for accessing the field via an interface.
+func (v *DeletePolicyEnforcementDeletePolicyEnforcementDeletePolicyEnforcementPayload) GetMsg() string {
+	return v.Msg
+}
+
+// GetNumUids returns DeletePolicyEnforcementDeletePolicyEnforcementDeletePolicyEnforcementPayload.NumUids, and is useful for accessing the field via an interface.
+func (v *DeletePolicyEnforcementDeletePolicyEnforcementDeletePolicyEnforcementPayload) GetNumUids() *int {
+	return v.NumUids
+}
+
+// DeletePolicyEnforcementResponse is returned by DeletePolicyEnforcement on success.
+type DeletePolicyEnforcementResponse struct {
+	DeletePolicyEnforcement *DeletePolicyEnforcementDeletePolicyEnforcementDeletePolicyEnforcementPayload `json:"deletePolicyEnforcement"`
+}
+
+// GetDeletePolicyEnforcement returns DeletePolicyEnforcementResponse.DeletePolicyEnforcement, and is useful for accessing the field via an interface.
+func (v *DeletePolicyEnforcementResponse) GetDeletePolicyEnforcement() *DeletePolicyEnforcementDeletePolicyEnforcementDeletePolicyEnforcementPayload {
+	return v.DeletePolicyEnforcement
+}
+
+// GetPolicyEnforcementWOPolicyDefQueryPolicyEnforcement includes the requested fields of the GraphQL type PolicyEnforcement.
+type GetPolicyEnforcementWOPolicyDefQueryPolicyEnforcement struct {
+	Id *string `json:"id"`
+}
+
+// GetId returns GetPolicyEnforcementWOPolicyDefQueryPolicyEnforcement.Id, and is useful for accessing the field via an interface.
+func (v *GetPolicyEnforcementWOPolicyDefQueryPolicyEnforcement) GetId() *string { return v.Id }
+
+// GetPolicyEnforcementWOPolicyDefResponse is returned by GetPolicyEnforcementWOPolicyDef on success.
+type GetPolicyEnforcementWOPolicyDefResponse struct {
+	QueryPolicyEnforcement []*GetPolicyEnforcementWOPolicyDefQueryPolicyEnforcement `json:"queryPolicyEnforcement"`
+}
+
+// GetQueryPolicyEnforcement returns GetPolicyEnforcementWOPolicyDefResponse.QueryPolicyEnforcement, and is useful for accessing the field via an interface.
+func (v *GetPolicyEnforcementWOPolicyDefResponse) GetQueryPolicyEnforcement() []*GetPolicyEnforcementWOPolicyDefQueryPolicyEnforcement {
+	return v.QueryPolicyEnforcement
+}
+
 // QueryRunHistoryWithApplicationDeploymentQueryRunHistory includes the requested fields of the GraphQL type RunHistory.
 type QueryRunHistoryWithApplicationDeploymentQueryRunHistory struct {
 	Id                    *string                                                                       `json:"id"`
@@ -155,6 +219,100 @@ func (v *QueryRunHistoryWithApplicationDeploymentResponse) GetQueryRunHistory() 
 	return v.QueryRunHistory
 }
 
+// QueryRunHistoryWithArtifactScanDataQueryRunHistory includes the requested fields of the GraphQL type RunHistory.
+type QueryRunHistoryWithArtifactScanDataQueryRunHistory struct {
+	Id           *string                                                                         `json:"id"`
+	ArtifactScan *QueryRunHistoryWithArtifactScanDataQueryRunHistoryArtifactScanArtifactScanData `json:"artifactScan"`
+}
+
+// GetId returns QueryRunHistoryWithArtifactScanDataQueryRunHistory.Id, and is useful for accessing the field via an interface.
+func (v *QueryRunHistoryWithArtifactScanDataQueryRunHistory) GetId() *string { return v.Id }
+
+// GetArtifactScan returns QueryRunHistoryWithArtifactScanDataQueryRunHistory.ArtifactScan, and is useful for accessing the field via an interface.
+func (v *QueryRunHistoryWithArtifactScanDataQueryRunHistory) GetArtifactScan() *QueryRunHistoryWithArtifactScanDataQueryRunHistoryArtifactScanArtifactScanData {
+	return v.ArtifactScan
+}
+
+// QueryRunHistoryWithArtifactScanDataQueryRunHistoryArtifactScanArtifactScanData includes the requested fields of the GraphQL type ArtifactScanData.
+type QueryRunHistoryWithArtifactScanDataQueryRunHistoryArtifactScanArtifactScanData struct {
+	Tool string `json:"tool"`
+}
+
+// GetTool returns QueryRunHistoryWithArtifactScanDataQueryRunHistoryArtifactScanArtifactScanData.Tool, and is useful for accessing the field via an interface.
+func (v *QueryRunHistoryWithArtifactScanDataQueryRunHistoryArtifactScanArtifactScanData) GetTool() string {
+	return v.Tool
+}
+
+// QueryRunHistoryWithArtifactScanDataResponse is returned by QueryRunHistoryWithArtifactScanData on success.
+type QueryRunHistoryWithArtifactScanDataResponse struct {
+	QueryRunHistory []*QueryRunHistoryWithArtifactScanDataQueryRunHistory `json:"queryRunHistory"`
+}
+
+// GetQueryRunHistory returns QueryRunHistoryWithArtifactScanDataResponse.QueryRunHistory, and is useful for accessing the field via an interface.
+func (v *QueryRunHistoryWithArtifactScanDataResponse) GetQueryRunHistory() []*QueryRunHistoryWithArtifactScanDataQueryRunHistory {
+	return v.QueryRunHistory
+}
+
+// UpdateArtifactRunHistoryResponse is returned by UpdateArtifactRunHistory on success.
+type UpdateArtifactRunHistoryResponse struct {
+	UpdateRunHistory *UpdateArtifactRunHistoryUpdateRunHistoryUpdateRunHistoryPayload `json:"updateRunHistory"`
+}
+
+// GetUpdateRunHistory returns UpdateArtifactRunHistoryResponse.UpdateRunHistory, and is useful for accessing the field via an interface.
+func (v *UpdateArtifactRunHistoryResponse) GetUpdateRunHistory() *UpdateArtifactRunHistoryUpdateRunHistoryUpdateRunHistoryPayload {
+	return v.UpdateRunHistory
+}
+
+// UpdateArtifactRunHistoryUpdateRunHistoryUpdateRunHistoryPayload includes the requested fields of the GraphQL type UpdateRunHistoryPayload.
+type UpdateArtifactRunHistoryUpdateRunHistoryUpdateRunHistoryPayload struct {
+	NumUids *int `json:"numUids"`
+}
+
+// GetNumUids returns UpdateArtifactRunHistoryUpdateRunHistoryUpdateRunHistoryPayload.NumUids, and is useful for accessing the field via an interface.
+func (v *UpdateArtifactRunHistoryUpdateRunHistoryUpdateRunHistoryPayload) GetNumUids() *int {
+	return v.NumUids
+}
+
+// UpdateBlockedApplicationDeploymentResponse is returned by UpdateBlockedApplicationDeployment on success.
+type UpdateBlockedApplicationDeploymentResponse struct {
+	UpdateApplicationDeployment *UpdateBlockedApplicationDeploymentUpdateApplicationDeploymentUpdateApplicationDeploymentPayload `json:"updateApplicationDeployment"`
+}
+
+// GetUpdateApplicationDeployment returns UpdateBlockedApplicationDeploymentResponse.UpdateApplicationDeployment, and is useful for accessing the field via an interface.
+func (v *UpdateBlockedApplicationDeploymentResponse) GetUpdateApplicationDeployment() *UpdateBlockedApplicationDeploymentUpdateApplicationDeploymentUpdateApplicationDeploymentPayload {
+	return v.UpdateApplicationDeployment
+}
+
+// UpdateBlockedApplicationDeploymentUpdateApplicationDeploymentUpdateApplicationDeploymentPayload includes the requested fields of the GraphQL type UpdateApplicationDeploymentPayload.
+type UpdateBlockedApplicationDeploymentUpdateApplicationDeploymentUpdateApplicationDeploymentPayload struct {
+	NumUids *int `json:"numUids"`
+}
+
+// GetNumUids returns UpdateBlockedApplicationDeploymentUpdateApplicationDeploymentUpdateApplicationDeploymentPayload.NumUids, and is useful for accessing the field via an interface.
+func (v *UpdateBlockedApplicationDeploymentUpdateApplicationDeploymentUpdateApplicationDeploymentPayload) GetNumUids() *int {
+	return v.NumUids
+}
+
+// UpdateNonBlockedApplicationDeploymentResponse is returned by UpdateNonBlockedApplicationDeployment on success.
+type UpdateNonBlockedApplicationDeploymentResponse struct {
+	UpdateApplicationDeployment *UpdateNonBlockedApplicationDeploymentUpdateApplicationDeploymentUpdateApplicationDeploymentPayload `json:"updateApplicationDeployment"`
+}
+
+// GetUpdateApplicationDeployment returns UpdateNonBlockedApplicationDeploymentResponse.UpdateApplicationDeployment, and is useful for accessing the field via an interface.
+func (v *UpdateNonBlockedApplicationDeploymentResponse) GetUpdateApplicationDeployment() *UpdateNonBlockedApplicationDeploymentUpdateApplicationDeploymentUpdateApplicationDeploymentPayload {
+	return v.UpdateApplicationDeployment
+}
+
+// UpdateNonBlockedApplicationDeploymentUpdateApplicationDeploymentUpdateApplicationDeploymentPayload includes the requested fields of the GraphQL type UpdateApplicationDeploymentPayload.
+type UpdateNonBlockedApplicationDeploymentUpdateApplicationDeploymentUpdateApplicationDeploymentPayload struct {
+	NumUids *int `json:"numUids"`
+}
+
+// GetNumUids returns UpdateNonBlockedApplicationDeploymentUpdateApplicationDeploymentUpdateApplicationDeploymentPayload.NumUids, and is useful for accessing the field via an interface.
+func (v *UpdateNonBlockedApplicationDeploymentUpdateApplicationDeploymentUpdateApplicationDeploymentPayload) GetNumUids() *int {
+	return v.NumUids
+}
+
 // UpdateRunHistoryDeploymentFieldsResponse is returned by UpdateRunHistoryDeploymentFields on success.
 type UpdateRunHistoryDeploymentFieldsResponse struct {
 	UpdateRunHistory *UpdateRunHistoryDeploymentFieldsUpdateRunHistoryUpdateRunHistoryPayload `json:"updateRunHistory"`
@@ -174,6 +332,26 @@ type UpdateRunHistoryDeploymentFieldsUpdateRunHistoryUpdateRunHistoryPayload str
 func (v *UpdateRunHistoryDeploymentFieldsUpdateRunHistoryUpdateRunHistoryPayload) GetNumUids() *int {
 	return v.NumUids
 }
+
+// __DeletePolicyEnforcementInput is used internally by genqlient
+type __DeletePolicyEnforcementInput struct {
+	Id *string `json:"id"`
+}
+
+// GetId returns __DeletePolicyEnforcementInput.Id, and is useful for accessing the field via an interface.
+func (v *__DeletePolicyEnforcementInput) GetId() *string { return v.Id }
+
+// __UpdateArtifactRunHistoryInput is used internally by genqlient
+type __UpdateArtifactRunHistoryInput struct {
+	RunHistoryID *string `json:"runHistoryID"`
+	SbomTool     string  `json:"sbomTool"`
+}
+
+// GetRunHistoryID returns __UpdateArtifactRunHistoryInput.RunHistoryID, and is useful for accessing the field via an interface.
+func (v *__UpdateArtifactRunHistoryInput) GetRunHistoryID() *string { return v.RunHistoryID }
+
+// GetSbomTool returns __UpdateArtifactRunHistoryInput.SbomTool, and is useful for accessing the field via an interface.
+func (v *__UpdateArtifactRunHistoryInput) GetSbomTool() string { return v.SbomTool }
 
 // __UpdateRunHistoryDeploymentFieldsInput is used internally by genqlient
 type __UpdateRunHistoryDeploymentFieldsInput struct {
@@ -210,6 +388,101 @@ func (v *__UpdateRunHistoryDeploymentFieldsInput) GetApplication() string { retu
 
 // GetTeamID returns __UpdateRunHistoryDeploymentFieldsInput.TeamID, and is useful for accessing the field via an interface.
 func (v *__UpdateRunHistoryDeploymentFieldsInput) GetTeamID() string { return v.TeamID }
+
+// The mutation executed by DeletePolicyDefinition.
+const DeletePolicyDefinition_Operation = `
+mutation DeletePolicyDefinition {
+	deletePolicyDefinition(filter: {id:{in:["422","423","436","437","438","441","442","443","444","445","446","448","450","452"]}}) {
+		numUids
+	}
+}
+`
+
+func DeletePolicyDefinition(
+	ctx_ context.Context,
+	client_ graphql.Client,
+) (data_ *DeletePolicyDefinitionResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "DeletePolicyDefinition",
+		Query:  DeletePolicyDefinition_Operation,
+	}
+
+	data_ = &DeletePolicyDefinitionResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by DeletePolicyEnforcement.
+const DeletePolicyEnforcement_Operation = `
+mutation DeletePolicyEnforcement ($id: ID!) {
+	deletePolicyEnforcement(filter: {id:[$id]}) {
+		msg
+		numUids
+	}
+}
+`
+
+func DeletePolicyEnforcement(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	id *string,
+) (data_ *DeletePolicyEnforcementResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "DeletePolicyEnforcement",
+		Query:  DeletePolicyEnforcement_Operation,
+		Variables: &__DeletePolicyEnforcementInput{
+			Id: id,
+		},
+	}
+
+	data_ = &DeletePolicyEnforcementResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by GetPolicyEnforcementWOPolicyDef.
+const GetPolicyEnforcementWOPolicyDef_Operation = `
+query GetPolicyEnforcementWOPolicyDef {
+	queryPolicyEnforcement(filter: {not:{has:policy}}) {
+		id
+	}
+}
+`
+
+func GetPolicyEnforcementWOPolicyDef(
+	ctx_ context.Context,
+	client_ graphql.Client,
+) (data_ *GetPolicyEnforcementWOPolicyDefResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "GetPolicyEnforcementWOPolicyDef",
+		Query:  GetPolicyEnforcementWOPolicyDef_Operation,
+	}
+
+	data_ = &GetPolicyEnforcementWOPolicyDefResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
 
 // The query executed by QueryRunHistoryWithApplicationDeployment.
 const QueryRunHistoryWithApplicationDeployment_Operation = `
@@ -251,6 +524,135 @@ func QueryRunHistoryWithApplicationDeployment(
 	}
 
 	data_ = &QueryRunHistoryWithApplicationDeploymentResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by QueryRunHistoryWithArtifactScanData.
+const QueryRunHistoryWithArtifactScanData_Operation = `
+query QueryRunHistoryWithArtifactScanData {
+	queryRunHistory @cascade {
+		id
+		artifactScan {
+			tool
+		}
+	}
+}
+`
+
+func QueryRunHistoryWithArtifactScanData(
+	ctx_ context.Context,
+	client_ graphql.Client,
+) (data_ *QueryRunHistoryWithArtifactScanDataResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "QueryRunHistoryWithArtifactScanData",
+		Query:  QueryRunHistoryWithArtifactScanData_Operation,
+	}
+
+	data_ = &QueryRunHistoryWithArtifactScanDataResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by UpdateArtifactRunHistory.
+const UpdateArtifactRunHistory_Operation = `
+mutation UpdateArtifactRunHistory ($runHistoryID: ID!, $sbomTool: String!) {
+	updateRunHistory(input: {filter:{id:[$runHistoryID]},set:{SbomTool:$sbomTool}}) {
+		numUids
+	}
+}
+`
+
+func UpdateArtifactRunHistory(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	runHistoryID *string,
+	sbomTool string,
+) (data_ *UpdateArtifactRunHistoryResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "UpdateArtifactRunHistory",
+		Query:  UpdateArtifactRunHistory_Operation,
+		Variables: &__UpdateArtifactRunHistoryInput{
+			RunHistoryID: runHistoryID,
+			SbomTool:     sbomTool,
+		},
+	}
+
+	data_ = &UpdateArtifactRunHistoryResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by UpdateBlockedApplicationDeployment.
+const UpdateBlockedApplicationDeployment_Operation = `
+mutation UpdateBlockedApplicationDeployment {
+	updateApplicationDeployment(input: {set:{firewall:true,deploymentResult:"blocked"},filter:{deploymentStage:{eq:blocked}}}) {
+		numUids
+	}
+}
+`
+
+func UpdateBlockedApplicationDeployment(
+	ctx_ context.Context,
+	client_ graphql.Client,
+) (data_ *UpdateBlockedApplicationDeploymentResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "UpdateBlockedApplicationDeployment",
+		Query:  UpdateBlockedApplicationDeployment_Operation,
+	}
+
+	data_ = &UpdateBlockedApplicationDeploymentResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by UpdateNonBlockedApplicationDeployment.
+const UpdateNonBlockedApplicationDeployment_Operation = `
+mutation UpdateNonBlockedApplicationDeployment {
+	updateApplicationDeployment(input: {set:{firewall:false,deploymentResult:"passed"},filter:{not:{deploymentStage:{eq:blocked}}}}) {
+		numUids
+	}
+}
+`
+
+func UpdateNonBlockedApplicationDeployment(
+	ctx_ context.Context,
+	client_ graphql.Client,
+) (data_ *UpdateNonBlockedApplicationDeploymentResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "UpdateNonBlockedApplicationDeployment",
+		Query:  UpdateNonBlockedApplicationDeployment_Operation,
+	}
+
+	data_ = &UpdateNonBlockedApplicationDeploymentResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
