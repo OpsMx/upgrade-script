@@ -1,0 +1,54 @@
+query QueryRunHistoryWithApplicationDeployment {
+    queryRunHistory @cascade {
+        id
+        applicationDeployment {
+            applicationEnvironment {
+                namespace
+                application {
+                    team {
+                        id
+                    }
+                    name
+                }
+                deploymentTarget {
+                    name
+                }
+                environment {
+                    purpose
+                }
+            }
+            toolsUsed {
+                sbom
+            }
+            id
+        }
+    }
+}
+
+mutation UpdateRunHistoryDeploymentFields(
+    $runHistoryID: ID!
+    $deploymentID: String!
+    $sbomTool: String!
+    $namespace: String!
+    $account: String!
+    $cluster: String!
+    $application: String!
+    $teamID: String!
+) {
+    updateRunHistory(
+        input: {
+            filter: { id: [$runHistoryID] }
+            set: {
+                DeploymentID: $deploymentID
+                SbomTool: $sbomTool
+                Namespace: $namespace
+                Account: $account
+                Cluster: $cluster
+                Application: $application
+                TeamID: $teamID
+            }
+        }
+    ) {
+        numUids
+    }
+}
