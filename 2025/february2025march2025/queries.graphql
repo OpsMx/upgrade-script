@@ -1,0 +1,138 @@
+query QueryRunHistoryWithApplicationDeployment {
+    queryRunHistory @cascade {
+        id
+        applicationDeployment {
+            applicationEnvironment {
+                namespace
+                application {
+                    team {
+                        id
+                    }
+                    name
+                }
+                deploymentTarget {
+                    name
+                }
+                environment {
+                    purpose
+                }
+            }
+            toolsUsed {
+                sbom
+            }
+            id
+        }
+    }
+}
+
+mutation UpdateRunHistoryDeploymentFields(
+    $runHistoryID: ID!
+    $deploymentID: String!
+    $sbomTool: String!
+    $namespace: String!
+    $account: String!
+    $cluster: String!
+    $application: String!
+    $teamID: String!
+) {
+    updateRunHistory(
+        input: {
+            filter: { id: [$runHistoryID] }
+            set: {
+                DeploymentID: $deploymentID
+                SbomTool: $sbomTool
+                Namespace: $namespace
+                Account: $account
+                Cluster: $cluster
+                Application: $application
+                TeamID: $teamID
+            }
+        }
+    ) {
+        numUids
+    }
+}
+
+query QueryRunHistoryWithArtifactScanData {
+    queryRunHistory @cascade {
+        id
+        artifactScan {
+            tool
+        }
+    }
+}
+
+mutation UpdateArtifactRunHistory(
+    $runHistoryID: ID!
+    $sbomTool: String!
+) {
+    updateRunHistory(input: { filter: { id: [$runHistoryID] }, set: {
+        SbomTool: $sbomTool
+
+    } }) {
+        numUids
+    }
+}
+
+mutation DeletePolicyDefinition {
+    deletePolicyDefinition(
+        filter: {
+            id: {
+                in: [
+                    "422"
+                    "423"
+                    "436"
+                    "437"
+                    "438"
+                    "441"
+                    "442"
+                    "443"
+                    "444"
+                    "445"
+                    "446"
+                    "448"
+                    "450"
+                    "452"
+                ]
+            }
+        }
+    ) {
+        numUids
+    }
+}
+
+query GetPolicyEnforcementWOPolicyDef {
+    queryPolicyEnforcement(filter: { not: { has: policy } }) {
+        id
+    }
+}
+
+mutation DeletePolicyEnforcement($id: ID!) {
+    deletePolicyEnforcement(filter: { id: [$id] }) {
+        msg
+        numUids
+    }
+}
+
+
+mutation UpdateNonBlockedApplicationDeployment {
+    updateApplicationDeployment(
+        input: {
+            set: { firewall: false, deploymentResult: "passed" }
+            filter: { not: { deploymentStage: { eq: blocked } } }
+        }
+    ) {
+        numUids
+    }
+}
+
+mutation UpdateBlockedApplicationDeployment {
+    updateApplicationDeployment(
+        input: {
+            set: { firewall: true, deploymentResult: "blocked" }
+            filter: { deploymentStage: { eq: blocked } }
+        }
+    ) {
+        numUids
+    }
+}

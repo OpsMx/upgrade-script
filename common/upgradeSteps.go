@@ -15,6 +15,7 @@ import (
 	"upgradationScript/2024/october2024november2024"
 	"upgradationScript/2024/september2024october2024"
 	"upgradationScript/2025/december2024january2025"
+	"upgradationScript/2025/february2025march2025"
 	"upgradationScript/2025/january2025february2025"
 	featuretable "upgradationScript/featureTable"
 	graphqlfunc "upgradationScript/graphqlFunc"
@@ -182,6 +183,9 @@ func beginProcessOfUpgrade(upgradeTo SchemaOrder, isSecondDgraphRequired, isLast
 	case February2025Version:
 
 		return january2025february2025.UpgradeToFebruary2025(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, prodGraphqlClient)
+
+	case March2025Version:
+		return february2025march2025.UpgradeToMarch2025(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, prodGraphqlClient)
 	}
 
 	logger.Sl.Debugf("no upgrade steps for %s", upgradeTo.NameOfSchema())
@@ -191,6 +195,16 @@ func beginProcessOfUpgrade(upgradeTo SchemaOrder, isSecondDgraphRequired, isLast
 func upgradePoliciesAndFeat() error {
 
 	logger.Logger.Info("-----------Starting Upgrade of Policies & feat-----------------")
+
+	shouldUpdate, err := shouldUpdatePolicies()
+	if err != nil {
+		return fmt.Errorf("upgradePoliciesAndFeat: %s", err.Error())
+	}
+
+	if !shouldUpdate {
+		logger.Logger.Info("------------Completed Upgrade--------------------")
+		return nil
+	}
 
 	graphqlClient := graphqlfunc.NewClient(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken)
 	getOrgId, err := graphqlfunc.GetOrgId(context.Background(), graphqlClient)
@@ -204,7 +218,7 @@ func upgradePoliciesAndFeat() error {
 		return fmt.Errorf("upgradePoliciesAndFeat: %s", err.Error())
 	}
 
-	shouldUpdate, err := shouldUpdateFeatTable()
+	shouldUpdate, err = shouldUpdateFeatTable()
 	if err != nil {
 		return fmt.Errorf("upgradePoliciesAndFeat: %s", err.Error())
 	}
