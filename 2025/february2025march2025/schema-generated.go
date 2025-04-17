@@ -54,21 +54,37 @@ func (v *DeletePolicyEnforcementResponse) GetDeletePolicyEnforcement() *DeletePo
 	return v.DeletePolicyEnforcement
 }
 
-// GetPolicyEnforcementWOPolicyDefQueryPolicyEnforcement includes the requested fields of the GraphQL type PolicyEnforcement.
-type GetPolicyEnforcementWOPolicyDefQueryPolicyEnforcement struct {
-	Id *string `json:"id"`
+// QueryPolicyEnforcementQueryPolicyEnforcement includes the requested fields of the GraphQL type PolicyEnforcement.
+type QueryPolicyEnforcementQueryPolicyEnforcement struct {
+	Id     *string                                                             `json:"id"`
+	Policy *QueryPolicyEnforcementQueryPolicyEnforcementPolicyPolicyDefinition `json:"policy"`
 }
 
-// GetId returns GetPolicyEnforcementWOPolicyDefQueryPolicyEnforcement.Id, and is useful for accessing the field via an interface.
-func (v *GetPolicyEnforcementWOPolicyDefQueryPolicyEnforcement) GetId() *string { return v.Id }
+// GetId returns QueryPolicyEnforcementQueryPolicyEnforcement.Id, and is useful for accessing the field via an interface.
+func (v *QueryPolicyEnforcementQueryPolicyEnforcement) GetId() *string { return v.Id }
 
-// GetPolicyEnforcementWOPolicyDefResponse is returned by GetPolicyEnforcementWOPolicyDef on success.
-type GetPolicyEnforcementWOPolicyDefResponse struct {
-	QueryPolicyEnforcement []*GetPolicyEnforcementWOPolicyDefQueryPolicyEnforcement `json:"queryPolicyEnforcement"`
+// GetPolicy returns QueryPolicyEnforcementQueryPolicyEnforcement.Policy, and is useful for accessing the field via an interface.
+func (v *QueryPolicyEnforcementQueryPolicyEnforcement) GetPolicy() *QueryPolicyEnforcementQueryPolicyEnforcementPolicyPolicyDefinition {
+	return v.Policy
 }
 
-// GetQueryPolicyEnforcement returns GetPolicyEnforcementWOPolicyDefResponse.QueryPolicyEnforcement, and is useful for accessing the field via an interface.
-func (v *GetPolicyEnforcementWOPolicyDefResponse) GetQueryPolicyEnforcement() []*GetPolicyEnforcementWOPolicyDefQueryPolicyEnforcement {
+// QueryPolicyEnforcementQueryPolicyEnforcementPolicyPolicyDefinition includes the requested fields of the GraphQL type PolicyDefinition.
+type QueryPolicyEnforcementQueryPolicyEnforcementPolicyPolicyDefinition struct {
+	Id string `json:"id"`
+}
+
+// GetId returns QueryPolicyEnforcementQueryPolicyEnforcementPolicyPolicyDefinition.Id, and is useful for accessing the field via an interface.
+func (v *QueryPolicyEnforcementQueryPolicyEnforcementPolicyPolicyDefinition) GetId() string {
+	return v.Id
+}
+
+// QueryPolicyEnforcementResponse is returned by QueryPolicyEnforcement on success.
+type QueryPolicyEnforcementResponse struct {
+	QueryPolicyEnforcement []*QueryPolicyEnforcementQueryPolicyEnforcement `json:"queryPolicyEnforcement"`
+}
+
+// GetQueryPolicyEnforcement returns QueryPolicyEnforcementResponse.QueryPolicyEnforcement, and is useful for accessing the field via an interface.
+func (v *QueryPolicyEnforcementResponse) GetQueryPolicyEnforcement() []*QueryPolicyEnforcementQueryPolicyEnforcement {
 	return v.QueryPolicyEnforcement
 }
 
@@ -454,25 +470,28 @@ func DeletePolicyEnforcement(
 	return data_, err_
 }
 
-// The query executed by GetPolicyEnforcementWOPolicyDef.
-const GetPolicyEnforcementWOPolicyDef_Operation = `
-query GetPolicyEnforcementWOPolicyDef {
-	queryPolicyEnforcement(filter: {not:{has:policy}}) {
+// The query executed by QueryPolicyEnforcement.
+const QueryPolicyEnforcement_Operation = `
+query QueryPolicyEnforcement {
+	queryPolicyEnforcement @cascade {
 		id
+		policy(filter: {id:{in:["422","423","436","437","438","441","442","443","444","445","446","448","450","452"]}}) {
+			id
+		}
 	}
 }
 `
 
-func GetPolicyEnforcementWOPolicyDef(
+func QueryPolicyEnforcement(
 	ctx_ context.Context,
 	client_ graphql.Client,
-) (data_ *GetPolicyEnforcementWOPolicyDefResponse, err_ error) {
+) (data_ *QueryPolicyEnforcementResponse, err_ error) {
 	req_ := &graphql.Request{
-		OpName: "GetPolicyEnforcementWOPolicyDef",
-		Query:  GetPolicyEnforcementWOPolicyDef_Operation,
+		OpName: "QueryPolicyEnforcement",
+		Query:  QueryPolicyEnforcement_Operation,
 	}
 
-	data_ = &GetPolicyEnforcementWOPolicyDefResponse{}
+	data_ = &QueryPolicyEnforcementResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(

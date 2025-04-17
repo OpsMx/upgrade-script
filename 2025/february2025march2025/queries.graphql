@@ -74,6 +74,15 @@ mutation UpdateArtifactRunHistory(
     }
 }
 
+query QueryPolicyEnforcement {
+    queryPolicyEnforcement @cascade {
+        id
+        policy(filter: { id: { in: ["422","423","436","437","438","441","442","443","444","445","446","448","450","452"] } }) {
+            id
+        }
+    }
+}
+
 mutation DeletePolicyDefinition {
     deletePolicyDefinition(
         filter: {
@@ -98,12 +107,6 @@ mutation DeletePolicyDefinition {
         }
     ) {
         numUids
-    }
-}
-
-query GetPolicyEnforcementWOPolicyDef {
-    queryPolicyEnforcement(filter: { not: { has: policy } }) {
-        id
     }
 }
 
