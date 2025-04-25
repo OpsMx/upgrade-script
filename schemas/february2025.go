@@ -407,7 +407,7 @@ type IntegratorConfigs
     team: Team @hasInverse(field: integratorConfigs)
     environment: Environment @hasInverse(field: integratorConfigs)
     applicationEnvironment: ApplicationEnvironment @hasInverse(field: integratorConfigs)
-    project: Project @hasInverse(field: integratorConfigs)
+    project: [Project] @hasInverse(field: integratorConfigs)
 }
 
 type IntegratorKeyValues {
@@ -1090,6 +1090,7 @@ type Project
     projectConfigs: [ProjectConfig!] @hasInverse(field: project)
     integratorConfigs: IntegratorConfigs @hasInverse(field: project)
     scans: [ScanTarget!] @hasInverse(field: projects)
+    type: String @search(by: [exact,regexp])
 }
 
 type ProjectConfig

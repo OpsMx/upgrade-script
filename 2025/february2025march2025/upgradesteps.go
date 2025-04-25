@@ -37,6 +37,11 @@ func UpgradeToMarch2025(prodGraphUrl, prodToken string, prodDgraphClient graphql
 	if _, err := UpdateNonBlockedApplicationDeployment(context.Background(), prodDgraphClient); err != nil {
 		return fmt.Errorf("error: UpgradeToMarch2025: UpdateBlockedApplicationDeploymentResponse: %s", err.Error())
 	}
+
+	if _, err := SetKubescapeLatestFileTSNodeToDefault(context.Background(), prodDgraphClient); err != nil {
+		return fmt.Errorf("error: UpgradeToMarch2025: UpdateBlockedApplicationDeploymentResponse: %s", err.Error())
+	}
+
 	logger.Logger.Info("--------------Completed UpgradeToMarch2025------------------")
 
 	return nil
