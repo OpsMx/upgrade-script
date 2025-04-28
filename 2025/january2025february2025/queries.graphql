@@ -1,0 +1,5 @@
+mutation SetDefaultValueOfProjectType {
+    updateProject(input: { filter: { has: name }, set: { type: "organization" } }) {
+        numUids
+    }
+}

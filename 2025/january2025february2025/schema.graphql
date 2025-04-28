@@ -1,32 +1,32 @@
+directive @hasInverse(field: String!) on FIELD_DEFINITION
+
+directive @withSubscription on OBJECT | INTERFACE | FIELD_DEFINITION
+
+directive @dgraph(type: String, pred: String) on OBJECT | INTERFACE | FIELD_DEFINITION
+
+directive @auth(password: AuthRule, query: AuthRule, add: AuthRule, update: AuthRule, delete: AuthRule) on OBJECT | INTERFACE
+
+directive @lambdaOnMutate(add: Boolean, update: Boolean, delete: Boolean) on OBJECT | INTERFACE
+
+directive @generate(query: GenerateQueryParams, mutation: GenerateMutationParams, subscription: Boolean) on OBJECT | INTERFACE
+
+directive @secret(field: String!, pred: String) on OBJECT | INTERFACE
+
+directive @custom(http: CustomHTTP, dql: String) on FIELD_DEFINITION
+
+directive @remote on OBJECT | INTERFACE | UNION | INPUT_OBJECT | ENUM
+
+directive @remoteResponse(name: String) on FIELD_DEFINITION
+
+directive @search(by: [DgraphIndex!]) on FIELD_DEFINITION
+
 directive @id(interface: Boolean) on FIELD_DEFINITION
 
 directive @cascade(fields: [String]) on FIELD
 
 directive @lambda on FIELD_DEFINITION
 
-directive @hasInverse(field: String!) on FIELD_DEFINITION
-
-directive @secret(field: String!, pred: String) on OBJECT | INTERFACE
-
-directive @auth(password: AuthRule, query: AuthRule, add: AuthRule, update: AuthRule, delete: AuthRule) on OBJECT | INTERFACE
-
-directive @search(by: [DgraphIndex!]) on FIELD_DEFINITION
-
-directive @withSubscription on OBJECT | INTERFACE | FIELD_DEFINITION
-
-directive @custom(http: CustomHTTP, dql: String) on FIELD_DEFINITION
-
 directive @cacheControl(maxAge: Int!) on QUERY
-
-directive @dgraph(type: String, pred: String) on OBJECT | INTERFACE | FIELD_DEFINITION
-
-directive @remote on OBJECT | INTERFACE | UNION | INPUT_OBJECT | ENUM
-
-directive @remoteResponse(name: String) on FIELD_DEFINITION
-
-directive @lambdaOnMutate(add: Boolean, update: Boolean, delete: Boolean) on OBJECT | INTERFACE
-
-directive @generate(query: GenerateQueryParams, mutation: GenerateMutationParams, subscription: Boolean) on OBJECT | INTERFACE
 
 interface AbstractResource {
   id: String!
@@ -142,12 +142,6 @@ input AddApplicationDeploymentInput {
   """
   deploymentStage: DeploymentStage!
 
-  """denotes if the deployment was for firewall usecase"""
-  firewall: Boolean!
-
-  """denotes whether the deployment was pending or passed or blocked"""
-  deploymentResult: String!
-
   """source is argo, spinnaker etc"""
   source: String!
 
@@ -160,6 +154,7 @@ input AddApplicationDeploymentInput {
   deploymentRisk: ApplicationDeploymentRiskRef
   policyRunHistory: [RunHistoryRef!]
   deploymentTags: [KeyValueRef!]
+  hasSecurityIssues: [SecurityIssueAffectsSummaryRef!]
   utilizedResources: [AbstractResourceRef]
   isNetworkExploitable: Boolean
 }
@@ -199,6 +194,7 @@ input AddApplicationEnvironmentInput {
   deployments: [ApplicationDeploymentRef!]
   riskStatus: ApplicationRiskStatusRef
   metadata: [KeyValueRef!]
+  hasSecurityIssues: [SecurityIssueAffectsSummaryRef!]
   integratorConfigs: [IntegratorConfigsRef!]
 }
 
@@ -217,6 +213,7 @@ input AddApplicationInput {
   policies: [PolicyDefinitionRef!]
   policyEnforcements: [PolicyEnforcementRef!]
   metadata: [KeyValueRef!]
+  hasSecurityIssues: [SecurityIssueAffectsSummaryRef!]
 }
 
 type AddApplicationPayload {
@@ -251,7 +248,6 @@ input AddArtifactInput {
   artifactDeployment: [ApplicationDeploymentRef!]
   sourceDetails: SourceCodeToolRef
   plugins: [BuildToolRef!]
-  scanTarget: [ScanTargetRef!]
 }
 
 type AddArtifactPayload {
@@ -298,10 +294,22 @@ input AddArtifactScanDataInput {
   artifactRisk: ArtifactRiskRef
   artifactRunHistory: [RunHistoryRef!]
   artifactTags: [KeyValueRef!]
+  artifactScanTS: [ArtifactScanDataTSRef!]
 }
 
 type AddArtifactScanDataPayload {
   artifactScanData(filter: ArtifactScanDataFilter, order: ArtifactScanDataOrder, first: Int, offset: Int): [ArtifactScanData]
+  numUids: Int
+}
+
+input AddArtifactScanDataTSInput {
+  artifact: ArtifactScanDataRef!
+  timestamps: [DateTime!]
+  summary: [SecurityIssueAffectsSummaryRef!]
+}
+
+type AddArtifactScanDataTSPayload {
+  artifactScanDataTS(filter: ArtifactScanDataTSFilter, first: Int, offset: Int): [ArtifactScanDataTS]
   numUids: Int
 }
 
@@ -361,13 +369,12 @@ input AddComponentAnalysisInput {
   Stars: Int
   Forks: Int
   Contributors: Int
-  Contributions: Int
   VulnCritical: Int
   VulnHigh: Int
   VulnMedium: Int
   VulnLow: Int
   VulnOthers: Int
-  MeanTimeToRepair: Float
+  MeanTimeToRepair: Int
   Licenses: [String!]
   CreatedAt: DateTime
   ScannedAt: DateTime
@@ -477,7 +484,6 @@ input AddDeploymentTargetInput {
   """this would be something like us-east-1 etc"""
   region: String
   kubescapeServiceConnected: String
-  kubescapeLatestFileTS: String
   isFirewall: Boolean
   organization: OrganizationRef!
   defaultEnvironment: EnvironmentRef!
@@ -528,6 +534,7 @@ input AddExceptionAffectsInput {
   status: String!
   exception: ExceptionRef!
   runHistories: [RunHistoryRef!]
+  hasSecurityIssues: [SecurityIssueAffectsSummaryRef!]
 }
 
 type AddExceptionAffectsPayload {
@@ -753,9 +760,6 @@ input AddProjectConfigInput {
   createdAt: DateTime!
   updatedAt: DateTime!
   project: ProjectRef!
-  artifactTag: [String!]
-  artifactTagPattern: String
-  scanUpto: Int
 }
 
 type AddProjectConfigPayload {
@@ -768,7 +772,6 @@ input AddProjectInput {
   platform: String
   organization: OrganizationRef!
   team: TeamRef
-  scanType: String
   scanlevel: String
   createdAt: DateTime!
   updatedAt: DateTime!
@@ -852,13 +855,6 @@ input AddRunHistoryInput {
   ArtifactSha: String!
   ArtifactNameTag: String!
   DatasourceTool: String!
-  DeploymentID: String
-  SbomTool: String
-  Namespace: String
-  Account: String
-  Cluster: String
-  Application: String
-  TeamID: String
   CreatedAt: DateTime!
   UpdatedAt: DateTime!
   DeployedAt: DateTime!
@@ -899,7 +895,6 @@ input AddScanResultInput {
   scanTool: String!
   scannedAt: DateTime!
   scanDuration: DateTime!
-  riskStatus: RiskStatus
   scanTarget: ScanTargetRef!
 }
 
@@ -919,7 +914,6 @@ input AddScanTargetInput {
   createdAt: DateTime!
   updatedAt: DateTime!
   scanResults: [ScanResultRef!]
-  artifact: ArtifactRef
 }
 
 type AddScanTargetPayload {
@@ -933,6 +927,24 @@ input AddSchemaVersionInput {
 
 type AddSchemaVersionPayload {
   schemaVersion(filter: SchemaVersionFilter, order: SchemaVersionOrder, first: Int, offset: Int): [SchemaVersion]
+  numUids: Int
+}
+
+input AddSecurityIssueAffectsSummaryInput {
+  """only pre-deployment analysis or deployment analysis"""
+  type: String!
+  team: TeamRef
+  application: ApplicationRef
+  applicationEnvironment: ApplicationEnvironmentRef
+  service: String
+  currentDeployed: ApplicationDeploymentRef
+  artifactScanTS: [ArtifactScanDataTSRef!]
+  exception: ExceptionAffectsRef
+  securityIssue: SecurityIssueRef!
+}
+
+type AddSecurityIssueAffectsSummaryPayload {
+  securityIssueAffectsSummary(filter: SecurityIssueAffectsSummaryFilter, order: SecurityIssueAffectsSummaryOrder, first: Int, offset: Int): [SecurityIssueAffectsSummary]
   numUids: Int
 }
 
@@ -950,6 +962,7 @@ input AddSecurityIssueInput {
   policyEnforcements: PolicyEnforcementRef!
   AttachedJira: [JiraRef]
   Affects: [RunHistoryRef!]
+  Summary: [SecurityIssueAffectsSummaryRef!]
 }
 
 type AddSecurityIssuePayload {
@@ -984,7 +997,7 @@ input AddSourceCodeToolInput {
 
   """parentRepo is populated in case the git repo is a fork"""
   parentRepo: String
-  buildTool: BuildToolRef
+  buildTool: BuildToolRef!
   sourceCodePath: String
   sonarqubeProjectKey: String
   artifactNode: ArtifactRef
@@ -1029,6 +1042,7 @@ input AddTeamInput {
   policies: [PolicyDefinitionRef!]
   policyEnforcements: [PolicyEnforcementRef!]
   exceptions: [ExceptionAffectsRef!]
+  hasSecurityIssues: [SecurityIssueAffectsSummaryRef!]
   integratorConfigs: [IntegratorConfigsRef!]
   AttachedJira: [JiraRef]
   projects: [ProjectRef!]
@@ -1094,11 +1108,13 @@ type Application implements RBAC {
   policies(filter: PolicyDefinitionFilter, order: PolicyDefinitionOrder, first: Int, offset: Int): [PolicyDefinition!]
   policyEnforcements(filter: PolicyEnforcementFilter, order: PolicyEnforcementOrder, first: Int, offset: Int): [PolicyEnforcement!]
   metadata(filter: KeyValueFilter, order: KeyValueOrder, first: Int, offset: Int): [KeyValue!]
+  hasSecurityIssues(filter: SecurityIssueAffectsSummaryFilter, order: SecurityIssueAffectsSummaryOrder, first: Int, offset: Int): [SecurityIssueAffectsSummary!]
   rolesAggregate(filter: RoleFilter): RoleAggregateResult
   environmentsAggregate(filter: ApplicationEnvironmentFilter): ApplicationEnvironmentAggregateResult
   policiesAggregate(filter: PolicyDefinitionFilter): PolicyDefinitionAggregateResult
   policyEnforcementsAggregate(filter: PolicyEnforcementFilter): PolicyEnforcementAggregateResult
   metadataAggregate(filter: KeyValueFilter): KeyValueAggregateResult
+  hasSecurityIssuesAggregate(filter: SecurityIssueAffectsSummaryFilter): SecurityIssueAffectsSummaryAggregateResult
 }
 
 type ApplicationAggregateResult {
@@ -1132,12 +1148,6 @@ type ApplicationDeployment {
   """
   deploymentStage: DeploymentStage!
 
-  """denotes if the deployment was for firewall usecase"""
-  firewall: Boolean!
-
-  """denotes whether the deployment was pending or passed or blocked"""
-  deploymentResult: String!
-
   """source is argo, spinnaker etc"""
   source: String!
 
@@ -1158,11 +1168,13 @@ type ApplicationDeployment {
   """policyRunHistory is the policy execution history for this deployment"""
   policyRunHistory(filter: RunHistoryFilter, order: RunHistoryOrder, first: Int, offset: Int): [RunHistory!]
   deploymentTags(filter: KeyValueFilter, order: KeyValueOrder, first: Int, offset: Int): [KeyValue!]
+  hasSecurityIssues(filter: SecurityIssueAffectsSummaryFilter, order: SecurityIssueAffectsSummaryOrder, first: Int, offset: Int): [SecurityIssueAffectsSummary!]
   utilizedResources(filter: AbstractResourceFilter, order: AbstractResourceOrder, first: Int, offset: Int): [AbstractResource]
   isNetworkExploitable: Boolean
   artifactAggregate(filter: ArtifactFilter): ArtifactAggregateResult
   policyRunHistoryAggregate(filter: RunHistoryFilter): RunHistoryAggregateResult
   deploymentTagsAggregate(filter: KeyValueFilter): KeyValueAggregateResult
+  hasSecurityIssuesAggregate(filter: SecurityIssueAffectsSummaryFilter): SecurityIssueAffectsSummaryAggregateResult
   utilizedResourcesAggregate(filter: AbstractResourceFilter): AbstractResourceAggregateResult
 }
 
@@ -1176,8 +1188,6 @@ type ApplicationDeploymentAggregateResult {
   serviceUrlMax: String
   deployedAtMin: DateTime
   deployedAtMax: DateTime
-  deploymentResultMin: String
-  deploymentResultMax: String
   sourceMin: String
   sourceMax: String
   componentMin: String
@@ -1192,8 +1202,6 @@ input ApplicationDeploymentFilter {
   serviceUrl: StringTermFilter
   deployedAt: DateTimeFilter
   deploymentStage: DeploymentStage_exact
-  firewall: Boolean
-  deploymentResult: StringExactFilter
   component: StringExactFilter_StringRegExpFilter
   has: [ApplicationDeploymentHasFilter]
   and: [ApplicationDeploymentFilter]
@@ -1209,8 +1217,6 @@ enum ApplicationDeploymentHasFilter {
   applicationEnvironment
   deployedAt
   deploymentStage
-  firewall
-  deploymentResult
   source
   component
   deployedBy
@@ -1218,6 +1224,7 @@ enum ApplicationDeploymentHasFilter {
   deploymentRisk
   policyRunHistory
   deploymentTags
+  hasSecurityIssues
   utilizedResources
   isNetworkExploitable
 }
@@ -1233,7 +1240,6 @@ enum ApplicationDeploymentOrderable {
   platform
   serviceUrl
   deployedAt
-  deploymentResult
   source
   component
   deployedBy
@@ -1254,12 +1260,6 @@ input ApplicationDeploymentPatch {
   """
   deploymentStage: DeploymentStage
 
-  """denotes if the deployment was for firewall usecase"""
-  firewall: Boolean
-
-  """denotes whether the deployment was pending or passed or blocked"""
-  deploymentResult: String
-
   """source is argo, spinnaker etc"""
   source: String
 
@@ -1272,6 +1272,7 @@ input ApplicationDeploymentPatch {
   deploymentRisk: ApplicationDeploymentRiskRef
   policyRunHistory: [RunHistoryRef!]
   deploymentTags: [KeyValueRef!]
+  hasSecurityIssues: [SecurityIssueAffectsSummaryRef!]
   utilizedResources: [AbstractResourceRef]
   isNetworkExploitable: Boolean
 }
@@ -1294,12 +1295,6 @@ input ApplicationDeploymentRef {
   """
   deploymentStage: DeploymentStage
 
-  """denotes if the deployment was for firewall usecase"""
-  firewall: Boolean
-
-  """denotes whether the deployment was pending or passed or blocked"""
-  deploymentResult: String
-
   """source is argo, spinnaker etc"""
   source: String
 
@@ -1312,6 +1307,7 @@ input ApplicationDeploymentRef {
   deploymentRisk: ApplicationDeploymentRiskRef
   policyRunHistory: [RunHistoryRef!]
   deploymentTags: [KeyValueRef!]
+  hasSecurityIssues: [SecurityIssueAffectsSummaryRef!]
   utilizedResources: [AbstractResourceRef]
   isNetworkExploitable: Boolean
 }
@@ -1428,9 +1424,11 @@ type ApplicationEnvironment {
   deployments(filter: ApplicationDeploymentFilter, order: ApplicationDeploymentOrder, first: Int, offset: Int): [ApplicationDeployment!]
   riskStatus(filter: ApplicationRiskStatusFilter): ApplicationRiskStatus
   metadata(filter: KeyValueFilter, order: KeyValueOrder, first: Int, offset: Int): [KeyValue!]
+  hasSecurityIssues(filter: SecurityIssueAffectsSummaryFilter, order: SecurityIssueAffectsSummaryOrder, first: Int, offset: Int): [SecurityIssueAffectsSummary!]
   integratorConfigs(filter: IntegratorConfigsFilter, order: IntegratorConfigsOrder, first: Int, offset: Int): [IntegratorConfigs!]
   deploymentsAggregate(filter: ApplicationDeploymentFilter): ApplicationDeploymentAggregateResult
   metadataAggregate(filter: KeyValueFilter): KeyValueAggregateResult
+  hasSecurityIssuesAggregate(filter: SecurityIssueAffectsSummaryFilter): SecurityIssueAffectsSummaryAggregateResult
   integratorConfigsAggregate(filter: IntegratorConfigsFilter): IntegratorConfigsAggregateResult
 }
 
@@ -1461,6 +1459,7 @@ enum ApplicationEnvironmentHasFilter {
   deployments
   riskStatus
   metadata
+  hasSecurityIssues
   integratorConfigs
 }
 
@@ -1488,6 +1487,7 @@ input ApplicationEnvironmentPatch {
   deployments: [ApplicationDeploymentRef!]
   riskStatus: ApplicationRiskStatusRef
   metadata: [KeyValueRef!]
+  hasSecurityIssues: [SecurityIssueAffectsSummaryRef!]
   integratorConfigs: [IntegratorConfigsRef!]
 }
 
@@ -1506,6 +1506,7 @@ input ApplicationEnvironmentRef {
   deployments: [ApplicationDeploymentRef!]
   riskStatus: ApplicationRiskStatusRef
   metadata: [KeyValueRef!]
+  hasSecurityIssues: [SecurityIssueAffectsSummaryRef!]
   integratorConfigs: [IntegratorConfigsRef!]
 }
 
@@ -1527,6 +1528,7 @@ enum ApplicationHasFilter {
   policies
   policyEnforcements
   metadata
+  hasSecurityIssues
 }
 
 input ApplicationOrder {
@@ -1548,6 +1550,7 @@ input ApplicationPatch {
   policies: [PolicyDefinitionRef!]
   policyEnforcements: [PolicyEnforcementRef!]
   metadata: [KeyValueRef!]
+  hasSecurityIssues: [SecurityIssueAffectsSummaryRef!]
 }
 
 input ApplicationRef {
@@ -1560,6 +1563,7 @@ input ApplicationRef {
   policies: [PolicyDefinitionRef!]
   policyEnforcements: [PolicyEnforcementRef!]
   metadata: [KeyValueRef!]
+  hasSecurityIssues: [SecurityIssueAffectsSummaryRef!]
 }
 
 """
@@ -1678,11 +1682,9 @@ type Artifact {
   artifactDeployment(filter: ApplicationDeploymentFilter, order: ApplicationDeploymentOrder, first: Int, offset: Int): [ApplicationDeployment!]
   sourceDetails(filter: SourceCodeToolFilter): SourceCodeTool
   plugins(filter: BuildToolFilter, order: BuildToolOrder, first: Int, offset: Int): [BuildTool!]
-  scanTarget(filter: ScanTargetFilter, order: ScanTargetOrder, first: Int, offset: Int): [ScanTarget!]
   scanDataAggregate(filter: ArtifactScanDataFilter): ArtifactScanDataAggregateResult
   artifactDeploymentAggregate(filter: ApplicationDeploymentFilter): ApplicationDeploymentAggregateResult
   pluginsAggregate(filter: BuildToolFilter): BuildToolAggregateResult
-  scanTargetAggregate(filter: ScanTargetFilter): ScanTargetAggregateResult
 }
 
 type ArtifactAggregateResult {
@@ -1721,7 +1723,6 @@ enum ArtifactHasFilter {
   artifactDeployment
   sourceDetails
   plugins
-  scanTarget
 }
 
 input ArtifactOrder {
@@ -1747,7 +1748,6 @@ input ArtifactPatch {
   artifactDeployment: [ApplicationDeploymentRef!]
   sourceDetails: SourceCodeToolRef
   plugins: [BuildToolRef!]
-  scanTarget: [ScanTargetRef!]
 }
 
 input ArtifactRef {
@@ -1760,7 +1760,6 @@ input ArtifactRef {
   artifactDeployment: [ApplicationDeploymentRef!]
   sourceDetails: SourceCodeToolRef
   plugins: [BuildToolRef!]
-  scanTarget: [ScanTargetRef!]
 }
 
 type ArtifactRisk {
@@ -1868,10 +1867,12 @@ type ArtifactScanData {
   artifactRisk(filter: ArtifactRiskFilter): ArtifactRisk
   artifactRunHistory(filter: RunHistoryFilter, order: RunHistoryOrder, first: Int, offset: Int): [RunHistory!]
   artifactTags(filter: KeyValueFilter, order: KeyValueOrder, first: Int, offset: Int): [KeyValue!]
+  artifactScanTS(filter: ArtifactScanDataTSFilter, first: Int, offset: Int): [ArtifactScanDataTS!]
   componentsAggregate(filter: ComponentFilter): ComponentAggregateResult
   scanFileAggregate(filter: ScanFileResultFilter): ScanFileResultAggregateResult
   artifactRunHistoryAggregate(filter: RunHistoryFilter): RunHistoryAggregateResult
   artifactTagsAggregate(filter: KeyValueFilter): KeyValueAggregateResult
+  artifactScanTSAggregate(filter: ArtifactScanDataTSFilter): ArtifactScanDataTSAggregateResult
 }
 
 type ArtifactScanDataAggregateResult {
@@ -1970,6 +1971,7 @@ enum ArtifactScanDataHasFilter {
   artifactRisk
   artifactRunHistory
   artifactTags
+  artifactScanTS
 }
 
 input ArtifactScanDataOrder {
@@ -2020,6 +2022,7 @@ input ArtifactScanDataPatch {
   artifactRisk: ArtifactRiskRef
   artifactRunHistory: [RunHistoryRef!]
   artifactTags: [KeyValueRef!]
+  artifactScanTS: [ArtifactScanDataTSRef!]
 }
 
 input ArtifactScanDataRef {
@@ -2047,6 +2050,47 @@ input ArtifactScanDataRef {
   artifactRisk: ArtifactRiskRef
   artifactRunHistory: [RunHistoryRef!]
   artifactTags: [KeyValueRef!]
+  artifactScanTS: [ArtifactScanDataTSRef!]
+}
+
+type ArtifactScanDataTS {
+  id: ID!
+  artifact(filter: ArtifactScanDataFilter): ArtifactScanData!
+  timestamps: [DateTime!]
+  summary(filter: SecurityIssueAffectsSummaryFilter, order: SecurityIssueAffectsSummaryOrder, first: Int, offset: Int): [SecurityIssueAffectsSummary!]
+  summaryAggregate(filter: SecurityIssueAffectsSummaryFilter): SecurityIssueAffectsSummaryAggregateResult
+}
+
+type ArtifactScanDataTSAggregateResult {
+  count: Int
+}
+
+input ArtifactScanDataTSFilter {
+  id: [ID!]
+  timestamps: DateTimeFilter
+  has: [ArtifactScanDataTSHasFilter]
+  and: [ArtifactScanDataTSFilter]
+  or: [ArtifactScanDataTSFilter]
+  not: ArtifactScanDataTSFilter
+}
+
+enum ArtifactScanDataTSHasFilter {
+  artifact
+  timestamps
+  summary
+}
+
+input ArtifactScanDataTSPatch {
+  artifact: ArtifactScanDataRef
+  timestamps: [DateTime!]
+  summary: [SecurityIssueAffectsSummaryRef!]
+}
+
+input ArtifactScanDataTSRef {
+  id: ID
+  artifact: ArtifactScanDataRef
+  timestamps: [DateTime!]
+  summary: [SecurityIssueAffectsSummaryRef!]
 }
 
 input AuthRule {
@@ -2234,7 +2278,6 @@ type CommitMetaDataAggregateResult {
 
 input CommitMetaDataFilter {
   id: [ID!]
-  commit: StringExactFilter
   has: [CommitMetaDataHasFilter]
   and: [CommitMetaDataFilter]
   or: [CommitMetaDataFilter]
@@ -2336,13 +2379,12 @@ type ComponentAnalysis {
   Stars: Int
   Forks: Int
   Contributors: Int
-  Contributions: Int
   VulnCritical: Int
   VulnHigh: Int
   VulnMedium: Int
   VulnLow: Int
   VulnOthers: Int
-  MeanTimeToRepair: Float
+  MeanTimeToRepair: Int
   Licenses: [String!]
   CreatedAt: DateTime
   ScannedAt: DateTime
@@ -2370,10 +2412,6 @@ type ComponentAnalysisAggregateResult {
   ContributorsMax: Int
   ContributorsSum: Int
   ContributorsAvg: Float
-  ContributionsMin: Int
-  ContributionsMax: Int
-  ContributionsSum: Int
-  ContributionsAvg: Float
   VulnCriticalMin: Int
   VulnCriticalMax: Int
   VulnCriticalSum: Int
@@ -2394,9 +2432,9 @@ type ComponentAnalysisAggregateResult {
   VulnOthersMax: Int
   VulnOthersSum: Int
   VulnOthersAvg: Float
-  MeanTimeToRepairMin: Float
-  MeanTimeToRepairMax: Float
-  MeanTimeToRepairSum: Float
+  MeanTimeToRepairMin: Int
+  MeanTimeToRepairMax: Int
+  MeanTimeToRepairSum: Int
   MeanTimeToRepairAvg: Float
   CreatedAtMin: DateTime
   CreatedAtMax: DateTime
@@ -2414,13 +2452,12 @@ input ComponentAnalysisFilter {
   Stars: IntFilter
   Forks: IntFilter
   Contributors: IntFilter
-  Contributions: IntFilter
   VulnCritical: IntFilter
   VulnHigh: IntFilter
   VulnMedium: IntFilter
   VulnLow: IntFilter
   VulnOthers: IntFilter
-  MeanTimeToRepair: FloatFilter
+  MeanTimeToRepair: IntFilter
   Licenses: StringExactFilter_StringRegExpFilter
   LastViewed: DateTimeFilter
   has: [ComponentAnalysisHasFilter]
@@ -2437,7 +2474,6 @@ enum ComponentAnalysisHasFilter {
   Stars
   Forks
   Contributors
-  Contributions
   VulnCritical
   VulnHigh
   VulnMedium
@@ -2462,7 +2498,6 @@ enum ComponentAnalysisOrderable {
   Stars
   Forks
   Contributors
-  Contributions
   VulnCritical
   VulnHigh
   VulnMedium
@@ -2482,13 +2517,12 @@ input ComponentAnalysisPatch {
   Stars: Int
   Forks: Int
   Contributors: Int
-  Contributions: Int
   VulnCritical: Int
   VulnHigh: Int
   VulnMedium: Int
   VulnLow: Int
   VulnOthers: Int
-  MeanTimeToRepair: Float
+  MeanTimeToRepair: Int
   Licenses: [String!]
   CreatedAt: DateTime
   ScannedAt: DateTime
@@ -2504,13 +2538,12 @@ input ComponentAnalysisRef {
   Stars: Int
   Forks: Int
   Contributors: Int
-  Contributions: Int
   VulnCritical: Int
   VulnHigh: Int
   VulnMedium: Int
   VulnLow: Int
   VulnOthers: Int
-  MeanTimeToRepair: Float
+  MeanTimeToRepair: Int
   Licenses: [String!]
   CreatedAt: DateTime
   ScannedAt: DateTime
@@ -2988,6 +3021,12 @@ type DeleteArtifactScanDataPayload {
   numUids: Int
 }
 
+type DeleteArtifactScanDataTSPayload {
+  artifactScanDataTS(filter: ArtifactScanDataTSFilter, first: Int, offset: Int): [ArtifactScanDataTS]
+  msg: String
+  numUids: Int
+}
+
 type DeleteBuildToolPayload {
   buildTool(filter: BuildToolFilter, order: BuildToolOrder, first: Int, offset: Int): [BuildTool]
   msg: String
@@ -3216,6 +3255,12 @@ type DeleteSchemaVersionPayload {
   numUids: Int
 }
 
+type DeleteSecurityIssueAffectsSummaryPayload {
+  securityIssueAffectsSummary(filter: SecurityIssueAffectsSummaryFilter, order: SecurityIssueAffectsSummaryOrder, first: Int, offset: Int): [SecurityIssueAffectsSummary]
+  msg: String
+  numUids: Int
+}
+
 type DeleteSecurityIssuePayload {
   securityIssue(filter: SecurityIssueFilter, order: SecurityIssueOrder, first: Int, offset: Int): [SecurityIssue]
   msg: String
@@ -3308,7 +3353,6 @@ type DeploymentTarget {
   """this would be something like us-east-1 etc"""
   region: String
   kubescapeServiceConnected: String
-  kubescapeLatestFileTS: String
   isFirewall: Boolean
   organization(filter: OrganizationFilter): Organization!
   defaultEnvironment(filter: EnvironmentFilter): Environment!
@@ -3332,8 +3376,6 @@ type DeploymentTargetAggregateResult {
   regionMax: String
   kubescapeServiceConnectedMin: String
   kubescapeServiceConnectedMax: String
-  kubescapeLatestFileTSMin: String
-  kubescapeLatestFileTSMax: String
 }
 
 input DeploymentTargetFilter {
@@ -3359,7 +3401,6 @@ enum DeploymentTargetHasFilter {
   account
   region
   kubescapeServiceConnected
-  kubescapeLatestFileTS
   isFirewall
   organization
   defaultEnvironment
@@ -3380,7 +3421,6 @@ enum DeploymentTargetOrderable {
   account
   region
   kubescapeServiceConnected
-  kubescapeLatestFileTS
 }
 
 input DeploymentTargetPatch {
@@ -3401,7 +3441,6 @@ input DeploymentTargetPatch {
   """this would be something like us-east-1 etc"""
   region: String
   kubescapeServiceConnected: String
-  kubescapeLatestFileTS: String
   isFirewall: Boolean
   organization: OrganizationRef
   defaultEnvironment: EnvironmentRef
@@ -3427,7 +3466,6 @@ input DeploymentTargetRef {
   """this would be something like us-east-1 etc"""
   region: String
   kubescapeServiceConnected: String
-  kubescapeLatestFileTS: String
   isFirewall: Boolean
   organization: OrganizationRef
   defaultEnvironment: EnvironmentRef
@@ -3606,8 +3644,10 @@ type ExceptionAffects implements RBAC {
   status: String!
   exception(filter: ExceptionFilter): Exception!
   runHistories(filter: RunHistoryFilter, order: RunHistoryOrder, first: Int, offset: Int): [RunHistory!]
+  hasSecurityIssues(filter: SecurityIssueAffectsSummaryFilter, order: SecurityIssueAffectsSummaryOrder, first: Int, offset: Int): [SecurityIssueAffectsSummary!]
   rolesAggregate(filter: RoleFilter): RoleAggregateResult
   runHistoriesAggregate(filter: RunHistoryFilter): RunHistoryAggregateResult
+  hasSecurityIssuesAggregate(filter: SecurityIssueAffectsSummaryFilter): SecurityIssueAffectsSummaryAggregateResult
 }
 
 type ExceptionAffectsAggregateResult {
@@ -3654,6 +3694,7 @@ enum ExceptionAffectsHasFilter {
   status
   exception
   runHistories
+  hasSecurityIssues
 }
 
 input ExceptionAffectsOrder {
@@ -3684,6 +3725,7 @@ input ExceptionAffectsPatch {
   status: String
   exception: ExceptionRef
   runHistories: [RunHistoryRef!]
+  hasSecurityIssues: [SecurityIssueAffectsSummaryRef!]
 }
 
 input ExceptionAffectsRef {
@@ -3700,6 +3742,7 @@ input ExceptionAffectsRef {
   status: String
   exception: ExceptionRef
   runHistories: [RunHistoryRef!]
+  hasSecurityIssues: [SecurityIssueAffectsSummaryRef!]
 }
 
 type ExceptionAggregateResult {
@@ -4377,6 +4420,12 @@ type Mutation {
   addSecurityIssue(input: [AddSecurityIssueInput!]!): AddSecurityIssuePayload
   updateSecurityIssue(input: UpdateSecurityIssueInput!): UpdateSecurityIssuePayload
   deleteSecurityIssue(filter: SecurityIssueFilter!): DeleteSecurityIssuePayload
+  addSecurityIssueAffectsSummary(input: [AddSecurityIssueAffectsSummaryInput!]!): AddSecurityIssueAffectsSummaryPayload
+  updateSecurityIssueAffectsSummary(input: UpdateSecurityIssueAffectsSummaryInput!): UpdateSecurityIssueAffectsSummaryPayload
+  deleteSecurityIssueAffectsSummary(filter: SecurityIssueAffectsSummaryFilter!): DeleteSecurityIssueAffectsSummaryPayload
+  addArtifactScanDataTS(input: [AddArtifactScanDataTSInput!]!): AddArtifactScanDataTSPayload
+  updateArtifactScanDataTS(input: UpdateArtifactScanDataTSInput!): UpdateArtifactScanDataTSPayload
+  deleteArtifactScanDataTS(filter: ArtifactScanDataTSFilter!): DeleteArtifactScanDataTSPayload
   addBuildTool(input: [AddBuildToolInput!]!, upsert: Boolean): AddBuildToolPayload
   updateBuildTool(input: UpdateBuildToolInput!): UpdateBuildToolPayload
   deleteBuildTool(filter: BuildToolFilter!): DeleteBuildToolPayload
@@ -5144,7 +5193,6 @@ type Project {
   platform: String
   organization(filter: OrganizationFilter): Organization!
   team(filter: TeamFilter): Team
-  scanType: String
   scanlevel: String
   createdAt: DateTime!
   updatedAt: DateTime!
@@ -5162,8 +5210,6 @@ type ProjectAggregateResult {
   nameMax: String
   platformMin: String
   platformMax: String
-  scanTypeMin: String
-  scanTypeMax: String
   scanlevelMin: String
   scanlevelMax: String
   createdAtMin: DateTime
@@ -5185,9 +5231,6 @@ type ProjectConfig {
   createdAt: DateTime!
   updatedAt: DateTime!
   project(filter: ProjectFilter): Project!
-  artifactTag: [String!]
-  artifactTagPattern: String
-  scanUpto: Int
 }
 
 type ProjectConfigAggregateResult {
@@ -5206,12 +5249,6 @@ type ProjectConfigAggregateResult {
   createdAtMax: DateTime
   updatedAtMin: DateTime
   updatedAtMax: DateTime
-  artifactTagPatternMin: String
-  artifactTagPatternMax: String
-  scanUptoMin: Int
-  scanUptoMax: Int
-  scanUptoSum: Int
-  scanUptoAvg: Float
 }
 
 input ProjectConfigFilter {
@@ -5224,9 +5261,6 @@ input ProjectConfigFilter {
   scheduledScan: Boolean
   createdAt: DateTimeFilter
   updatedAt: DateTimeFilter
-  artifactTag: StringExactFilter_StringRegExpFilter
-  artifactTagPattern: StringExactFilter_StringRegExpFilter
-  scanUpto: IntFilter
   has: [ProjectConfigHasFilter]
   and: [ProjectConfigFilter]
   or: [ProjectConfigFilter]
@@ -5243,9 +5277,6 @@ enum ProjectConfigHasFilter {
   createdAt
   updatedAt
   project
-  artifactTag
-  artifactTagPattern
-  scanUpto
 }
 
 input ProjectConfigOrder {
@@ -5261,8 +5292,6 @@ enum ProjectConfigOrderable {
   scheduleTime
   createdAt
   updatedAt
-  artifactTagPattern
-  scanUpto
 }
 
 input ProjectConfigPatch {
@@ -5275,9 +5304,6 @@ input ProjectConfigPatch {
   createdAt: DateTime
   updatedAt: DateTime
   project: ProjectRef
-  artifactTag: [String!]
-  artifactTagPattern: String
-  scanUpto: Int
 }
 
 input ProjectConfigRef {
@@ -5291,16 +5317,12 @@ input ProjectConfigRef {
   createdAt: DateTime
   updatedAt: DateTime
   project: ProjectRef
-  artifactTag: [String!]
-  artifactTagPattern: String
-  scanUpto: Int
 }
 
 input ProjectFilter {
   id: [ID!]
   name: StringExactFilter_StringRegExpFilter
   platform: StringExactFilter_StringRegExpFilter
-  scanType: StringExactFilter_StringRegExpFilter
   scanlevel: StringExactFilter_StringRegExpFilter
   createdAt: DateTimeFilter
   updatedAt: DateTimeFilter
@@ -5316,7 +5338,6 @@ enum ProjectHasFilter {
   platform
   organization
   team
-  scanType
   scanlevel
   createdAt
   updatedAt
@@ -5335,7 +5356,6 @@ input ProjectOrder {
 enum ProjectOrderable {
   name
   platform
-  scanType
   scanlevel
   createdAt
   updatedAt
@@ -5347,7 +5367,6 @@ input ProjectPatch {
   platform: String
   organization: OrganizationRef
   team: TeamRef
-  scanType: String
   scanlevel: String
   createdAt: DateTime
   updatedAt: DateTime
@@ -5363,7 +5382,6 @@ input ProjectRef {
   platform: String
   organization: OrganizationRef
   team: TeamRef
-  scanType: String
   scanlevel: String
   createdAt: DateTime
   updatedAt: DateTime
@@ -5443,6 +5461,12 @@ type Query {
   getSecurityIssue(id: ID!): SecurityIssue
   querySecurityIssue(filter: SecurityIssueFilter, order: SecurityIssueOrder, first: Int, offset: Int): [SecurityIssue]
   aggregateSecurityIssue(filter: SecurityIssueFilter): SecurityIssueAggregateResult
+  getSecurityIssueAffectsSummary(id: ID!): SecurityIssueAffectsSummary
+  querySecurityIssueAffectsSummary(filter: SecurityIssueAffectsSummaryFilter, order: SecurityIssueAffectsSummaryOrder, first: Int, offset: Int): [SecurityIssueAffectsSummary]
+  aggregateSecurityIssueAffectsSummary(filter: SecurityIssueAffectsSummaryFilter): SecurityIssueAffectsSummaryAggregateResult
+  getArtifactScanDataTS(id: ID!): ArtifactScanDataTS
+  queryArtifactScanDataTS(filter: ArtifactScanDataTSFilter, first: Int, offset: Int): [ArtifactScanDataTS]
+  aggregateArtifactScanDataTS(filter: ArtifactScanDataTSFilter): ArtifactScanDataTSAggregateResult
   getBuildTool(id: String!): BuildTool
   queryBuildTool(filter: BuildToolFilter, order: BuildToolOrder, first: Int, offset: Int): [BuildTool]
   aggregateBuildTool(filter: BuildToolFilter): BuildToolAggregateResult
@@ -5675,8 +5699,6 @@ enum RiskStatus {
   highrisk
   apocalypserisk
   scanning
-  completed
-  fail
 }
 
 input RiskStatus_exact {
@@ -5876,13 +5898,6 @@ type RunHistory {
   ArtifactSha: String!
   ArtifactNameTag: String!
   DatasourceTool: String!
-  DeploymentID: String
-  SbomTool: String
-  Namespace: String
-  Account: String
-  Cluster: String
-  Application: String
-  TeamID: String
   CreatedAt: DateTime!
   UpdatedAt: DateTime!
   DeployedAt: DateTime!
@@ -5916,20 +5931,6 @@ type RunHistoryAggregateResult {
   ArtifactNameTagMax: String
   DatasourceToolMin: String
   DatasourceToolMax: String
-  DeploymentIDMin: String
-  DeploymentIDMax: String
-  SbomToolMin: String
-  SbomToolMax: String
-  NamespaceMin: String
-  NamespaceMax: String
-  AccountMin: String
-  AccountMax: String
-  ClusterMin: String
-  ClusterMax: String
-  ApplicationMin: String
-  ApplicationMax: String
-  TeamIDMin: String
-  TeamIDMax: String
   CreatedAtMin: DateTime
   CreatedAtMax: DateTime
   UpdatedAtMin: DateTime
@@ -5954,13 +5955,6 @@ input RunHistoryFilter {
   ArtifactSha: StringExactFilter_StringRegExpFilter
   ArtifactNameTag: StringExactFilter_StringRegExpFilter
   DatasourceTool: StringExactFilter_StringRegExpFilter
-  DeploymentID: StringExactFilter_StringRegExpFilter
-  SbomTool: StringExactFilter_StringRegExpFilter
-  Namespace: StringExactFilter_StringRegExpFilter
-  Account: StringExactFilter_StringRegExpFilter
-  Cluster: StringExactFilter_StringRegExpFilter
-  Application: StringExactFilter_StringRegExpFilter
-  TeamID: StringExactFilter_StringRegExpFilter
   CreatedAt: DateTimeFilter
   UpdatedAt: DateTimeFilter
   DeployedAt: DateTimeFilter
@@ -5984,13 +5978,6 @@ enum RunHistoryHasFilter {
   ArtifactSha
   ArtifactNameTag
   DatasourceTool
-  DeploymentID
-  SbomTool
-  Namespace
-  Account
-  Cluster
-  Application
-  TeamID
   CreatedAt
   UpdatedAt
   DeployedAt
@@ -6021,13 +6008,6 @@ enum RunHistoryOrderable {
   ArtifactSha
   ArtifactNameTag
   DatasourceTool
-  DeploymentID
-  SbomTool
-  Namespace
-  Account
-  Cluster
-  Application
-  TeamID
   CreatedAt
   UpdatedAt
   DeployedAt
@@ -6047,13 +6027,6 @@ input RunHistoryPatch {
   ArtifactSha: String
   ArtifactNameTag: String
   DatasourceTool: String
-  DeploymentID: String
-  SbomTool: String
-  Namespace: String
-  Account: String
-  Cluster: String
-  Application: String
-  TeamID: String
   CreatedAt: DateTime
   UpdatedAt: DateTime
   DeployedAt: DateTime
@@ -6081,13 +6054,6 @@ input RunHistoryRef {
   ArtifactSha: String
   ArtifactNameTag: String
   DatasourceTool: String
-  DeploymentID: String
-  SbomTool: String
-  Namespace: String
-  Account: String
-  Cluster: String
-  Application: String
-  TeamID: String
   CreatedAt: DateTime
   UpdatedAt: DateTime
   DeployedAt: DateTime
@@ -6237,7 +6203,6 @@ type ScanResult {
   scanTool: String!
   scannedAt: DateTime!
   scanDuration: DateTime!
-  riskStatus: RiskStatus
   scanTarget(filter: ScanTargetFilter): ScanTarget!
 }
 
@@ -6274,7 +6239,6 @@ input ScanResultFilter {
   scanTool: StringExactFilter_StringRegExpFilter
   scannedAt: DateTimeFilter
   scanDuration: DateTimeFilter
-  riskStatus: RiskStatus_exact_StringRegExpFilter
   has: [ScanResultHasFilter]
   and: [ScanResultFilter]
   or: [ScanResultFilter]
@@ -6291,7 +6255,6 @@ enum ScanResultHasFilter {
   scanTool
   scannedAt
   scanDuration
-  riskStatus
   scanTarget
 }
 
@@ -6323,7 +6286,6 @@ input ScanResultPatch {
   scanTool: String
   scannedAt: DateTime
   scanDuration: DateTime
-  riskStatus: RiskStatus
   scanTarget: ScanTargetRef
 }
 
@@ -6338,7 +6300,6 @@ input ScanResultRef {
   scanTool: String
   scannedAt: DateTime
   scanDuration: DateTime
-  riskStatus: RiskStatus
   scanTarget: ScanTargetRef
 }
 
@@ -6360,7 +6321,6 @@ type ScanTarget {
   createdAt: DateTime!
   updatedAt: DateTime!
   scanResults(filter: ScanResultFilter, order: ScanResultOrder, first: Int, offset: Int): [ScanResult!]
-  artifact(filter: ArtifactFilter): Artifact
   projectsAggregate(filter: ProjectFilter): ProjectAggregateResult
   scanResultsAggregate(filter: ScanResultFilter): ScanResultAggregateResult
 }
@@ -6412,7 +6372,6 @@ enum ScanTargetHasFilter {
   createdAt
   updatedAt
   scanResults
-  artifact
 }
 
 input ScanTargetOrder {
@@ -6443,7 +6402,6 @@ input ScanTargetPatch {
   createdAt: DateTime
   updatedAt: DateTime
   scanResults: [ScanResultRef!]
-  artifact: ArtifactRef
 }
 
 input ScanTargetRef {
@@ -6458,7 +6416,6 @@ input ScanTargetRef {
   createdAt: DateTime
   updatedAt: DateTime
   scanResults: [ScanResultRef!]
-  artifact: ArtifactRef
 }
 
 type SchemaVersion {
@@ -6515,8 +6472,95 @@ type SecurityIssue {
   policyEnforcements(filter: PolicyEnforcementFilter): PolicyEnforcement!
   AttachedJira(filter: JiraFilter, order: JiraOrder, first: Int, offset: Int): [Jira]
   Affects(filter: RunHistoryFilter, order: RunHistoryOrder, first: Int, offset: Int): [RunHistory!]
+  Summary(filter: SecurityIssueAffectsSummaryFilter, order: SecurityIssueAffectsSummaryOrder, first: Int, offset: Int): [SecurityIssueAffectsSummary!]
   AttachedJiraAggregate(filter: JiraFilter): JiraAggregateResult
   AffectsAggregate(filter: RunHistoryFilter): RunHistoryAggregateResult
+  SummaryAggregate(filter: SecurityIssueAffectsSummaryFilter): SecurityIssueAffectsSummaryAggregateResult
+}
+
+type SecurityIssueAffectsSummary {
+  id: ID!
+
+  """only pre-deployment analysis or deployment analysis"""
+  type: String!
+  team(filter: TeamFilter): Team
+  application(filter: ApplicationFilter): Application
+  applicationEnvironment(filter: ApplicationEnvironmentFilter): ApplicationEnvironment
+  service: String
+  currentDeployed(filter: ApplicationDeploymentFilter): ApplicationDeployment
+  artifactScanTS(filter: ArtifactScanDataTSFilter, first: Int, offset: Int): [ArtifactScanDataTS!]
+  exception(filter: ExceptionAffectsFilter): ExceptionAffects
+  securityIssue(filter: SecurityIssueFilter): SecurityIssue!
+  artifactScanTSAggregate(filter: ArtifactScanDataTSFilter): ArtifactScanDataTSAggregateResult
+}
+
+type SecurityIssueAffectsSummaryAggregateResult {
+  count: Int
+  typeMin: String
+  typeMax: String
+  serviceMin: String
+  serviceMax: String
+}
+
+input SecurityIssueAffectsSummaryFilter {
+  id: [ID!]
+  type: StringExactFilter
+  service: StringExactFilter_StringRegExpFilter
+  has: [SecurityIssueAffectsSummaryHasFilter]
+  and: [SecurityIssueAffectsSummaryFilter]
+  or: [SecurityIssueAffectsSummaryFilter]
+  not: SecurityIssueAffectsSummaryFilter
+}
+
+enum SecurityIssueAffectsSummaryHasFilter {
+  type
+  team
+  application
+  applicationEnvironment
+  service
+  currentDeployed
+  artifactScanTS
+  exception
+  securityIssue
+}
+
+input SecurityIssueAffectsSummaryOrder {
+  asc: SecurityIssueAffectsSummaryOrderable
+  desc: SecurityIssueAffectsSummaryOrderable
+  then: SecurityIssueAffectsSummaryOrder
+}
+
+enum SecurityIssueAffectsSummaryOrderable {
+  type
+  service
+}
+
+input SecurityIssueAffectsSummaryPatch {
+  """only pre-deployment analysis or deployment analysis"""
+  type: String
+  team: TeamRef
+  application: ApplicationRef
+  applicationEnvironment: ApplicationEnvironmentRef
+  service: String
+  currentDeployed: ApplicationDeploymentRef
+  artifactScanTS: [ArtifactScanDataTSRef!]
+  exception: ExceptionAffectsRef
+  securityIssue: SecurityIssueRef
+}
+
+input SecurityIssueAffectsSummaryRef {
+  id: ID
+
+  """only pre-deployment analysis or deployment analysis"""
+  type: String
+  team: TeamRef
+  application: ApplicationRef
+  applicationEnvironment: ApplicationEnvironmentRef
+  service: String
+  currentDeployed: ApplicationDeploymentRef
+  artifactScanTS: [ArtifactScanDataTSRef!]
+  exception: ExceptionAffectsRef
+  securityIssue: SecurityIssueRef
 }
 
 type SecurityIssueAggregateResult {
@@ -6575,6 +6619,7 @@ enum SecurityIssueHasFilter {
   policyEnforcements
   AttachedJira
   Affects
+  Summary
 }
 
 input SecurityIssueOrder {
@@ -6609,6 +6654,7 @@ input SecurityIssuePatch {
   policyEnforcements: PolicyEnforcementRef
   AttachedJira: [JiraRef]
   Affects: [RunHistoryRef!]
+  Summary: [SecurityIssueAffectsSummaryRef!]
 }
 
 input SecurityIssueRef {
@@ -6626,6 +6672,7 @@ input SecurityIssueRef {
   policyEnforcements: PolicyEnforcementRef
   AttachedJira: [JiraRef]
   Affects: [RunHistoryRef!]
+  Summary: [SecurityIssueAffectsSummaryRef!]
 }
 
 enum Severity {
@@ -6690,7 +6737,7 @@ type SourceCodeTool {
 
   """parentRepo is populated in case the git repo is a fork"""
   parentRepo: String
-  buildTool(filter: BuildToolFilter): BuildTool
+  buildTool(filter: BuildToolFilter): BuildTool!
   sourceCodePath: String
   sonarqubeProjectKey: String
 
@@ -7033,6 +7080,7 @@ type Team implements RBAC {
   policies(filter: PolicyDefinitionFilter, order: PolicyDefinitionOrder, first: Int, offset: Int): [PolicyDefinition!]
   policyEnforcements(filter: PolicyEnforcementFilter, order: PolicyEnforcementOrder, first: Int, offset: Int): [PolicyEnforcement!]
   exceptions(filter: ExceptionAffectsFilter, order: ExceptionAffectsOrder, first: Int, offset: Int): [ExceptionAffects!]
+  hasSecurityIssues(filter: SecurityIssueAffectsSummaryFilter, order: SecurityIssueAffectsSummaryOrder, first: Int, offset: Int): [SecurityIssueAffectsSummary!]
   integratorConfigs(filter: IntegratorConfigsFilter, order: IntegratorConfigsOrder, first: Int, offset: Int): [IntegratorConfigs!]
   AttachedJira(filter: JiraFilter, order: JiraOrder, first: Int, offset: Int): [Jira]
   projects(filter: ProjectFilter, order: ProjectOrder, first: Int, offset: Int): [Project!]
@@ -7042,6 +7090,7 @@ type Team implements RBAC {
   policiesAggregate(filter: PolicyDefinitionFilter): PolicyDefinitionAggregateResult
   policyEnforcementsAggregate(filter: PolicyEnforcementFilter): PolicyEnforcementAggregateResult
   exceptionsAggregate(filter: ExceptionAffectsFilter): ExceptionAffectsAggregateResult
+  hasSecurityIssuesAggregate(filter: SecurityIssueAffectsSummaryFilter): SecurityIssueAffectsSummaryAggregateResult
   integratorConfigsAggregate(filter: IntegratorConfigsFilter): IntegratorConfigsAggregateResult
   AttachedJiraAggregate(filter: JiraFilter): JiraAggregateResult
   projectsAggregate(filter: ProjectFilter): ProjectAggregateResult
@@ -7078,6 +7127,7 @@ enum TeamHasFilter {
   policies
   policyEnforcements
   exceptions
+  hasSecurityIssues
   integratorConfigs
   AttachedJira
   projects
@@ -7105,6 +7155,7 @@ input TeamPatch {
   policies: [PolicyDefinitionRef!]
   policyEnforcements: [PolicyEnforcementRef!]
   exceptions: [ExceptionAffectsRef!]
+  hasSecurityIssues: [SecurityIssueAffectsSummaryRef!]
   integratorConfigs: [IntegratorConfigsRef!]
   AttachedJira: [JiraRef]
   projects: [ProjectRef!]
@@ -7122,6 +7173,7 @@ input TeamRef {
   policies: [PolicyDefinitionRef!]
   policyEnforcements: [PolicyEnforcementRef!]
   exceptions: [ExceptionAffectsRef!]
+  hasSecurityIssues: [SecurityIssueAffectsSummaryRef!]
   integratorConfigs: [IntegratorConfigsRef!]
   AttachedJira: [JiraRef]
   projects: [ProjectRef!]
@@ -7305,6 +7357,17 @@ input UpdateArtifactScanDataInput {
 
 type UpdateArtifactScanDataPayload {
   artifactScanData(filter: ArtifactScanDataFilter, order: ArtifactScanDataOrder, first: Int, offset: Int): [ArtifactScanData]
+  numUids: Int
+}
+
+input UpdateArtifactScanDataTSInput {
+  filter: ArtifactScanDataTSFilter!
+  set: ArtifactScanDataTSPatch
+  remove: ArtifactScanDataTSPatch
+}
+
+type UpdateArtifactScanDataTSPayload {
+  artifactScanDataTS(filter: ArtifactScanDataTSFilter, first: Int, offset: Int): [ArtifactScanDataTS]
   numUids: Int
 }
 
@@ -7726,6 +7789,17 @@ type UpdateSchemaVersionPayload {
   numUids: Int
 }
 
+input UpdateSecurityIssueAffectsSummaryInput {
+  filter: SecurityIssueAffectsSummaryFilter!
+  set: SecurityIssueAffectsSummaryPatch
+  remove: SecurityIssueAffectsSummaryPatch
+}
+
+type UpdateSecurityIssueAffectsSummaryPayload {
+  securityIssueAffectsSummary(filter: SecurityIssueAffectsSummaryFilter, order: SecurityIssueAffectsSummaryOrder, first: Int, offset: Int): [SecurityIssueAffectsSummary]
+  numUids: Int
+}
+
 input UpdateSecurityIssueInput {
   filter: SecurityIssueFilter!
   set: SecurityIssuePatch
@@ -7993,4 +8067,3 @@ input VulnerabilityRef {
 input WithinFilter {
   polygon: PolygonRef!
 }
-

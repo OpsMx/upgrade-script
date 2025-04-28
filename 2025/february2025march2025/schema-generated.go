@@ -269,6 +269,26 @@ func (v *QueryRunHistoryWithArtifactScanDataResponse) GetQueryRunHistory() []*Qu
 	return v.QueryRunHistory
 }
 
+// SetKubescapeLatestFileTSNodeToDefaultResponse is returned by SetKubescapeLatestFileTSNodeToDefault on success.
+type SetKubescapeLatestFileTSNodeToDefaultResponse struct {
+	UpdateDeploymentTarget *SetKubescapeLatestFileTSNodeToDefaultUpdateDeploymentTargetUpdateDeploymentTargetPayload `json:"updateDeploymentTarget"`
+}
+
+// GetUpdateDeploymentTarget returns SetKubescapeLatestFileTSNodeToDefaultResponse.UpdateDeploymentTarget, and is useful for accessing the field via an interface.
+func (v *SetKubescapeLatestFileTSNodeToDefaultResponse) GetUpdateDeploymentTarget() *SetKubescapeLatestFileTSNodeToDefaultUpdateDeploymentTargetUpdateDeploymentTargetPayload {
+	return v.UpdateDeploymentTarget
+}
+
+// SetKubescapeLatestFileTSNodeToDefaultUpdateDeploymentTargetUpdateDeploymentTargetPayload includes the requested fields of the GraphQL type UpdateDeploymentTargetPayload.
+type SetKubescapeLatestFileTSNodeToDefaultUpdateDeploymentTargetUpdateDeploymentTargetPayload struct {
+	NumUids *int `json:"numUids"`
+}
+
+// GetNumUids returns SetKubescapeLatestFileTSNodeToDefaultUpdateDeploymentTargetUpdateDeploymentTargetPayload.NumUids, and is useful for accessing the field via an interface.
+func (v *SetKubescapeLatestFileTSNodeToDefaultUpdateDeploymentTargetUpdateDeploymentTargetPayload) GetNumUids() *int {
+	return v.NumUids
+}
+
 // UpdateArtifactRunHistoryResponse is returned by UpdateArtifactRunHistory on success.
 type UpdateArtifactRunHistoryResponse struct {
 	UpdateRunHistory *UpdateArtifactRunHistoryUpdateRunHistoryUpdateRunHistoryPayload `json:"updateRunHistory"`
@@ -576,6 +596,36 @@ func QueryRunHistoryWithArtifactScanData(
 	}
 
 	data_ = &QueryRunHistoryWithArtifactScanDataResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by SetKubescapeLatestFileTSNodeToDefault.
+const SetKubescapeLatestFileTSNodeToDefault_Operation = `
+mutation SetKubescapeLatestFileTSNodeToDefault {
+	updateDeploymentTarget(input: {set:{kubescapeLatestFileTS:""},filter:{has:name}}) {
+		numUids
+	}
+}
+`
+
+func SetKubescapeLatestFileTSNodeToDefault(
+	ctx_ context.Context,
+	client_ graphql.Client,
+) (data_ *SetKubescapeLatestFileTSNodeToDefaultResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "SetKubescapeLatestFileTSNodeToDefault",
+		Query:  SetKubescapeLatestFileTSNodeToDefault_Operation,
+	}
+
+	data_ = &SetKubescapeLatestFileTSNodeToDefaultResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
