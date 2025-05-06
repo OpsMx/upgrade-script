@@ -1,0 +1,103 @@
+mutation SetDefaultAttemptForDeployment {
+    updateApplicationDeployment(
+        input: { set: { attempt: 0 }, filter: { has: component } }
+    ) {
+        numUids
+    }
+}
+
+mutation SetDefaultAttemptForArtifact {
+    updateArtifact(
+        input: { set: { attempt: 0 }, filter: { has: scanData } }
+    ) {
+        numUids
+    }
+}
+
+mutation SetDefaultScanStateForArtifact {
+    updateArtifactScanData(
+        input: { set: { scanState: "completed" }, filter: { has: components } }
+    ) {
+        numUids
+    }
+}
+
+query GetArtifacts {
+    scanning: queryArtifact @cascade {
+        artifactName
+        artifactTag
+        artifactType
+        scanData {
+            id
+            artifactNameTag
+            artifactSha
+            artifactRisk(filter: { artifactRiskStatus: { eq: scanning } }) {
+                artifactRiskStatus
+            }
+        }
+    }
+    noartifact: queryArtifactScanData(filter: { not: { has: artifactDetails } }) @cascade {
+        id
+        artifactNameTag
+        artifactSha
+    }
+}
+
+mutation DeleteArtifactScanData($scanIDs: [String]) {
+    deleteArtifactScanData(filter: { id: { in: $scanIDs } }) {
+        msg
+        numUids
+    }
+}
+
+query PolicyRunHistoryScanningDeployments {
+    queryApplicationDeployment(filter: { deploymentStage: { in: [scanning] } }) @cascade {
+        policyRunHistory{
+            id
+        }
+    }
+}
+
+mutation DeleteRunHistory($ids: [ID!]) {
+    deleteRunHistory(filter: { id: $ids }) {
+        msg
+        numUids
+    }
+}
+
+mutation UpdateApplicationDeployment {
+    updateApplicationDeployment(
+        input: {
+            filter: { deploymentStage: { eq: scanning } }
+            set: { 
+                deploymentStage: discovered
+                attempt:1 
+            }
+        }
+    ) {
+        numUids
+    }
+}
+
+query GetRunHistories{
+    queryRunHistory{
+        id
+    }
+}
+
+mutation SetDefaultRunhistoryValues($runhistoryID:[ID!]) {
+    updateRunHistory(
+        input: {
+            filter: { id: $runhistoryID }
+            set: {
+                ToolAccountName: ""
+                BuildTool: ""
+                SourceTool: ""
+                ArtifactTool: ""
+                DeployTool: ""
+            }
+        }
+    ) {
+        numUids
+    }
+}
