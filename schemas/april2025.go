@@ -596,7 +596,7 @@ type SourceCodeTool {
     "branch is the git branch on which the artifact was built"
     branch: String! @search(by: [exact,regexp])
     "headCommit is the checkout out head commit"
-    headCommit: String
+    headCommit: String @search(by: [exact,regexp])
     "diffCommits is a comma separated string of the commits between the previous built artifact and the current"
     diffCommits: String
     licenseName: String
