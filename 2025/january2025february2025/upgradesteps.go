@@ -19,7 +19,7 @@ func UpgradeToFebruary2025(prodGraphUrl, prodToken string, prodDgraphClient grap
 	}
 
 	if _, err := SetDefaultValueOfProjectType(context.Background(), prodDgraphClient); err != nil {
-		return fmt.Errorf("error: UpgradeToMarch2025: UpdateBlockedApplicationDeploymentResponse: %s", err.Error())
+		return fmt.Errorf("error: UpgradeToFebruary2025: SetDefaultValueOfProjectType: %s", err.Error())
 	}
 
 	logger.Logger.Info("--------------Completed UpgradeToFebruary2025------------------")
