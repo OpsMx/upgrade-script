@@ -124,6 +124,29 @@ func UpgradeToApril2025(prodGraphUrl, prodToken string, prodDgraphClient graphql
 		}
 	}
 
+	runHistories, err := QueryRunHistoryWTeamIDNull(context.Background(), prodDgraphClient)
+	if err != nil {
+		return fmt.Errorf("error: UpgradeToApril2025: QueryRunHistoryWTeamIDNull: %s", err.Error())
+	}
+	runHistoryIDs = []*string{}
+	for _, runhistory := range runHistories.QueryRunHistory {
+		runHistoryIDs = append(runHistoryIDs, runhistory.Id)
+		if len(runHistoryIDs) == 1000 {
+			if _, err := SetDefaultTeamIDInRunHistory(context.Background(), prodDgraphClient, runHistoryIDs); err != nil {
+				return fmt.Errorf("error: UpgradeToApril2025: SetDefaultTeamIDInRunHistory: %s", err.Error())
+			}
+			runHistoryIDs = []*string{}
+		}
+	}
+
+	if len(runHistoryIDs) != 0 {
+		if _, err := SetDefaultTeamIDInRunHistory(context.Background(), prodDgraphClient, runHistoryIDs); err != nil {
+			return fmt.Errorf("error: UpgradeToApril2025: SetDefaultTeamIDInRunHistory: %s", err.Error())
+		}
+	}
+
+	SyncPoliciesWRepo(prodDgraphClient)
+
 	logger.Logger.Info("--------------Completed UpgradeToApril2025------------------")
 
 	return nil
