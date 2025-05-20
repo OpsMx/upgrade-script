@@ -101,3 +101,67 @@ mutation SetDefaultRunhistoryValues($runhistoryID:[ID!]) {
         numUids
     }
 }
+
+query QueryRunHistoryWTeamIDNull {
+    queryRunHistory(filter: { TeamID: { eq: null } }) {
+        id
+    }
+}
+
+mutation SetDefaultTeamIDInRunHistory($ids:[ID!]) {
+    updateRunHistory(input: { set: { TeamID: "" }, filter: { id: $ids } }) {
+        numUids
+    }
+}
+
+query GetPolicyEnfIDOfPolicyDef($policyName: String!) {
+    queryPolicyEnforcement @cascade(fields:"policy") {
+        id
+        policy(filter: { policyName: { eq: $policyName } }) {
+            id
+            createdAt
+            updatedAt
+            policyName
+            category
+            stage
+            description
+            scheduledPolicy
+            script
+            variables
+            conditionName
+            suggestion
+            ownerOrg {
+                id
+            }
+        }
+    }
+}
+
+query ExtraPolicies($policyNames:[String!]) {
+    queryPolicyDefinition(filter: { not: { policyName: { in: $policyNames } } }) {
+        id
+        policyName
+    }
+}
+
+
+mutation DeletePolicyDefinition($policyIDs: [String!]) {
+    deletePolicyDefinition(filter: { id: { in: $policyIDs } }) {
+        msg
+        numUids
+    }
+}
+
+mutation AddPolicyDefinition($policy: AddPolicyDefinitionInput!) {
+    addPolicyDefinition(input: [$policy]) {
+        numUids
+    }
+}
+
+mutation UpdatePolicyEnforcement($policyEnfIDs:[ID!],$policyDefID:String!) {
+    updatePolicyEnforcement(
+        input: { set: { policy: { id: $policyDefID } }, filter: { id: $policyEnfIDs } }
+    ) {
+        numUids
+    }
+}

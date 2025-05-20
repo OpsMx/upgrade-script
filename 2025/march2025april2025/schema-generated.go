@@ -4,9 +4,882 @@ package march2025april2025
 
 import (
 	"context"
+	"time"
 
 	"github.com/Khan/genqlient/graphql"
 )
+
+type AbstractResourceRef struct {
+	Id string `json:"id"`
+}
+
+// GetId returns AbstractResourceRef.Id, and is useful for accessing the field via an interface.
+func (v *AbstractResourceRef) GetId() string { return v.Id }
+
+// AddPolicyDefinitionAddPolicyDefinitionAddPolicyDefinitionPayload includes the requested fields of the GraphQL type AddPolicyDefinitionPayload.
+type AddPolicyDefinitionAddPolicyDefinitionAddPolicyDefinitionPayload struct {
+	NumUids *int `json:"numUids"`
+}
+
+// GetNumUids returns AddPolicyDefinitionAddPolicyDefinitionAddPolicyDefinitionPayload.NumUids, and is useful for accessing the field via an interface.
+func (v *AddPolicyDefinitionAddPolicyDefinitionAddPolicyDefinitionPayload) GetNumUids() *int {
+	return v.NumUids
+}
+
+type AddPolicyDefinitionInput struct {
+	Id               string           `json:"id"`
+	OwnerOrg         *OrganizationRef `json:"ownerOrg,omitempty"`
+	OwnerTeam        *TeamRef         `json:"ownerTeam,omitempty"`
+	OwnerApplication *ApplicationRef  `json:"ownerApplication,omitempty"`
+	CreatedAt        *time.Time       `json:"createdAt"`
+	UpdatedAt        *time.Time       `json:"updatedAt"`
+	PolicyName       string           `json:"policyName"`
+	Category         string           `json:"category"`
+	Stage            string           `json:"stage"`
+	Description      string           `json:"description"`
+	ScheduledPolicy  *bool            `json:"scheduledPolicy"`
+	Script           string           `json:"script"`
+	Variables        string           `json:"variables"`
+	ConditionName    string           `json:"conditionName"`
+	Suggestion       string           `json:"suggestion"`
+}
+
+// GetId returns AddPolicyDefinitionInput.Id, and is useful for accessing the field via an interface.
+func (v *AddPolicyDefinitionInput) GetId() string { return v.Id }
+
+// GetOwnerOrg returns AddPolicyDefinitionInput.OwnerOrg, and is useful for accessing the field via an interface.
+func (v *AddPolicyDefinitionInput) GetOwnerOrg() *OrganizationRef { return v.OwnerOrg }
+
+// GetOwnerTeam returns AddPolicyDefinitionInput.OwnerTeam, and is useful for accessing the field via an interface.
+func (v *AddPolicyDefinitionInput) GetOwnerTeam() *TeamRef { return v.OwnerTeam }
+
+// GetOwnerApplication returns AddPolicyDefinitionInput.OwnerApplication, and is useful for accessing the field via an interface.
+func (v *AddPolicyDefinitionInput) GetOwnerApplication() *ApplicationRef { return v.OwnerApplication }
+
+// GetCreatedAt returns AddPolicyDefinitionInput.CreatedAt, and is useful for accessing the field via an interface.
+func (v *AddPolicyDefinitionInput) GetCreatedAt() *time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns AddPolicyDefinitionInput.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *AddPolicyDefinitionInput) GetUpdatedAt() *time.Time { return v.UpdatedAt }
+
+// GetPolicyName returns AddPolicyDefinitionInput.PolicyName, and is useful for accessing the field via an interface.
+func (v *AddPolicyDefinitionInput) GetPolicyName() string { return v.PolicyName }
+
+// GetCategory returns AddPolicyDefinitionInput.Category, and is useful for accessing the field via an interface.
+func (v *AddPolicyDefinitionInput) GetCategory() string { return v.Category }
+
+// GetStage returns AddPolicyDefinitionInput.Stage, and is useful for accessing the field via an interface.
+func (v *AddPolicyDefinitionInput) GetStage() string { return v.Stage }
+
+// GetDescription returns AddPolicyDefinitionInput.Description, and is useful for accessing the field via an interface.
+func (v *AddPolicyDefinitionInput) GetDescription() string { return v.Description }
+
+// GetScheduledPolicy returns AddPolicyDefinitionInput.ScheduledPolicy, and is useful for accessing the field via an interface.
+func (v *AddPolicyDefinitionInput) GetScheduledPolicy() *bool { return v.ScheduledPolicy }
+
+// GetScript returns AddPolicyDefinitionInput.Script, and is useful for accessing the field via an interface.
+func (v *AddPolicyDefinitionInput) GetScript() string { return v.Script }
+
+// GetVariables returns AddPolicyDefinitionInput.Variables, and is useful for accessing the field via an interface.
+func (v *AddPolicyDefinitionInput) GetVariables() string { return v.Variables }
+
+// GetConditionName returns AddPolicyDefinitionInput.ConditionName, and is useful for accessing the field via an interface.
+func (v *AddPolicyDefinitionInput) GetConditionName() string { return v.ConditionName }
+
+// GetSuggestion returns AddPolicyDefinitionInput.Suggestion, and is useful for accessing the field via an interface.
+func (v *AddPolicyDefinitionInput) GetSuggestion() string { return v.Suggestion }
+
+// AddPolicyDefinitionResponse is returned by AddPolicyDefinition on success.
+type AddPolicyDefinitionResponse struct {
+	AddPolicyDefinition *AddPolicyDefinitionAddPolicyDefinitionAddPolicyDefinitionPayload `json:"addPolicyDefinition"`
+}
+
+// GetAddPolicyDefinition returns AddPolicyDefinitionResponse.AddPolicyDefinition, and is useful for accessing the field via an interface.
+func (v *AddPolicyDefinitionResponse) GetAddPolicyDefinition() *AddPolicyDefinitionAddPolicyDefinitionAddPolicyDefinitionPayload {
+	return v.AddPolicyDefinition
+}
+
+type ApplicationDeploymentRef struct {
+	// id is randomly assigned
+	Id string `json:"id"`
+	// platform will help us identify which image was actually deployed helping us identify the accurate sha
+	Platform               string                     `json:"platform"`
+	ServiceUrl             string                     `json:"serviceUrl"`
+	Attempt                *int                       `json:"attempt"`
+	Artifact               []*ArtifactRef             `json:"artifact,omitempty"`
+	ApplicationEnvironment *ApplicationEnvironmentRef `json:"applicationEnvironment,omitempty"`
+	DeployedAt             *time.Time                 `json:"deployedAt"`
+	// deploymentStage is an enum and can be discovered, current, previous or blocked
+	DeploymentStage DeploymentStage `json:"deploymentStage"`
+	// denotes if the deployment was for firewall usecase
+	Firewall *bool `json:"firewall"`
+	// denotes whether the deployment was pending or passed or blocked
+	DeploymentResult string `json:"deploymentResult"`
+	// source is argo, spinnaker etc
+	Source string `json:"source"`
+	// component would be a service
+	Component string `json:"component"`
+	// user who deployed the artifact
+	DeployedBy           string                        `json:"deployedBy"`
+	ToolsUsed            *ToolsUsedRef                 `json:"toolsUsed,omitempty"`
+	DeploymentRisk       *ApplicationDeploymentRiskRef `json:"deploymentRisk,omitempty"`
+	PolicyRunHistory     []*RunHistoryRef              `json:"policyRunHistory,omitempty"`
+	DeploymentTags       []*KeyValueRef                `json:"deploymentTags,omitempty"`
+	UtilizedResources    []*AbstractResourceRef        `json:"utilizedResources,omitempty"`
+	IsNetworkExploitable *bool                         `json:"isNetworkExploitable"`
+}
+
+// GetId returns ApplicationDeploymentRef.Id, and is useful for accessing the field via an interface.
+func (v *ApplicationDeploymentRef) GetId() string { return v.Id }
+
+// GetPlatform returns ApplicationDeploymentRef.Platform, and is useful for accessing the field via an interface.
+func (v *ApplicationDeploymentRef) GetPlatform() string { return v.Platform }
+
+// GetServiceUrl returns ApplicationDeploymentRef.ServiceUrl, and is useful for accessing the field via an interface.
+func (v *ApplicationDeploymentRef) GetServiceUrl() string { return v.ServiceUrl }
+
+// GetAttempt returns ApplicationDeploymentRef.Attempt, and is useful for accessing the field via an interface.
+func (v *ApplicationDeploymentRef) GetAttempt() *int { return v.Attempt }
+
+// GetArtifact returns ApplicationDeploymentRef.Artifact, and is useful for accessing the field via an interface.
+func (v *ApplicationDeploymentRef) GetArtifact() []*ArtifactRef { return v.Artifact }
+
+// GetApplicationEnvironment returns ApplicationDeploymentRef.ApplicationEnvironment, and is useful for accessing the field via an interface.
+func (v *ApplicationDeploymentRef) GetApplicationEnvironment() *ApplicationEnvironmentRef {
+	return v.ApplicationEnvironment
+}
+
+// GetDeployedAt returns ApplicationDeploymentRef.DeployedAt, and is useful for accessing the field via an interface.
+func (v *ApplicationDeploymentRef) GetDeployedAt() *time.Time { return v.DeployedAt }
+
+// GetDeploymentStage returns ApplicationDeploymentRef.DeploymentStage, and is useful for accessing the field via an interface.
+func (v *ApplicationDeploymentRef) GetDeploymentStage() DeploymentStage { return v.DeploymentStage }
+
+// GetFirewall returns ApplicationDeploymentRef.Firewall, and is useful for accessing the field via an interface.
+func (v *ApplicationDeploymentRef) GetFirewall() *bool { return v.Firewall }
+
+// GetDeploymentResult returns ApplicationDeploymentRef.DeploymentResult, and is useful for accessing the field via an interface.
+func (v *ApplicationDeploymentRef) GetDeploymentResult() string { return v.DeploymentResult }
+
+// GetSource returns ApplicationDeploymentRef.Source, and is useful for accessing the field via an interface.
+func (v *ApplicationDeploymentRef) GetSource() string { return v.Source }
+
+// GetComponent returns ApplicationDeploymentRef.Component, and is useful for accessing the field via an interface.
+func (v *ApplicationDeploymentRef) GetComponent() string { return v.Component }
+
+// GetDeployedBy returns ApplicationDeploymentRef.DeployedBy, and is useful for accessing the field via an interface.
+func (v *ApplicationDeploymentRef) GetDeployedBy() string { return v.DeployedBy }
+
+// GetToolsUsed returns ApplicationDeploymentRef.ToolsUsed, and is useful for accessing the field via an interface.
+func (v *ApplicationDeploymentRef) GetToolsUsed() *ToolsUsedRef { return v.ToolsUsed }
+
+// GetDeploymentRisk returns ApplicationDeploymentRef.DeploymentRisk, and is useful for accessing the field via an interface.
+func (v *ApplicationDeploymentRef) GetDeploymentRisk() *ApplicationDeploymentRiskRef {
+	return v.DeploymentRisk
+}
+
+// GetPolicyRunHistory returns ApplicationDeploymentRef.PolicyRunHistory, and is useful for accessing the field via an interface.
+func (v *ApplicationDeploymentRef) GetPolicyRunHistory() []*RunHistoryRef { return v.PolicyRunHistory }
+
+// GetDeploymentTags returns ApplicationDeploymentRef.DeploymentTags, and is useful for accessing the field via an interface.
+func (v *ApplicationDeploymentRef) GetDeploymentTags() []*KeyValueRef { return v.DeploymentTags }
+
+// GetUtilizedResources returns ApplicationDeploymentRef.UtilizedResources, and is useful for accessing the field via an interface.
+func (v *ApplicationDeploymentRef) GetUtilizedResources() []*AbstractResourceRef {
+	return v.UtilizedResources
+}
+
+// GetIsNetworkExploitable returns ApplicationDeploymentRef.IsNetworkExploitable, and is useful for accessing the field via an interface.
+func (v *ApplicationDeploymentRef) GetIsNetworkExploitable() *bool { return v.IsNetworkExploitable }
+
+type ApplicationDeploymentRiskRef struct {
+	Id                        *string                   `json:"id"`
+	SourceCodeAlertsScore     *int                      `json:"sourceCodeAlertsScore"`
+	BuildAlertsScore          *int                      `json:"buildAlertsScore"`
+	ArtifactAlertsScore       *int                      `json:"artifactAlertsScore"`
+	DeploymentAlertsScore     *int                      `json:"deploymentAlertsScore"`
+	PostDeploymentAlertsScore *int                      `json:"postDeploymentAlertsScore"`
+	DeploymentRiskStatus      RiskStatus                `json:"deploymentRiskStatus"`
+	ApplicationDeployment     *ApplicationDeploymentRef `json:"applicationDeployment,omitempty"`
+}
+
+// GetId returns ApplicationDeploymentRiskRef.Id, and is useful for accessing the field via an interface.
+func (v *ApplicationDeploymentRiskRef) GetId() *string { return v.Id }
+
+// GetSourceCodeAlertsScore returns ApplicationDeploymentRiskRef.SourceCodeAlertsScore, and is useful for accessing the field via an interface.
+func (v *ApplicationDeploymentRiskRef) GetSourceCodeAlertsScore() *int {
+	return v.SourceCodeAlertsScore
+}
+
+// GetBuildAlertsScore returns ApplicationDeploymentRiskRef.BuildAlertsScore, and is useful for accessing the field via an interface.
+func (v *ApplicationDeploymentRiskRef) GetBuildAlertsScore() *int { return v.BuildAlertsScore }
+
+// GetArtifactAlertsScore returns ApplicationDeploymentRiskRef.ArtifactAlertsScore, and is useful for accessing the field via an interface.
+func (v *ApplicationDeploymentRiskRef) GetArtifactAlertsScore() *int { return v.ArtifactAlertsScore }
+
+// GetDeploymentAlertsScore returns ApplicationDeploymentRiskRef.DeploymentAlertsScore, and is useful for accessing the field via an interface.
+func (v *ApplicationDeploymentRiskRef) GetDeploymentAlertsScore() *int {
+	return v.DeploymentAlertsScore
+}
+
+// GetPostDeploymentAlertsScore returns ApplicationDeploymentRiskRef.PostDeploymentAlertsScore, and is useful for accessing the field via an interface.
+func (v *ApplicationDeploymentRiskRef) GetPostDeploymentAlertsScore() *int {
+	return v.PostDeploymentAlertsScore
+}
+
+// GetDeploymentRiskStatus returns ApplicationDeploymentRiskRef.DeploymentRiskStatus, and is useful for accessing the field via an interface.
+func (v *ApplicationDeploymentRiskRef) GetDeploymentRiskStatus() RiskStatus {
+	return v.DeploymentRiskStatus
+}
+
+// GetApplicationDeployment returns ApplicationDeploymentRiskRef.ApplicationDeployment, and is useful for accessing the field via an interface.
+func (v *ApplicationDeploymentRiskRef) GetApplicationDeployment() *ApplicationDeploymentRef {
+	return v.ApplicationDeployment
+}
+
+type ApplicationEnvironmentRef struct {
+	// id is randomly assigned
+	Id               string               `json:"id"`
+	Environment      *EnvironmentRef      `json:"environment,omitempty"`
+	Application      *ApplicationRef      `json:"application,omitempty"`
+	DeploymentTarget *DeploymentTargetRef `json:"deploymentTarget,omitempty"`
+	Namespace        string               `json:"namespace"`
+	// toolsUsed is a comma-separated string that contains all the tools(source, build, artifact, deploy etc) for an app env
+	ToolsUsed         []string                    `json:"toolsUsed"`
+	Deployments       []*ApplicationDeploymentRef `json:"deployments,omitempty"`
+	RiskStatus        *ApplicationRiskStatusRef   `json:"riskStatus,omitempty"`
+	Metadata          []*KeyValueRef              `json:"metadata,omitempty"`
+	IntegratorConfigs []*IntegratorConfigsRef     `json:"integratorConfigs,omitempty"`
+}
+
+// GetId returns ApplicationEnvironmentRef.Id, and is useful for accessing the field via an interface.
+func (v *ApplicationEnvironmentRef) GetId() string { return v.Id }
+
+// GetEnvironment returns ApplicationEnvironmentRef.Environment, and is useful for accessing the field via an interface.
+func (v *ApplicationEnvironmentRef) GetEnvironment() *EnvironmentRef { return v.Environment }
+
+// GetApplication returns ApplicationEnvironmentRef.Application, and is useful for accessing the field via an interface.
+func (v *ApplicationEnvironmentRef) GetApplication() *ApplicationRef { return v.Application }
+
+// GetDeploymentTarget returns ApplicationEnvironmentRef.DeploymentTarget, and is useful for accessing the field via an interface.
+func (v *ApplicationEnvironmentRef) GetDeploymentTarget() *DeploymentTargetRef {
+	return v.DeploymentTarget
+}
+
+// GetNamespace returns ApplicationEnvironmentRef.Namespace, and is useful for accessing the field via an interface.
+func (v *ApplicationEnvironmentRef) GetNamespace() string { return v.Namespace }
+
+// GetToolsUsed returns ApplicationEnvironmentRef.ToolsUsed, and is useful for accessing the field via an interface.
+func (v *ApplicationEnvironmentRef) GetToolsUsed() []string { return v.ToolsUsed }
+
+// GetDeployments returns ApplicationEnvironmentRef.Deployments, and is useful for accessing the field via an interface.
+func (v *ApplicationEnvironmentRef) GetDeployments() []*ApplicationDeploymentRef {
+	return v.Deployments
+}
+
+// GetRiskStatus returns ApplicationEnvironmentRef.RiskStatus, and is useful for accessing the field via an interface.
+func (v *ApplicationEnvironmentRef) GetRiskStatus() *ApplicationRiskStatusRef { return v.RiskStatus }
+
+// GetMetadata returns ApplicationEnvironmentRef.Metadata, and is useful for accessing the field via an interface.
+func (v *ApplicationEnvironmentRef) GetMetadata() []*KeyValueRef { return v.Metadata }
+
+// GetIntegratorConfigs returns ApplicationEnvironmentRef.IntegratorConfigs, and is useful for accessing the field via an interface.
+func (v *ApplicationEnvironmentRef) GetIntegratorConfigs() []*IntegratorConfigsRef {
+	return v.IntegratorConfigs
+}
+
+type ApplicationRef struct {
+	// id is randomly assigned
+	Id                 string                       `json:"id"`
+	Name               string                       `json:"name"`
+	Roles              []*RoleRef                   `json:"roles,omitempty"`
+	Environments       []*ApplicationEnvironmentRef `json:"environments,omitempty"`
+	Team               *TeamRef                     `json:"team,omitempty"`
+	Policies           []*PolicyDefinitionRef       `json:"policies,omitempty"`
+	PolicyEnforcements []*PolicyEnforcementRef      `json:"policyEnforcements,omitempty"`
+	Metadata           []*KeyValueRef               `json:"metadata,omitempty"`
+}
+
+// GetId returns ApplicationRef.Id, and is useful for accessing the field via an interface.
+func (v *ApplicationRef) GetId() string { return v.Id }
+
+// GetName returns ApplicationRef.Name, and is useful for accessing the field via an interface.
+func (v *ApplicationRef) GetName() string { return v.Name }
+
+// GetRoles returns ApplicationRef.Roles, and is useful for accessing the field via an interface.
+func (v *ApplicationRef) GetRoles() []*RoleRef { return v.Roles }
+
+// GetEnvironments returns ApplicationRef.Environments, and is useful for accessing the field via an interface.
+func (v *ApplicationRef) GetEnvironments() []*ApplicationEnvironmentRef { return v.Environments }
+
+// GetTeam returns ApplicationRef.Team, and is useful for accessing the field via an interface.
+func (v *ApplicationRef) GetTeam() *TeamRef { return v.Team }
+
+// GetPolicies returns ApplicationRef.Policies, and is useful for accessing the field via an interface.
+func (v *ApplicationRef) GetPolicies() []*PolicyDefinitionRef { return v.Policies }
+
+// GetPolicyEnforcements returns ApplicationRef.PolicyEnforcements, and is useful for accessing the field via an interface.
+func (v *ApplicationRef) GetPolicyEnforcements() []*PolicyEnforcementRef { return v.PolicyEnforcements }
+
+// GetMetadata returns ApplicationRef.Metadata, and is useful for accessing the field via an interface.
+func (v *ApplicationRef) GetMetadata() []*KeyValueRef { return v.Metadata }
+
+type ApplicationRiskStatusRef struct {
+	Id                     *string                    `json:"id"`
+	RiskStatus             RiskStatus                 `json:"riskStatus"`
+	SourceCodeAlerts       *int                       `json:"sourceCodeAlerts"`
+	BuildAlerts            *int                       `json:"buildAlerts"`
+	ArtifactAlerts         *int                       `json:"artifactAlerts"`
+	DeploymentAlerts       *int                       `json:"deploymentAlerts"`
+	PostDeploymentAlerts   *int                       `json:"postDeploymentAlerts"`
+	CreatedAt              *time.Time                 `json:"createdAt"`
+	UpdatedAt              *time.Time                 `json:"updatedAt"`
+	ApplicationEnvironment *ApplicationEnvironmentRef `json:"applicationEnvironment,omitempty"`
+}
+
+// GetId returns ApplicationRiskStatusRef.Id, and is useful for accessing the field via an interface.
+func (v *ApplicationRiskStatusRef) GetId() *string { return v.Id }
+
+// GetRiskStatus returns ApplicationRiskStatusRef.RiskStatus, and is useful for accessing the field via an interface.
+func (v *ApplicationRiskStatusRef) GetRiskStatus() RiskStatus { return v.RiskStatus }
+
+// GetSourceCodeAlerts returns ApplicationRiskStatusRef.SourceCodeAlerts, and is useful for accessing the field via an interface.
+func (v *ApplicationRiskStatusRef) GetSourceCodeAlerts() *int { return v.SourceCodeAlerts }
+
+// GetBuildAlerts returns ApplicationRiskStatusRef.BuildAlerts, and is useful for accessing the field via an interface.
+func (v *ApplicationRiskStatusRef) GetBuildAlerts() *int { return v.BuildAlerts }
+
+// GetArtifactAlerts returns ApplicationRiskStatusRef.ArtifactAlerts, and is useful for accessing the field via an interface.
+func (v *ApplicationRiskStatusRef) GetArtifactAlerts() *int { return v.ArtifactAlerts }
+
+// GetDeploymentAlerts returns ApplicationRiskStatusRef.DeploymentAlerts, and is useful for accessing the field via an interface.
+func (v *ApplicationRiskStatusRef) GetDeploymentAlerts() *int { return v.DeploymentAlerts }
+
+// GetPostDeploymentAlerts returns ApplicationRiskStatusRef.PostDeploymentAlerts, and is useful for accessing the field via an interface.
+func (v *ApplicationRiskStatusRef) GetPostDeploymentAlerts() *int { return v.PostDeploymentAlerts }
+
+// GetCreatedAt returns ApplicationRiskStatusRef.CreatedAt, and is useful for accessing the field via an interface.
+func (v *ApplicationRiskStatusRef) GetCreatedAt() *time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns ApplicationRiskStatusRef.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *ApplicationRiskStatusRef) GetUpdatedAt() *time.Time { return v.UpdatedAt }
+
+// GetApplicationEnvironment returns ApplicationRiskStatusRef.ApplicationEnvironment, and is useful for accessing the field via an interface.
+func (v *ApplicationRiskStatusRef) GetApplicationEnvironment() *ApplicationEnvironmentRef {
+	return v.ApplicationEnvironment
+}
+
+type ArtifactRef struct {
+	Id                 string                      `json:"id"`
+	Attempt            *int                        `json:"attempt"`
+	ArtifactType       string                      `json:"artifactType"`
+	ArtifactName       string                      `json:"artifactName"`
+	ArtifactTag        string                      `json:"artifactTag"`
+	ArtifactSha        string                      `json:"artifactSha"`
+	ScanData           []*ArtifactScanDataRef      `json:"scanData,omitempty"`
+	ArtifactDeployment []*ApplicationDeploymentRef `json:"artifactDeployment,omitempty"`
+	SourceDetails      *SourceCodeToolRef          `json:"sourceDetails,omitempty"`
+	Plugins            []*BuildToolRef             `json:"plugins,omitempty"`
+	ScanTarget         []*ScanTargetRef            `json:"scanTarget,omitempty"`
+}
+
+// GetId returns ArtifactRef.Id, and is useful for accessing the field via an interface.
+func (v *ArtifactRef) GetId() string { return v.Id }
+
+// GetAttempt returns ArtifactRef.Attempt, and is useful for accessing the field via an interface.
+func (v *ArtifactRef) GetAttempt() *int { return v.Attempt }
+
+// GetArtifactType returns ArtifactRef.ArtifactType, and is useful for accessing the field via an interface.
+func (v *ArtifactRef) GetArtifactType() string { return v.ArtifactType }
+
+// GetArtifactName returns ArtifactRef.ArtifactName, and is useful for accessing the field via an interface.
+func (v *ArtifactRef) GetArtifactName() string { return v.ArtifactName }
+
+// GetArtifactTag returns ArtifactRef.ArtifactTag, and is useful for accessing the field via an interface.
+func (v *ArtifactRef) GetArtifactTag() string { return v.ArtifactTag }
+
+// GetArtifactSha returns ArtifactRef.ArtifactSha, and is useful for accessing the field via an interface.
+func (v *ArtifactRef) GetArtifactSha() string { return v.ArtifactSha }
+
+// GetScanData returns ArtifactRef.ScanData, and is useful for accessing the field via an interface.
+func (v *ArtifactRef) GetScanData() []*ArtifactScanDataRef { return v.ScanData }
+
+// GetArtifactDeployment returns ArtifactRef.ArtifactDeployment, and is useful for accessing the field via an interface.
+func (v *ArtifactRef) GetArtifactDeployment() []*ApplicationDeploymentRef {
+	return v.ArtifactDeployment
+}
+
+// GetSourceDetails returns ArtifactRef.SourceDetails, and is useful for accessing the field via an interface.
+func (v *ArtifactRef) GetSourceDetails() *SourceCodeToolRef { return v.SourceDetails }
+
+// GetPlugins returns ArtifactRef.Plugins, and is useful for accessing the field via an interface.
+func (v *ArtifactRef) GetPlugins() []*BuildToolRef { return v.Plugins }
+
+// GetScanTarget returns ArtifactRef.ScanTarget, and is useful for accessing the field via an interface.
+func (v *ArtifactRef) GetScanTarget() []*ScanTargetRef { return v.ScanTarget }
+
+type ArtifactRiskRef struct {
+	Id                    *string              `json:"id"`
+	SourceCodeAlertsScore *int                 `json:"sourceCodeAlertsScore"`
+	BuildAlertsScore      *int                 `json:"buildAlertsScore"`
+	ArtifactAlertsScore   *int                 `json:"artifactAlertsScore"`
+	DeploymentAlertsScore *int                 `json:"deploymentAlertsScore"`
+	ArtifactRiskStatus    RiskStatus           `json:"artifactRiskStatus"`
+	ArtifactScanResult    *ArtifactScanDataRef `json:"artifactScanResult,omitempty"`
+}
+
+// GetId returns ArtifactRiskRef.Id, and is useful for accessing the field via an interface.
+func (v *ArtifactRiskRef) GetId() *string { return v.Id }
+
+// GetSourceCodeAlertsScore returns ArtifactRiskRef.SourceCodeAlertsScore, and is useful for accessing the field via an interface.
+func (v *ArtifactRiskRef) GetSourceCodeAlertsScore() *int { return v.SourceCodeAlertsScore }
+
+// GetBuildAlertsScore returns ArtifactRiskRef.BuildAlertsScore, and is useful for accessing the field via an interface.
+func (v *ArtifactRiskRef) GetBuildAlertsScore() *int { return v.BuildAlertsScore }
+
+// GetArtifactAlertsScore returns ArtifactRiskRef.ArtifactAlertsScore, and is useful for accessing the field via an interface.
+func (v *ArtifactRiskRef) GetArtifactAlertsScore() *int { return v.ArtifactAlertsScore }
+
+// GetDeploymentAlertsScore returns ArtifactRiskRef.DeploymentAlertsScore, and is useful for accessing the field via an interface.
+func (v *ArtifactRiskRef) GetDeploymentAlertsScore() *int { return v.DeploymentAlertsScore }
+
+// GetArtifactRiskStatus returns ArtifactRiskRef.ArtifactRiskStatus, and is useful for accessing the field via an interface.
+func (v *ArtifactRiskRef) GetArtifactRiskStatus() RiskStatus { return v.ArtifactRiskStatus }
+
+// GetArtifactScanResult returns ArtifactRiskRef.ArtifactScanResult, and is useful for accessing the field via an interface.
+func (v *ArtifactRiskRef) GetArtifactScanResult() *ArtifactScanDataRef { return v.ArtifactScanResult }
+
+type ArtifactScanDataRef struct {
+	Id string `json:"id"`
+	// platform: String! @search(by: [exact]) -> add later
+	ArtifactSha        string               `json:"artifactSha"`
+	ArtifactNameTag    string               `json:"artifactNameTag"`
+	Tool               string               `json:"tool"`
+	ArtifactDetails    *ArtifactRef         `json:"artifactDetails,omitempty"`
+	LastScannedAt      *time.Time           `json:"lastScannedAt"`
+	CreatedAt          *time.Time           `json:"createdAt"`
+	VulnTrackingId     string               `json:"vulnTrackingId"`
+	VulnScanState      string               `json:"vulnScanState"`
+	ScanState          string               `json:"scanState"`
+	Components         []*ComponentRef      `json:"components,omitempty"`
+	VulnCriticalCount  *int                 `json:"vulnCriticalCount"`
+	VulnHighCount      *int                 `json:"vulnHighCount"`
+	VulnMediumCount    *int                 `json:"vulnMediumCount"`
+	VulnLowCount       *int                 `json:"vulnLowCount"`
+	VulnInfoCount      *int                 `json:"vulnInfoCount"`
+	VulnUnknownCount   *int                 `json:"vulnUnknownCount"`
+	VulnNoneCount      *int                 `json:"vulnNoneCount"`
+	VulnTotalCount     *int                 `json:"vulnTotalCount"`
+	ScanFile           []*ScanFileResultRef `json:"scanFile,omitempty"`
+	ArtifactRisk       *ArtifactRiskRef     `json:"artifactRisk,omitempty"`
+	ArtifactRunHistory []*RunHistoryRef     `json:"artifactRunHistory,omitempty"`
+	ArtifactTags       []*KeyValueRef       `json:"artifactTags,omitempty"`
+}
+
+// GetId returns ArtifactScanDataRef.Id, and is useful for accessing the field via an interface.
+func (v *ArtifactScanDataRef) GetId() string { return v.Id }
+
+// GetArtifactSha returns ArtifactScanDataRef.ArtifactSha, and is useful for accessing the field via an interface.
+func (v *ArtifactScanDataRef) GetArtifactSha() string { return v.ArtifactSha }
+
+// GetArtifactNameTag returns ArtifactScanDataRef.ArtifactNameTag, and is useful for accessing the field via an interface.
+func (v *ArtifactScanDataRef) GetArtifactNameTag() string { return v.ArtifactNameTag }
+
+// GetTool returns ArtifactScanDataRef.Tool, and is useful for accessing the field via an interface.
+func (v *ArtifactScanDataRef) GetTool() string { return v.Tool }
+
+// GetArtifactDetails returns ArtifactScanDataRef.ArtifactDetails, and is useful for accessing the field via an interface.
+func (v *ArtifactScanDataRef) GetArtifactDetails() *ArtifactRef { return v.ArtifactDetails }
+
+// GetLastScannedAt returns ArtifactScanDataRef.LastScannedAt, and is useful for accessing the field via an interface.
+func (v *ArtifactScanDataRef) GetLastScannedAt() *time.Time { return v.LastScannedAt }
+
+// GetCreatedAt returns ArtifactScanDataRef.CreatedAt, and is useful for accessing the field via an interface.
+func (v *ArtifactScanDataRef) GetCreatedAt() *time.Time { return v.CreatedAt }
+
+// GetVulnTrackingId returns ArtifactScanDataRef.VulnTrackingId, and is useful for accessing the field via an interface.
+func (v *ArtifactScanDataRef) GetVulnTrackingId() string { return v.VulnTrackingId }
+
+// GetVulnScanState returns ArtifactScanDataRef.VulnScanState, and is useful for accessing the field via an interface.
+func (v *ArtifactScanDataRef) GetVulnScanState() string { return v.VulnScanState }
+
+// GetScanState returns ArtifactScanDataRef.ScanState, and is useful for accessing the field via an interface.
+func (v *ArtifactScanDataRef) GetScanState() string { return v.ScanState }
+
+// GetComponents returns ArtifactScanDataRef.Components, and is useful for accessing the field via an interface.
+func (v *ArtifactScanDataRef) GetComponents() []*ComponentRef { return v.Components }
+
+// GetVulnCriticalCount returns ArtifactScanDataRef.VulnCriticalCount, and is useful for accessing the field via an interface.
+func (v *ArtifactScanDataRef) GetVulnCriticalCount() *int { return v.VulnCriticalCount }
+
+// GetVulnHighCount returns ArtifactScanDataRef.VulnHighCount, and is useful for accessing the field via an interface.
+func (v *ArtifactScanDataRef) GetVulnHighCount() *int { return v.VulnHighCount }
+
+// GetVulnMediumCount returns ArtifactScanDataRef.VulnMediumCount, and is useful for accessing the field via an interface.
+func (v *ArtifactScanDataRef) GetVulnMediumCount() *int { return v.VulnMediumCount }
+
+// GetVulnLowCount returns ArtifactScanDataRef.VulnLowCount, and is useful for accessing the field via an interface.
+func (v *ArtifactScanDataRef) GetVulnLowCount() *int { return v.VulnLowCount }
+
+// GetVulnInfoCount returns ArtifactScanDataRef.VulnInfoCount, and is useful for accessing the field via an interface.
+func (v *ArtifactScanDataRef) GetVulnInfoCount() *int { return v.VulnInfoCount }
+
+// GetVulnUnknownCount returns ArtifactScanDataRef.VulnUnknownCount, and is useful for accessing the field via an interface.
+func (v *ArtifactScanDataRef) GetVulnUnknownCount() *int { return v.VulnUnknownCount }
+
+// GetVulnNoneCount returns ArtifactScanDataRef.VulnNoneCount, and is useful for accessing the field via an interface.
+func (v *ArtifactScanDataRef) GetVulnNoneCount() *int { return v.VulnNoneCount }
+
+// GetVulnTotalCount returns ArtifactScanDataRef.VulnTotalCount, and is useful for accessing the field via an interface.
+func (v *ArtifactScanDataRef) GetVulnTotalCount() *int { return v.VulnTotalCount }
+
+// GetScanFile returns ArtifactScanDataRef.ScanFile, and is useful for accessing the field via an interface.
+func (v *ArtifactScanDataRef) GetScanFile() []*ScanFileResultRef { return v.ScanFile }
+
+// GetArtifactRisk returns ArtifactScanDataRef.ArtifactRisk, and is useful for accessing the field via an interface.
+func (v *ArtifactScanDataRef) GetArtifactRisk() *ArtifactRiskRef { return v.ArtifactRisk }
+
+// GetArtifactRunHistory returns ArtifactScanDataRef.ArtifactRunHistory, and is useful for accessing the field via an interface.
+func (v *ArtifactScanDataRef) GetArtifactRunHistory() []*RunHistoryRef { return v.ArtifactRunHistory }
+
+// GetArtifactTags returns ArtifactScanDataRef.ArtifactTags, and is useful for accessing the field via an interface.
+func (v *ArtifactScanDataRef) GetArtifactTags() []*KeyValueRef { return v.ArtifactTags }
+
+type BuildToolRef struct {
+	// id is randomly assigned
+	Id string `json:"id"`
+	// buildId is a unique job id, run id for a job/pipeline/action
+	BuildId string `json:"buildId"`
+	// tool is jenkins etc
+	Tool string `json:"tool"`
+	// buildName is the name of the job/pipeline/action
+	BuildName string `json:"buildName"`
+	BuildUrl  string `json:"buildUrl"`
+	// buildTime is the time at which the artifact was built
+	BuildTime *time.Time `json:"buildTime"`
+	// buildUser is the user that built the artifact
+	BuildUser      string               `json:"buildUser"`
+	BuildPlugins   []*ArtifactRef       `json:"buildPlugins,omitempty"`
+	SourceCodeTool []*SourceCodeToolRef `json:"sourceCodeTool,omitempty"`
+	CommitMetaData []*CommitMetaDataRef `json:"commitMetaData,omitempty"`
+	CreatedAt      *time.Time           `json:"createdAt"`
+}
+
+// GetId returns BuildToolRef.Id, and is useful for accessing the field via an interface.
+func (v *BuildToolRef) GetId() string { return v.Id }
+
+// GetBuildId returns BuildToolRef.BuildId, and is useful for accessing the field via an interface.
+func (v *BuildToolRef) GetBuildId() string { return v.BuildId }
+
+// GetTool returns BuildToolRef.Tool, and is useful for accessing the field via an interface.
+func (v *BuildToolRef) GetTool() string { return v.Tool }
+
+// GetBuildName returns BuildToolRef.BuildName, and is useful for accessing the field via an interface.
+func (v *BuildToolRef) GetBuildName() string { return v.BuildName }
+
+// GetBuildUrl returns BuildToolRef.BuildUrl, and is useful for accessing the field via an interface.
+func (v *BuildToolRef) GetBuildUrl() string { return v.BuildUrl }
+
+// GetBuildTime returns BuildToolRef.BuildTime, and is useful for accessing the field via an interface.
+func (v *BuildToolRef) GetBuildTime() *time.Time { return v.BuildTime }
+
+// GetBuildUser returns BuildToolRef.BuildUser, and is useful for accessing the field via an interface.
+func (v *BuildToolRef) GetBuildUser() string { return v.BuildUser }
+
+// GetBuildPlugins returns BuildToolRef.BuildPlugins, and is useful for accessing the field via an interface.
+func (v *BuildToolRef) GetBuildPlugins() []*ArtifactRef { return v.BuildPlugins }
+
+// GetSourceCodeTool returns BuildToolRef.SourceCodeTool, and is useful for accessing the field via an interface.
+func (v *BuildToolRef) GetSourceCodeTool() []*SourceCodeToolRef { return v.SourceCodeTool }
+
+// GetCommitMetaData returns BuildToolRef.CommitMetaData, and is useful for accessing the field via an interface.
+func (v *BuildToolRef) GetCommitMetaData() []*CommitMetaDataRef { return v.CommitMetaData }
+
+// GetCreatedAt returns BuildToolRef.CreatedAt, and is useful for accessing the field via an interface.
+func (v *BuildToolRef) GetCreatedAt() *time.Time { return v.CreatedAt }
+
+type CSPMResourceScanGroupRef struct {
+	Id                     string                      `json:"id"`
+	ResourceId             string                      `json:"resourceId"`
+	Name                   string                      `json:"name"`
+	Organization           *OrganizationRef            `json:"organization,omitempty"`
+	CloudAccountName       string                      `json:"cloudAccountName"`
+	CloudProvider          string                      `json:"cloudProvider"`
+	ResourceType           string                      `json:"resourceType"`
+	ChildResources         []*AbstractResourceRef      `json:"childResources,omitempty"`
+	ParentResource         *AbstractResourceRef        `json:"parentResource,omitempty"`
+	AssociatedResources    []*AbstractResourceRef      `json:"associatedResources,omitempty"`
+	CspmScan               *CSPMScanRef                `json:"cspmScan,omitempty"`
+	EnrichedFindings       []*EnrichedFindingRef       `json:"enrichedFindings,omitempty"`
+	ApplicationDeployments []*ApplicationDeploymentRef `json:"applicationDeployments,omitempty"`
+}
+
+// GetId returns CSPMResourceScanGroupRef.Id, and is useful for accessing the field via an interface.
+func (v *CSPMResourceScanGroupRef) GetId() string { return v.Id }
+
+// GetResourceId returns CSPMResourceScanGroupRef.ResourceId, and is useful for accessing the field via an interface.
+func (v *CSPMResourceScanGroupRef) GetResourceId() string { return v.ResourceId }
+
+// GetName returns CSPMResourceScanGroupRef.Name, and is useful for accessing the field via an interface.
+func (v *CSPMResourceScanGroupRef) GetName() string { return v.Name }
+
+// GetOrganization returns CSPMResourceScanGroupRef.Organization, and is useful for accessing the field via an interface.
+func (v *CSPMResourceScanGroupRef) GetOrganization() *OrganizationRef { return v.Organization }
+
+// GetCloudAccountName returns CSPMResourceScanGroupRef.CloudAccountName, and is useful for accessing the field via an interface.
+func (v *CSPMResourceScanGroupRef) GetCloudAccountName() string { return v.CloudAccountName }
+
+// GetCloudProvider returns CSPMResourceScanGroupRef.CloudProvider, and is useful for accessing the field via an interface.
+func (v *CSPMResourceScanGroupRef) GetCloudProvider() string { return v.CloudProvider }
+
+// GetResourceType returns CSPMResourceScanGroupRef.ResourceType, and is useful for accessing the field via an interface.
+func (v *CSPMResourceScanGroupRef) GetResourceType() string { return v.ResourceType }
+
+// GetChildResources returns CSPMResourceScanGroupRef.ChildResources, and is useful for accessing the field via an interface.
+func (v *CSPMResourceScanGroupRef) GetChildResources() []*AbstractResourceRef {
+	return v.ChildResources
+}
+
+// GetParentResource returns CSPMResourceScanGroupRef.ParentResource, and is useful for accessing the field via an interface.
+func (v *CSPMResourceScanGroupRef) GetParentResource() *AbstractResourceRef { return v.ParentResource }
+
+// GetAssociatedResources returns CSPMResourceScanGroupRef.AssociatedResources, and is useful for accessing the field via an interface.
+func (v *CSPMResourceScanGroupRef) GetAssociatedResources() []*AbstractResourceRef {
+	return v.AssociatedResources
+}
+
+// GetCspmScan returns CSPMResourceScanGroupRef.CspmScan, and is useful for accessing the field via an interface.
+func (v *CSPMResourceScanGroupRef) GetCspmScan() *CSPMScanRef { return v.CspmScan }
+
+// GetEnrichedFindings returns CSPMResourceScanGroupRef.EnrichedFindings, and is useful for accessing the field via an interface.
+func (v *CSPMResourceScanGroupRef) GetEnrichedFindings() []*EnrichedFindingRef {
+	return v.EnrichedFindings
+}
+
+// GetApplicationDeployments returns CSPMResourceScanGroupRef.ApplicationDeployments, and is useful for accessing the field via an interface.
+func (v *CSPMResourceScanGroupRef) GetApplicationDeployments() []*ApplicationDeploymentRef {
+	return v.ApplicationDeployments
+}
+
+type CSPMScanRef struct {
+	Id                          string                      `json:"id"`
+	Status                      string                      `json:"status"`
+	DetailedStatus              string                      `json:"detailedStatus"`
+	Category                    string                      `json:"category"`
+	Tag                         string                      `json:"tag"`
+	CreatedAt                   *time.Time                  `json:"createdAt"`
+	UpdatedAt                   *time.Time                  `json:"updatedAt"`
+	AssociatedResourceScanGroup []*CSPMResourceScanGroupRef `json:"associatedResourceScanGroup,omitempty"`
+}
+
+// GetId returns CSPMScanRef.Id, and is useful for accessing the field via an interface.
+func (v *CSPMScanRef) GetId() string { return v.Id }
+
+// GetStatus returns CSPMScanRef.Status, and is useful for accessing the field via an interface.
+func (v *CSPMScanRef) GetStatus() string { return v.Status }
+
+// GetDetailedStatus returns CSPMScanRef.DetailedStatus, and is useful for accessing the field via an interface.
+func (v *CSPMScanRef) GetDetailedStatus() string { return v.DetailedStatus }
+
+// GetCategory returns CSPMScanRef.Category, and is useful for accessing the field via an interface.
+func (v *CSPMScanRef) GetCategory() string { return v.Category }
+
+// GetTag returns CSPMScanRef.Tag, and is useful for accessing the field via an interface.
+func (v *CSPMScanRef) GetTag() string { return v.Tag }
+
+// GetCreatedAt returns CSPMScanRef.CreatedAt, and is useful for accessing the field via an interface.
+func (v *CSPMScanRef) GetCreatedAt() *time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns CSPMScanRef.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *CSPMScanRef) GetUpdatedAt() *time.Time { return v.UpdatedAt }
+
+// GetAssociatedResourceScanGroup returns CSPMScanRef.AssociatedResourceScanGroup, and is useful for accessing the field via an interface.
+func (v *CSPMScanRef) GetAssociatedResourceScanGroup() []*CSPMResourceScanGroupRef {
+	return v.AssociatedResourceScanGroup
+}
+
+type CWERef struct {
+	Id          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+// GetId returns CWERef.Id, and is useful for accessing the field via an interface.
+func (v *CWERef) GetId() string { return v.Id }
+
+// GetName returns CWERef.Name, and is useful for accessing the field via an interface.
+func (v *CWERef) GetName() string { return v.Name }
+
+// GetDescription returns CWERef.Description, and is useful for accessing the field via an interface.
+func (v *CWERef) GetDescription() string { return v.Description }
+
+type CommitMetaDataRef struct {
+	// id is randomly assigned
+	Id *string `json:"id"`
+	// commit is a git commit that was used to build an artifact
+	Commit     string `json:"commit"`
+	Repository string `json:"repository"`
+	// commitSign tells us whether the commit is signed
+	CommitSign        *bool         `json:"commitSign"`
+	NoOfReviewersConf *int          `json:"noOfReviewersConf"`
+	ReviewerList      []string      `json:"reviewerList"`
+	ApproverList      []string      `json:"approverList"`
+	BuildTool         *BuildToolRef `json:"buildTool,omitempty"`
+}
+
+// GetId returns CommitMetaDataRef.Id, and is useful for accessing the field via an interface.
+func (v *CommitMetaDataRef) GetId() *string { return v.Id }
+
+// GetCommit returns CommitMetaDataRef.Commit, and is useful for accessing the field via an interface.
+func (v *CommitMetaDataRef) GetCommit() string { return v.Commit }
+
+// GetRepository returns CommitMetaDataRef.Repository, and is useful for accessing the field via an interface.
+func (v *CommitMetaDataRef) GetRepository() string { return v.Repository }
+
+// GetCommitSign returns CommitMetaDataRef.CommitSign, and is useful for accessing the field via an interface.
+func (v *CommitMetaDataRef) GetCommitSign() *bool { return v.CommitSign }
+
+// GetNoOfReviewersConf returns CommitMetaDataRef.NoOfReviewersConf, and is useful for accessing the field via an interface.
+func (v *CommitMetaDataRef) GetNoOfReviewersConf() *int { return v.NoOfReviewersConf }
+
+// GetReviewerList returns CommitMetaDataRef.ReviewerList, and is useful for accessing the field via an interface.
+func (v *CommitMetaDataRef) GetReviewerList() []string { return v.ReviewerList }
+
+// GetApproverList returns CommitMetaDataRef.ApproverList, and is useful for accessing the field via an interface.
+func (v *CommitMetaDataRef) GetApproverList() []string { return v.ApproverList }
+
+// GetBuildTool returns CommitMetaDataRef.BuildTool, and is useful for accessing the field via an interface.
+func (v *CommitMetaDataRef) GetBuildTool() *BuildToolRef { return v.BuildTool }
+
+type ComponentAnalysisRef struct {
+	Id               *string         `json:"Id"`
+	Name             string          `json:"Name"`
+	Components       []*ComponentRef `json:"Components,omitempty"`
+	Severity         Severity        `json:"Severity"`
+	SeverityInt      *int            `json:"SeverityInt"`
+	Stars            *int            `json:"Stars"`
+	Forks            *int            `json:"Forks"`
+	Contributors     *int            `json:"Contributors"`
+	Contributions    *int            `json:"Contributions"`
+	VulnCritical     *int            `json:"VulnCritical"`
+	VulnHigh         *int            `json:"VulnHigh"`
+	VulnMedium       *int            `json:"VulnMedium"`
+	VulnLow          *int            `json:"VulnLow"`
+	VulnOthers       *int            `json:"VulnOthers"`
+	MeanTimeToRepair float64         `json:"MeanTimeToRepair"`
+	Licenses         []string        `json:"Licenses"`
+	CreatedAt        *time.Time      `json:"CreatedAt"`
+	ScannedAt        *time.Time      `json:"ScannedAt"`
+	LastViewed       *time.Time      `json:"LastViewed"`
+}
+
+// GetId returns ComponentAnalysisRef.Id, and is useful for accessing the field via an interface.
+func (v *ComponentAnalysisRef) GetId() *string { return v.Id }
+
+// GetName returns ComponentAnalysisRef.Name, and is useful for accessing the field via an interface.
+func (v *ComponentAnalysisRef) GetName() string { return v.Name }
+
+// GetComponents returns ComponentAnalysisRef.Components, and is useful for accessing the field via an interface.
+func (v *ComponentAnalysisRef) GetComponents() []*ComponentRef { return v.Components }
+
+// GetSeverity returns ComponentAnalysisRef.Severity, and is useful for accessing the field via an interface.
+func (v *ComponentAnalysisRef) GetSeverity() Severity { return v.Severity }
+
+// GetSeverityInt returns ComponentAnalysisRef.SeverityInt, and is useful for accessing the field via an interface.
+func (v *ComponentAnalysisRef) GetSeverityInt() *int { return v.SeverityInt }
+
+// GetStars returns ComponentAnalysisRef.Stars, and is useful for accessing the field via an interface.
+func (v *ComponentAnalysisRef) GetStars() *int { return v.Stars }
+
+// GetForks returns ComponentAnalysisRef.Forks, and is useful for accessing the field via an interface.
+func (v *ComponentAnalysisRef) GetForks() *int { return v.Forks }
+
+// GetContributors returns ComponentAnalysisRef.Contributors, and is useful for accessing the field via an interface.
+func (v *ComponentAnalysisRef) GetContributors() *int { return v.Contributors }
+
+// GetContributions returns ComponentAnalysisRef.Contributions, and is useful for accessing the field via an interface.
+func (v *ComponentAnalysisRef) GetContributions() *int { return v.Contributions }
+
+// GetVulnCritical returns ComponentAnalysisRef.VulnCritical, and is useful for accessing the field via an interface.
+func (v *ComponentAnalysisRef) GetVulnCritical() *int { return v.VulnCritical }
+
+// GetVulnHigh returns ComponentAnalysisRef.VulnHigh, and is useful for accessing the field via an interface.
+func (v *ComponentAnalysisRef) GetVulnHigh() *int { return v.VulnHigh }
+
+// GetVulnMedium returns ComponentAnalysisRef.VulnMedium, and is useful for accessing the field via an interface.
+func (v *ComponentAnalysisRef) GetVulnMedium() *int { return v.VulnMedium }
+
+// GetVulnLow returns ComponentAnalysisRef.VulnLow, and is useful for accessing the field via an interface.
+func (v *ComponentAnalysisRef) GetVulnLow() *int { return v.VulnLow }
+
+// GetVulnOthers returns ComponentAnalysisRef.VulnOthers, and is useful for accessing the field via an interface.
+func (v *ComponentAnalysisRef) GetVulnOthers() *int { return v.VulnOthers }
+
+// GetMeanTimeToRepair returns ComponentAnalysisRef.MeanTimeToRepair, and is useful for accessing the field via an interface.
+func (v *ComponentAnalysisRef) GetMeanTimeToRepair() float64 { return v.MeanTimeToRepair }
+
+// GetLicenses returns ComponentAnalysisRef.Licenses, and is useful for accessing the field via an interface.
+func (v *ComponentAnalysisRef) GetLicenses() []string { return v.Licenses }
+
+// GetCreatedAt returns ComponentAnalysisRef.CreatedAt, and is useful for accessing the field via an interface.
+func (v *ComponentAnalysisRef) GetCreatedAt() *time.Time { return v.CreatedAt }
+
+// GetScannedAt returns ComponentAnalysisRef.ScannedAt, and is useful for accessing the field via an interface.
+func (v *ComponentAnalysisRef) GetScannedAt() *time.Time { return v.ScannedAt }
+
+// GetLastViewed returns ComponentAnalysisRef.LastViewed, and is useful for accessing the field via an interface.
+func (v *ComponentAnalysisRef) GetLastViewed() *time.Time { return v.LastViewed }
+
+type ComponentRef struct {
+	Id               string                 `json:"id"`
+	Type             string                 `json:"type"`
+	Name             string                 `json:"name"`
+	Version          string                 `json:"version"`
+	Licenses         []string               `json:"licenses"`
+	Purl             string                 `json:"purl"`
+	Cpe              string                 `json:"cpe"`
+	ScannedAt        *time.Time             `json:"scannedAt"`
+	AnalysisRequired *bool                  `json:"analysisRequired"`
+	Analysis         *ComponentAnalysisRef  `json:"analysis,omitempty"`
+	Vulnerabilities  []*VulnerabilityRef    `json:"vulnerabilities,omitempty"`
+	Artifacts        []*ArtifactScanDataRef `json:"artifacts,omitempty"`
+}
+
+// GetId returns ComponentRef.Id, and is useful for accessing the field via an interface.
+func (v *ComponentRef) GetId() string { return v.Id }
+
+// GetType returns ComponentRef.Type, and is useful for accessing the field via an interface.
+func (v *ComponentRef) GetType() string { return v.Type }
+
+// GetName returns ComponentRef.Name, and is useful for accessing the field via an interface.
+func (v *ComponentRef) GetName() string { return v.Name }
+
+// GetVersion returns ComponentRef.Version, and is useful for accessing the field via an interface.
+func (v *ComponentRef) GetVersion() string { return v.Version }
+
+// GetLicenses returns ComponentRef.Licenses, and is useful for accessing the field via an interface.
+func (v *ComponentRef) GetLicenses() []string { return v.Licenses }
+
+// GetPurl returns ComponentRef.Purl, and is useful for accessing the field via an interface.
+func (v *ComponentRef) GetPurl() string { return v.Purl }
+
+// GetCpe returns ComponentRef.Cpe, and is useful for accessing the field via an interface.
+func (v *ComponentRef) GetCpe() string { return v.Cpe }
+
+// GetScannedAt returns ComponentRef.ScannedAt, and is useful for accessing the field via an interface.
+func (v *ComponentRef) GetScannedAt() *time.Time { return v.ScannedAt }
+
+// GetAnalysisRequired returns ComponentRef.AnalysisRequired, and is useful for accessing the field via an interface.
+func (v *ComponentRef) GetAnalysisRequired() *bool { return v.AnalysisRequired }
+
+// GetAnalysis returns ComponentRef.Analysis, and is useful for accessing the field via an interface.
+func (v *ComponentRef) GetAnalysis() *ComponentAnalysisRef { return v.Analysis }
+
+// GetVulnerabilities returns ComponentRef.Vulnerabilities, and is useful for accessing the field via an interface.
+func (v *ComponentRef) GetVulnerabilities() []*VulnerabilityRef { return v.Vulnerabilities }
+
+// GetArtifacts returns ComponentRef.Artifacts, and is useful for accessing the field via an interface.
+func (v *ComponentRef) GetArtifacts() []*ArtifactScanDataRef { return v.Artifacts }
 
 // DeleteArtifactScanDataDeleteArtifactScanDataDeleteArtifactScanDataPayload includes the requested fields of the GraphQL type DeleteArtifactScanDataPayload.
 type DeleteArtifactScanDataDeleteArtifactScanDataDeleteArtifactScanDataPayload struct {
@@ -34,6 +907,32 @@ func (v *DeleteArtifactScanDataResponse) GetDeleteArtifactScanData() *DeleteArti
 	return v.DeleteArtifactScanData
 }
 
+// DeletePolicyDefinitionDeletePolicyDefinitionDeletePolicyDefinitionPayload includes the requested fields of the GraphQL type DeletePolicyDefinitionPayload.
+type DeletePolicyDefinitionDeletePolicyDefinitionDeletePolicyDefinitionPayload struct {
+	Msg     string `json:"msg"`
+	NumUids *int   `json:"numUids"`
+}
+
+// GetMsg returns DeletePolicyDefinitionDeletePolicyDefinitionDeletePolicyDefinitionPayload.Msg, and is useful for accessing the field via an interface.
+func (v *DeletePolicyDefinitionDeletePolicyDefinitionDeletePolicyDefinitionPayload) GetMsg() string {
+	return v.Msg
+}
+
+// GetNumUids returns DeletePolicyDefinitionDeletePolicyDefinitionDeletePolicyDefinitionPayload.NumUids, and is useful for accessing the field via an interface.
+func (v *DeletePolicyDefinitionDeletePolicyDefinitionDeletePolicyDefinitionPayload) GetNumUids() *int {
+	return v.NumUids
+}
+
+// DeletePolicyDefinitionResponse is returned by DeletePolicyDefinition on success.
+type DeletePolicyDefinitionResponse struct {
+	DeletePolicyDefinition *DeletePolicyDefinitionDeletePolicyDefinitionDeletePolicyDefinitionPayload `json:"deletePolicyDefinition"`
+}
+
+// GetDeletePolicyDefinition returns DeletePolicyDefinitionResponse.DeletePolicyDefinition, and is useful for accessing the field via an interface.
+func (v *DeletePolicyDefinitionResponse) GetDeletePolicyDefinition() *DeletePolicyDefinitionDeletePolicyDefinitionDeletePolicyDefinitionPayload {
+	return v.DeletePolicyDefinition
+}
+
 // DeleteRunHistoryDeleteRunHistoryDeleteRunHistoryPayload includes the requested fields of the GraphQL type DeleteRunHistoryPayload.
 type DeleteRunHistoryDeleteRunHistoryDeleteRunHistoryPayload struct {
 	Msg     string `json:"msg"`
@@ -54,6 +953,247 @@ type DeleteRunHistoryResponse struct {
 // GetDeleteRunHistory returns DeleteRunHistoryResponse.DeleteRunHistory, and is useful for accessing the field via an interface.
 func (v *DeleteRunHistoryResponse) GetDeleteRunHistory() *DeleteRunHistoryDeleteRunHistoryDeleteRunHistoryPayload {
 	return v.DeleteRunHistory
+}
+
+// DeploymentStage is an enum denoting the stage of the deployment. .
+type DeploymentStage string
+
+const (
+	// deployment is discovered from the events
+	DeploymentStageDiscovered DeploymentStage = "discovered"
+	// scanning is under process
+	DeploymentStageScanning DeploymentStage = "scanning"
+	// deployment is known to have passed the deployment firewall and the deployment(ie the artifact) is live
+	DeploymentStageCurrent DeploymentStage = "current"
+	// deployment becomes a past deployment because another fresh deployment has happened
+	DeploymentStagePrevious DeploymentStage = "previous"
+	// deployment is blocked by the firewall
+	DeploymentStageBlocked DeploymentStage = "blocked"
+)
+
+var AllDeploymentStage = []DeploymentStage{
+	DeploymentStageDiscovered,
+	DeploymentStageScanning,
+	DeploymentStageCurrent,
+	DeploymentStagePrevious,
+	DeploymentStageBlocked,
+}
+
+type DeploymentTargetRef struct {
+	// id is randomly assigned
+	Id   string `json:"id"`
+	Name string `json:"name"`
+	// this would be the ip/server address of the target environment
+	Ip string `json:"ip"`
+	// expected value is kubernetes or non-kubernetes
+	TargetType string `json:"targetType"`
+	// Options are: self-hosted(default), aws
+	Hosting string `json:"hosting"`
+	// Account name from the cloud provider integrator is expected here
+	Account string `json:"account"`
+	// this would be something like us-east-1 etc
+	Region                    string           `json:"region"`
+	KubescapeServiceConnected string           `json:"kubescapeServiceConnected"`
+	KubescapeLatestFileTS     string           `json:"kubescapeLatestFileTS"`
+	IsFirewall                *bool            `json:"isFirewall"`
+	Organization              *OrganizationRef `json:"organization,omitempty"`
+	DefaultEnvironment        *EnvironmentRef  `json:"defaultEnvironment,omitempty"`
+}
+
+// GetId returns DeploymentTargetRef.Id, and is useful for accessing the field via an interface.
+func (v *DeploymentTargetRef) GetId() string { return v.Id }
+
+// GetName returns DeploymentTargetRef.Name, and is useful for accessing the field via an interface.
+func (v *DeploymentTargetRef) GetName() string { return v.Name }
+
+// GetIp returns DeploymentTargetRef.Ip, and is useful for accessing the field via an interface.
+func (v *DeploymentTargetRef) GetIp() string { return v.Ip }
+
+// GetTargetType returns DeploymentTargetRef.TargetType, and is useful for accessing the field via an interface.
+func (v *DeploymentTargetRef) GetTargetType() string { return v.TargetType }
+
+// GetHosting returns DeploymentTargetRef.Hosting, and is useful for accessing the field via an interface.
+func (v *DeploymentTargetRef) GetHosting() string { return v.Hosting }
+
+// GetAccount returns DeploymentTargetRef.Account, and is useful for accessing the field via an interface.
+func (v *DeploymentTargetRef) GetAccount() string { return v.Account }
+
+// GetRegion returns DeploymentTargetRef.Region, and is useful for accessing the field via an interface.
+func (v *DeploymentTargetRef) GetRegion() string { return v.Region }
+
+// GetKubescapeServiceConnected returns DeploymentTargetRef.KubescapeServiceConnected, and is useful for accessing the field via an interface.
+func (v *DeploymentTargetRef) GetKubescapeServiceConnected() string {
+	return v.KubescapeServiceConnected
+}
+
+// GetKubescapeLatestFileTS returns DeploymentTargetRef.KubescapeLatestFileTS, and is useful for accessing the field via an interface.
+func (v *DeploymentTargetRef) GetKubescapeLatestFileTS() string { return v.KubescapeLatestFileTS }
+
+// GetIsFirewall returns DeploymentTargetRef.IsFirewall, and is useful for accessing the field via an interface.
+func (v *DeploymentTargetRef) GetIsFirewall() *bool { return v.IsFirewall }
+
+// GetOrganization returns DeploymentTargetRef.Organization, and is useful for accessing the field via an interface.
+func (v *DeploymentTargetRef) GetOrganization() *OrganizationRef { return v.Organization }
+
+// GetDefaultEnvironment returns DeploymentTargetRef.DefaultEnvironment, and is useful for accessing the field via an interface.
+func (v *DeploymentTargetRef) GetDefaultEnvironment() *EnvironmentRef { return v.DefaultEnvironment }
+
+type EnrichedFindingRef struct {
+	Id                 string                   `json:"id"`
+	AffectedResource   *AbstractResourceRef     `json:"affectedResource,omitempty"`
+	Finding            *PolicyEvaluationDataRef `json:"finding,omitempty"`
+	AffectedAttributes string                   `json:"affectedAttributes"`
+	Timestamp          *time.Time               `json:"timestamp"`
+	Affected           *bool                    `json:"affected"`
+	ScanData           *CSPMScanRef             `json:"scanData,omitempty"`
+}
+
+// GetId returns EnrichedFindingRef.Id, and is useful for accessing the field via an interface.
+func (v *EnrichedFindingRef) GetId() string { return v.Id }
+
+// GetAffectedResource returns EnrichedFindingRef.AffectedResource, and is useful for accessing the field via an interface.
+func (v *EnrichedFindingRef) GetAffectedResource() *AbstractResourceRef { return v.AffectedResource }
+
+// GetFinding returns EnrichedFindingRef.Finding, and is useful for accessing the field via an interface.
+func (v *EnrichedFindingRef) GetFinding() *PolicyEvaluationDataRef { return v.Finding }
+
+// GetAffectedAttributes returns EnrichedFindingRef.AffectedAttributes, and is useful for accessing the field via an interface.
+func (v *EnrichedFindingRef) GetAffectedAttributes() string { return v.AffectedAttributes }
+
+// GetTimestamp returns EnrichedFindingRef.Timestamp, and is useful for accessing the field via an interface.
+func (v *EnrichedFindingRef) GetTimestamp() *time.Time { return v.Timestamp }
+
+// GetAffected returns EnrichedFindingRef.Affected, and is useful for accessing the field via an interface.
+func (v *EnrichedFindingRef) GetAffected() *bool { return v.Affected }
+
+// GetScanData returns EnrichedFindingRef.ScanData, and is useful for accessing the field via an interface.
+func (v *EnrichedFindingRef) GetScanData() *CSPMScanRef { return v.ScanData }
+
+type EnvironmentRef struct {
+	Id                string                  `json:"id"`
+	Organization      *OrganizationRef        `json:"organization,omitempty"`
+	Purpose           string                  `json:"purpose"`
+	IntegratorConfigs []*IntegratorConfigsRef `json:"integratorConfigs,omitempty"`
+}
+
+// GetId returns EnvironmentRef.Id, and is useful for accessing the field via an interface.
+func (v *EnvironmentRef) GetId() string { return v.Id }
+
+// GetOrganization returns EnvironmentRef.Organization, and is useful for accessing the field via an interface.
+func (v *EnvironmentRef) GetOrganization() *OrganizationRef { return v.Organization }
+
+// GetPurpose returns EnvironmentRef.Purpose, and is useful for accessing the field via an interface.
+func (v *EnvironmentRef) GetPurpose() string { return v.Purpose }
+
+// GetIntegratorConfigs returns EnvironmentRef.IntegratorConfigs, and is useful for accessing the field via an interface.
+func (v *EnvironmentRef) GetIntegratorConfigs() []*IntegratorConfigsRef { return v.IntegratorConfigs }
+
+type ExceptionAffectsRef struct {
+	Id                 *string          `json:"id"`
+	Roles              []*RoleRef       `json:"roles,omitempty"`
+	CreatedBy          string           `json:"createdBy"`
+	AffectsTeam        *TeamRef         `json:"affectsTeam,omitempty"`
+	AffectsApplication *ApplicationRef  `json:"affectsApplication,omitempty"`
+	AffectsServices    []string         `json:"affectsServices"`
+	ValidUpTo          *time.Time       `json:"validUpTo"`
+	CreatedAt          *time.Time       `json:"createdAt"`
+	UpdatedAt          *time.Time       `json:"updatedAt"`
+	Reason             string           `json:"reason"`
+	Status             string           `json:"status"`
+	Exception          *ExceptionRef    `json:"exception,omitempty"`
+	RunHistories       []*RunHistoryRef `json:"runHistories,omitempty"`
+}
+
+// GetId returns ExceptionAffectsRef.Id, and is useful for accessing the field via an interface.
+func (v *ExceptionAffectsRef) GetId() *string { return v.Id }
+
+// GetRoles returns ExceptionAffectsRef.Roles, and is useful for accessing the field via an interface.
+func (v *ExceptionAffectsRef) GetRoles() []*RoleRef { return v.Roles }
+
+// GetCreatedBy returns ExceptionAffectsRef.CreatedBy, and is useful for accessing the field via an interface.
+func (v *ExceptionAffectsRef) GetCreatedBy() string { return v.CreatedBy }
+
+// GetAffectsTeam returns ExceptionAffectsRef.AffectsTeam, and is useful for accessing the field via an interface.
+func (v *ExceptionAffectsRef) GetAffectsTeam() *TeamRef { return v.AffectsTeam }
+
+// GetAffectsApplication returns ExceptionAffectsRef.AffectsApplication, and is useful for accessing the field via an interface.
+func (v *ExceptionAffectsRef) GetAffectsApplication() *ApplicationRef { return v.AffectsApplication }
+
+// GetAffectsServices returns ExceptionAffectsRef.AffectsServices, and is useful for accessing the field via an interface.
+func (v *ExceptionAffectsRef) GetAffectsServices() []string { return v.AffectsServices }
+
+// GetValidUpTo returns ExceptionAffectsRef.ValidUpTo, and is useful for accessing the field via an interface.
+func (v *ExceptionAffectsRef) GetValidUpTo() *time.Time { return v.ValidUpTo }
+
+// GetCreatedAt returns ExceptionAffectsRef.CreatedAt, and is useful for accessing the field via an interface.
+func (v *ExceptionAffectsRef) GetCreatedAt() *time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns ExceptionAffectsRef.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *ExceptionAffectsRef) GetUpdatedAt() *time.Time { return v.UpdatedAt }
+
+// GetReason returns ExceptionAffectsRef.Reason, and is useful for accessing the field via an interface.
+func (v *ExceptionAffectsRef) GetReason() string { return v.Reason }
+
+// GetStatus returns ExceptionAffectsRef.Status, and is useful for accessing the field via an interface.
+func (v *ExceptionAffectsRef) GetStatus() string { return v.Status }
+
+// GetException returns ExceptionAffectsRef.Exception, and is useful for accessing the field via an interface.
+func (v *ExceptionAffectsRef) GetException() *ExceptionRef { return v.Exception }
+
+// GetRunHistories returns ExceptionAffectsRef.RunHistories, and is useful for accessing the field via an interface.
+func (v *ExceptionAffectsRef) GetRunHistories() []*RunHistoryRef { return v.RunHistories }
+
+type ExceptionRef struct {
+	Id        *string                `json:"id"`
+	Roles     []*RoleRef             `json:"roles,omitempty"`
+	Type      string                 `json:"type"`
+	Name      string                 `json:"name"`
+	Affects   []*ExceptionAffectsRef `json:"affects,omitempty"`
+	CreatedAt *time.Time             `json:"createdAt"`
+	UpdatedAt *time.Time             `json:"updatedAt"`
+}
+
+// GetId returns ExceptionRef.Id, and is useful for accessing the field via an interface.
+func (v *ExceptionRef) GetId() *string { return v.Id }
+
+// GetRoles returns ExceptionRef.Roles, and is useful for accessing the field via an interface.
+func (v *ExceptionRef) GetRoles() []*RoleRef { return v.Roles }
+
+// GetType returns ExceptionRef.Type, and is useful for accessing the field via an interface.
+func (v *ExceptionRef) GetType() string { return v.Type }
+
+// GetName returns ExceptionRef.Name, and is useful for accessing the field via an interface.
+func (v *ExceptionRef) GetName() string { return v.Name }
+
+// GetAffects returns ExceptionRef.Affects, and is useful for accessing the field via an interface.
+func (v *ExceptionRef) GetAffects() []*ExceptionAffectsRef { return v.Affects }
+
+// GetCreatedAt returns ExceptionRef.CreatedAt, and is useful for accessing the field via an interface.
+func (v *ExceptionRef) GetCreatedAt() *time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns ExceptionRef.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *ExceptionRef) GetUpdatedAt() *time.Time { return v.UpdatedAt }
+
+// ExtraPoliciesQueryPolicyDefinition includes the requested fields of the GraphQL type PolicyDefinition.
+type ExtraPoliciesQueryPolicyDefinition struct {
+	Id         string `json:"id"`
+	PolicyName string `json:"policyName"`
+}
+
+// GetId returns ExtraPoliciesQueryPolicyDefinition.Id, and is useful for accessing the field via an interface.
+func (v *ExtraPoliciesQueryPolicyDefinition) GetId() string { return v.Id }
+
+// GetPolicyName returns ExtraPoliciesQueryPolicyDefinition.PolicyName, and is useful for accessing the field via an interface.
+func (v *ExtraPoliciesQueryPolicyDefinition) GetPolicyName() string { return v.PolicyName }
+
+// ExtraPoliciesResponse is returned by ExtraPolicies on success.
+type ExtraPoliciesResponse struct {
+	QueryPolicyDefinition []*ExtraPoliciesQueryPolicyDefinition `json:"queryPolicyDefinition"`
+}
+
+// GetQueryPolicyDefinition returns ExtraPoliciesResponse.QueryPolicyDefinition, and is useful for accessing the field via an interface.
+func (v *ExtraPoliciesResponse) GetQueryPolicyDefinition() []*ExtraPoliciesQueryPolicyDefinition {
+	return v.QueryPolicyDefinition
 }
 
 // GetArtifactsNoartifactArtifactScanData includes the requested fields of the GraphQL type ArtifactScanData.
@@ -144,6 +1284,123 @@ func (v *GetArtifactsScanningArtifactScanDataArtifactRisk) GetArtifactRiskStatus
 	return v.ArtifactRiskStatus
 }
 
+// GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcement includes the requested fields of the GraphQL type PolicyEnforcement.
+type GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcement struct {
+	Id     *string                                                                `json:"id"`
+	Policy *GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcementPolicyPolicyDefinition `json:"policy"`
+}
+
+// GetId returns GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcement.Id, and is useful for accessing the field via an interface.
+func (v *GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcement) GetId() *string { return v.Id }
+
+// GetPolicy returns GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcement.Policy, and is useful for accessing the field via an interface.
+func (v *GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcement) GetPolicy() *GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcementPolicyPolicyDefinition {
+	return v.Policy
+}
+
+// GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcementPolicyPolicyDefinition includes the requested fields of the GraphQL type PolicyDefinition.
+type GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcementPolicyPolicyDefinition struct {
+	Id              string                                                                                     `json:"id"`
+	CreatedAt       *time.Time                                                                                 `json:"createdAt"`
+	UpdatedAt       *time.Time                                                                                 `json:"updatedAt"`
+	PolicyName      string                                                                                     `json:"policyName"`
+	Category        string                                                                                     `json:"category"`
+	Stage           string                                                                                     `json:"stage"`
+	Description     string                                                                                     `json:"description"`
+	ScheduledPolicy *bool                                                                                      `json:"scheduledPolicy"`
+	Script          string                                                                                     `json:"script"`
+	Variables       string                                                                                     `json:"variables"`
+	ConditionName   string                                                                                     `json:"conditionName"`
+	Suggestion      string                                                                                     `json:"suggestion"`
+	OwnerOrg        *GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcementPolicyPolicyDefinitionOwnerOrgOrganization `json:"ownerOrg"`
+}
+
+// GetId returns GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcementPolicyPolicyDefinition.Id, and is useful for accessing the field via an interface.
+func (v *GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcementPolicyPolicyDefinition) GetId() string {
+	return v.Id
+}
+
+// GetCreatedAt returns GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcementPolicyPolicyDefinition.CreatedAt, and is useful for accessing the field via an interface.
+func (v *GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcementPolicyPolicyDefinition) GetCreatedAt() *time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcementPolicyPolicyDefinition.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcementPolicyPolicyDefinition) GetUpdatedAt() *time.Time {
+	return v.UpdatedAt
+}
+
+// GetPolicyName returns GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcementPolicyPolicyDefinition.PolicyName, and is useful for accessing the field via an interface.
+func (v *GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcementPolicyPolicyDefinition) GetPolicyName() string {
+	return v.PolicyName
+}
+
+// GetCategory returns GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcementPolicyPolicyDefinition.Category, and is useful for accessing the field via an interface.
+func (v *GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcementPolicyPolicyDefinition) GetCategory() string {
+	return v.Category
+}
+
+// GetStage returns GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcementPolicyPolicyDefinition.Stage, and is useful for accessing the field via an interface.
+func (v *GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcementPolicyPolicyDefinition) GetStage() string {
+	return v.Stage
+}
+
+// GetDescription returns GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcementPolicyPolicyDefinition.Description, and is useful for accessing the field via an interface.
+func (v *GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcementPolicyPolicyDefinition) GetDescription() string {
+	return v.Description
+}
+
+// GetScheduledPolicy returns GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcementPolicyPolicyDefinition.ScheduledPolicy, and is useful for accessing the field via an interface.
+func (v *GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcementPolicyPolicyDefinition) GetScheduledPolicy() *bool {
+	return v.ScheduledPolicy
+}
+
+// GetScript returns GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcementPolicyPolicyDefinition.Script, and is useful for accessing the field via an interface.
+func (v *GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcementPolicyPolicyDefinition) GetScript() string {
+	return v.Script
+}
+
+// GetVariables returns GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcementPolicyPolicyDefinition.Variables, and is useful for accessing the field via an interface.
+func (v *GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcementPolicyPolicyDefinition) GetVariables() string {
+	return v.Variables
+}
+
+// GetConditionName returns GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcementPolicyPolicyDefinition.ConditionName, and is useful for accessing the field via an interface.
+func (v *GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcementPolicyPolicyDefinition) GetConditionName() string {
+	return v.ConditionName
+}
+
+// GetSuggestion returns GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcementPolicyPolicyDefinition.Suggestion, and is useful for accessing the field via an interface.
+func (v *GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcementPolicyPolicyDefinition) GetSuggestion() string {
+	return v.Suggestion
+}
+
+// GetOwnerOrg returns GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcementPolicyPolicyDefinition.OwnerOrg, and is useful for accessing the field via an interface.
+func (v *GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcementPolicyPolicyDefinition) GetOwnerOrg() *GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcementPolicyPolicyDefinitionOwnerOrgOrganization {
+	return v.OwnerOrg
+}
+
+// GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcementPolicyPolicyDefinitionOwnerOrgOrganization includes the requested fields of the GraphQL type Organization.
+type GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcementPolicyPolicyDefinitionOwnerOrgOrganization struct {
+	// id is randomly assigned
+	Id string `json:"id"`
+}
+
+// GetId returns GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcementPolicyPolicyDefinitionOwnerOrgOrganization.Id, and is useful for accessing the field via an interface.
+func (v *GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcementPolicyPolicyDefinitionOwnerOrgOrganization) GetId() string {
+	return v.Id
+}
+
+// GetPolicyEnfIDOfPolicyDefResponse is returned by GetPolicyEnfIDOfPolicyDef on success.
+type GetPolicyEnfIDOfPolicyDefResponse struct {
+	QueryPolicyEnforcement []*GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcement `json:"queryPolicyEnforcement"`
+}
+
+// GetQueryPolicyEnforcement returns GetPolicyEnfIDOfPolicyDefResponse.QueryPolicyEnforcement, and is useful for accessing the field via an interface.
+func (v *GetPolicyEnfIDOfPolicyDefResponse) GetQueryPolicyEnforcement() []*GetPolicyEnfIDOfPolicyDefQueryPolicyEnforcement {
+	return v.QueryPolicyEnforcement
+}
+
 // GetRunHistoriesQueryRunHistory includes the requested fields of the GraphQL type RunHistory.
 type GetRunHistoriesQueryRunHistory struct {
 	Id *string `json:"id"`
@@ -161,6 +1418,389 @@ type GetRunHistoriesResponse struct {
 func (v *GetRunHistoriesResponse) GetQueryRunHistory() []*GetRunHistoriesQueryRunHistory {
 	return v.QueryRunHistory
 }
+
+type IntegratorConfigsRef struct {
+	Id                     *string                    `json:"id"`
+	Name                   string                     `json:"name"`
+	Configs                []*IntegratorKeyValuesRef  `json:"configs,omitempty"`
+	Status                 string                     `json:"status"`
+	Integrator             *IntegratorRef             `json:"integrator,omitempty"`
+	Organization           *OrganizationRef           `json:"organization,omitempty"`
+	Team                   *TeamRef                   `json:"team,omitempty"`
+	Environment            *EnvironmentRef            `json:"environment,omitempty"`
+	ApplicationEnvironment *ApplicationEnvironmentRef `json:"applicationEnvironment,omitempty"`
+	Project                []*ProjectRef              `json:"project,omitempty"`
+}
+
+// GetId returns IntegratorConfigsRef.Id, and is useful for accessing the field via an interface.
+func (v *IntegratorConfigsRef) GetId() *string { return v.Id }
+
+// GetName returns IntegratorConfigsRef.Name, and is useful for accessing the field via an interface.
+func (v *IntegratorConfigsRef) GetName() string { return v.Name }
+
+// GetConfigs returns IntegratorConfigsRef.Configs, and is useful for accessing the field via an interface.
+func (v *IntegratorConfigsRef) GetConfigs() []*IntegratorKeyValuesRef { return v.Configs }
+
+// GetStatus returns IntegratorConfigsRef.Status, and is useful for accessing the field via an interface.
+func (v *IntegratorConfigsRef) GetStatus() string { return v.Status }
+
+// GetIntegrator returns IntegratorConfigsRef.Integrator, and is useful for accessing the field via an interface.
+func (v *IntegratorConfigsRef) GetIntegrator() *IntegratorRef { return v.Integrator }
+
+// GetOrganization returns IntegratorConfigsRef.Organization, and is useful for accessing the field via an interface.
+func (v *IntegratorConfigsRef) GetOrganization() *OrganizationRef { return v.Organization }
+
+// GetTeam returns IntegratorConfigsRef.Team, and is useful for accessing the field via an interface.
+func (v *IntegratorConfigsRef) GetTeam() *TeamRef { return v.Team }
+
+// GetEnvironment returns IntegratorConfigsRef.Environment, and is useful for accessing the field via an interface.
+func (v *IntegratorConfigsRef) GetEnvironment() *EnvironmentRef { return v.Environment }
+
+// GetApplicationEnvironment returns IntegratorConfigsRef.ApplicationEnvironment, and is useful for accessing the field via an interface.
+func (v *IntegratorConfigsRef) GetApplicationEnvironment() *ApplicationEnvironmentRef {
+	return v.ApplicationEnvironment
+}
+
+// GetProject returns IntegratorConfigsRef.Project, and is useful for accessing the field via an interface.
+func (v *IntegratorConfigsRef) GetProject() []*ProjectRef { return v.Project }
+
+type IntegratorKeyValuesRef struct {
+	Id      *string `json:"id"`
+	Feat    *bool   `json:"feat"`
+	Key     string  `json:"key"`
+	Value   string  `json:"value"`
+	Encrypt *bool   `json:"encrypt"`
+}
+
+// GetId returns IntegratorKeyValuesRef.Id, and is useful for accessing the field via an interface.
+func (v *IntegratorKeyValuesRef) GetId() *string { return v.Id }
+
+// GetFeat returns IntegratorKeyValuesRef.Feat, and is useful for accessing the field via an interface.
+func (v *IntegratorKeyValuesRef) GetFeat() *bool { return v.Feat }
+
+// GetKey returns IntegratorKeyValuesRef.Key, and is useful for accessing the field via an interface.
+func (v *IntegratorKeyValuesRef) GetKey() string { return v.Key }
+
+// GetValue returns IntegratorKeyValuesRef.Value, and is useful for accessing the field via an interface.
+func (v *IntegratorKeyValuesRef) GetValue() string { return v.Value }
+
+// GetEncrypt returns IntegratorKeyValuesRef.Encrypt, and is useful for accessing the field via an interface.
+func (v *IntegratorKeyValuesRef) GetEncrypt() *bool { return v.Encrypt }
+
+type IntegratorRef struct {
+	Id                string                  `json:"id"`
+	Organization      *OrganizationRef        `json:"organization,omitempty"`
+	Type              string                  `json:"type"`
+	Category          string                  `json:"category"`
+	Status            string                  `json:"status"`
+	IntegratorConfigs []*IntegratorConfigsRef `json:"integratorConfigs,omitempty"`
+	CreatedAt         *time.Time              `json:"createdAt"`
+	UpdatedAt         *time.Time              `json:"updatedAt"`
+}
+
+// GetId returns IntegratorRef.Id, and is useful for accessing the field via an interface.
+func (v *IntegratorRef) GetId() string { return v.Id }
+
+// GetOrganization returns IntegratorRef.Organization, and is useful for accessing the field via an interface.
+func (v *IntegratorRef) GetOrganization() *OrganizationRef { return v.Organization }
+
+// GetType returns IntegratorRef.Type, and is useful for accessing the field via an interface.
+func (v *IntegratorRef) GetType() string { return v.Type }
+
+// GetCategory returns IntegratorRef.Category, and is useful for accessing the field via an interface.
+func (v *IntegratorRef) GetCategory() string { return v.Category }
+
+// GetStatus returns IntegratorRef.Status, and is useful for accessing the field via an interface.
+func (v *IntegratorRef) GetStatus() string { return v.Status }
+
+// GetIntegratorConfigs returns IntegratorRef.IntegratorConfigs, and is useful for accessing the field via an interface.
+func (v *IntegratorRef) GetIntegratorConfigs() []*IntegratorConfigsRef { return v.IntegratorConfigs }
+
+// GetCreatedAt returns IntegratorRef.CreatedAt, and is useful for accessing the field via an interface.
+func (v *IntegratorRef) GetCreatedAt() *time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns IntegratorRef.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *IntegratorRef) GetUpdatedAt() *time.Time { return v.UpdatedAt }
+
+type JiraRef struct {
+	Id                         *string           `json:"id"`
+	JiraId                     string            `json:"jiraId"`
+	Url                        string            `json:"url"`
+	Status                     string            `json:"status"`
+	Assignee                   string            `json:"assignee"`
+	CreatedAt                  *time.Time        `json:"createdAt"`
+	UpdatedAt                  *time.Time        `json:"updatedAt"`
+	AffectsIndividualComponent []*RunHistoryRef  `json:"affectsIndividualComponent,omitempty"`
+	AffectsSecurityissue       *SecurityIssueRef `json:"affectsSecurityissue,omitempty"`
+	Team                       *TeamRef          `json:"team,omitempty"`
+}
+
+// GetId returns JiraRef.Id, and is useful for accessing the field via an interface.
+func (v *JiraRef) GetId() *string { return v.Id }
+
+// GetJiraId returns JiraRef.JiraId, and is useful for accessing the field via an interface.
+func (v *JiraRef) GetJiraId() string { return v.JiraId }
+
+// GetUrl returns JiraRef.Url, and is useful for accessing the field via an interface.
+func (v *JiraRef) GetUrl() string { return v.Url }
+
+// GetStatus returns JiraRef.Status, and is useful for accessing the field via an interface.
+func (v *JiraRef) GetStatus() string { return v.Status }
+
+// GetAssignee returns JiraRef.Assignee, and is useful for accessing the field via an interface.
+func (v *JiraRef) GetAssignee() string { return v.Assignee }
+
+// GetCreatedAt returns JiraRef.CreatedAt, and is useful for accessing the field via an interface.
+func (v *JiraRef) GetCreatedAt() *time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns JiraRef.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *JiraRef) GetUpdatedAt() *time.Time { return v.UpdatedAt }
+
+// GetAffectsIndividualComponent returns JiraRef.AffectsIndividualComponent, and is useful for accessing the field via an interface.
+func (v *JiraRef) GetAffectsIndividualComponent() []*RunHistoryRef {
+	return v.AffectsIndividualComponent
+}
+
+// GetAffectsSecurityissue returns JiraRef.AffectsSecurityissue, and is useful for accessing the field via an interface.
+func (v *JiraRef) GetAffectsSecurityissue() *SecurityIssueRef { return v.AffectsSecurityissue }
+
+// GetTeam returns JiraRef.Team, and is useful for accessing the field via an interface.
+func (v *JiraRef) GetTeam() *TeamRef { return v.Team }
+
+type KeyValueRef struct {
+	Id        string     `json:"id"`
+	Name      string     `json:"name"`
+	Value     string     `json:"value"`
+	CreatedAt *time.Time `json:"createdAt"`
+}
+
+// GetId returns KeyValueRef.Id, and is useful for accessing the field via an interface.
+func (v *KeyValueRef) GetId() string { return v.Id }
+
+// GetName returns KeyValueRef.Name, and is useful for accessing the field via an interface.
+func (v *KeyValueRef) GetName() string { return v.Name }
+
+// GetValue returns KeyValueRef.Value, and is useful for accessing the field via an interface.
+func (v *KeyValueRef) GetValue() string { return v.Value }
+
+// GetCreatedAt returns KeyValueRef.CreatedAt, and is useful for accessing the field via an interface.
+func (v *KeyValueRef) GetCreatedAt() *time.Time { return v.CreatedAt }
+
+type OrganizationRef struct {
+	// id is randomly assigned
+	Id                 string                  `json:"id"`
+	Name               string                  `json:"name"`
+	Roles              []*RoleRef              `json:"roles,omitempty"`
+	Teams              []*TeamRef              `json:"teams,omitempty"`
+	Environments       []*DeploymentTargetRef  `json:"environments,omitempty"`
+	Policies           []*PolicyDefinitionRef  `json:"policies,omitempty"`
+	PolicyEnforcements []*PolicyEnforcementRef `json:"policyEnforcements,omitempty"`
+	Integrators        []*IntegratorRef        `json:"integrators,omitempty"`
+	IntegratorConfigs  []*IntegratorConfigsRef `json:"integratorConfigs,omitempty"`
+	Resources          []*AbstractResourceRef  `json:"resources,omitempty"`
+	Projects           []*ProjectRef           `json:"projects,omitempty"`
+}
+
+// GetId returns OrganizationRef.Id, and is useful for accessing the field via an interface.
+func (v *OrganizationRef) GetId() string { return v.Id }
+
+// GetName returns OrganizationRef.Name, and is useful for accessing the field via an interface.
+func (v *OrganizationRef) GetName() string { return v.Name }
+
+// GetRoles returns OrganizationRef.Roles, and is useful for accessing the field via an interface.
+func (v *OrganizationRef) GetRoles() []*RoleRef { return v.Roles }
+
+// GetTeams returns OrganizationRef.Teams, and is useful for accessing the field via an interface.
+func (v *OrganizationRef) GetTeams() []*TeamRef { return v.Teams }
+
+// GetEnvironments returns OrganizationRef.Environments, and is useful for accessing the field via an interface.
+func (v *OrganizationRef) GetEnvironments() []*DeploymentTargetRef { return v.Environments }
+
+// GetPolicies returns OrganizationRef.Policies, and is useful for accessing the field via an interface.
+func (v *OrganizationRef) GetPolicies() []*PolicyDefinitionRef { return v.Policies }
+
+// GetPolicyEnforcements returns OrganizationRef.PolicyEnforcements, and is useful for accessing the field via an interface.
+func (v *OrganizationRef) GetPolicyEnforcements() []*PolicyEnforcementRef {
+	return v.PolicyEnforcements
+}
+
+// GetIntegrators returns OrganizationRef.Integrators, and is useful for accessing the field via an interface.
+func (v *OrganizationRef) GetIntegrators() []*IntegratorRef { return v.Integrators }
+
+// GetIntegratorConfigs returns OrganizationRef.IntegratorConfigs, and is useful for accessing the field via an interface.
+func (v *OrganizationRef) GetIntegratorConfigs() []*IntegratorConfigsRef { return v.IntegratorConfigs }
+
+// GetResources returns OrganizationRef.Resources, and is useful for accessing the field via an interface.
+func (v *OrganizationRef) GetResources() []*AbstractResourceRef { return v.Resources }
+
+// GetProjects returns OrganizationRef.Projects, and is useful for accessing the field via an interface.
+func (v *OrganizationRef) GetProjects() []*ProjectRef { return v.Projects }
+
+type PolicyDefinitionRef struct {
+	Id               string           `json:"id"`
+	OwnerOrg         *OrganizationRef `json:"ownerOrg,omitempty"`
+	OwnerTeam        *TeamRef         `json:"ownerTeam,omitempty"`
+	OwnerApplication *ApplicationRef  `json:"ownerApplication,omitempty"`
+	CreatedAt        *time.Time       `json:"createdAt"`
+	UpdatedAt        *time.Time       `json:"updatedAt"`
+	PolicyName       string           `json:"policyName"`
+	Category         string           `json:"category"`
+	Stage            string           `json:"stage"`
+	Description      string           `json:"description"`
+	ScheduledPolicy  *bool            `json:"scheduledPolicy"`
+	Script           string           `json:"script"`
+	Variables        string           `json:"variables"`
+	ConditionName    string           `json:"conditionName"`
+	Suggestion       string           `json:"suggestion"`
+}
+
+// GetId returns PolicyDefinitionRef.Id, and is useful for accessing the field via an interface.
+func (v *PolicyDefinitionRef) GetId() string { return v.Id }
+
+// GetOwnerOrg returns PolicyDefinitionRef.OwnerOrg, and is useful for accessing the field via an interface.
+func (v *PolicyDefinitionRef) GetOwnerOrg() *OrganizationRef { return v.OwnerOrg }
+
+// GetOwnerTeam returns PolicyDefinitionRef.OwnerTeam, and is useful for accessing the field via an interface.
+func (v *PolicyDefinitionRef) GetOwnerTeam() *TeamRef { return v.OwnerTeam }
+
+// GetOwnerApplication returns PolicyDefinitionRef.OwnerApplication, and is useful for accessing the field via an interface.
+func (v *PolicyDefinitionRef) GetOwnerApplication() *ApplicationRef { return v.OwnerApplication }
+
+// GetCreatedAt returns PolicyDefinitionRef.CreatedAt, and is useful for accessing the field via an interface.
+func (v *PolicyDefinitionRef) GetCreatedAt() *time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns PolicyDefinitionRef.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *PolicyDefinitionRef) GetUpdatedAt() *time.Time { return v.UpdatedAt }
+
+// GetPolicyName returns PolicyDefinitionRef.PolicyName, and is useful for accessing the field via an interface.
+func (v *PolicyDefinitionRef) GetPolicyName() string { return v.PolicyName }
+
+// GetCategory returns PolicyDefinitionRef.Category, and is useful for accessing the field via an interface.
+func (v *PolicyDefinitionRef) GetCategory() string { return v.Category }
+
+// GetStage returns PolicyDefinitionRef.Stage, and is useful for accessing the field via an interface.
+func (v *PolicyDefinitionRef) GetStage() string { return v.Stage }
+
+// GetDescription returns PolicyDefinitionRef.Description, and is useful for accessing the field via an interface.
+func (v *PolicyDefinitionRef) GetDescription() string { return v.Description }
+
+// GetScheduledPolicy returns PolicyDefinitionRef.ScheduledPolicy, and is useful for accessing the field via an interface.
+func (v *PolicyDefinitionRef) GetScheduledPolicy() *bool { return v.ScheduledPolicy }
+
+// GetScript returns PolicyDefinitionRef.Script, and is useful for accessing the field via an interface.
+func (v *PolicyDefinitionRef) GetScript() string { return v.Script }
+
+// GetVariables returns PolicyDefinitionRef.Variables, and is useful for accessing the field via an interface.
+func (v *PolicyDefinitionRef) GetVariables() string { return v.Variables }
+
+// GetConditionName returns PolicyDefinitionRef.ConditionName, and is useful for accessing the field via an interface.
+func (v *PolicyDefinitionRef) GetConditionName() string { return v.ConditionName }
+
+// GetSuggestion returns PolicyDefinitionRef.Suggestion, and is useful for accessing the field via an interface.
+func (v *PolicyDefinitionRef) GetSuggestion() string { return v.Suggestion }
+
+type PolicyEnforcementRef struct {
+	Id                  *string              `json:"id"`
+	Policy              *PolicyDefinitionRef `json:"policy,omitempty"`
+	EnforcedOrg         *OrganizationRef     `json:"enforcedOrg,omitempty"`
+	EnforcedTeam        *TeamRef             `json:"enforcedTeam,omitempty"`
+	EnforcedApplication *ApplicationRef      `json:"enforcedApplication,omitempty"`
+	Status              *bool                `json:"status"`
+	ForceApply          *bool                `json:"forceApply"`
+	Severity            Severity             `json:"severity"`
+	DatasourceTool      string               `json:"datasourceTool"`
+	Action              string               `json:"action"`
+	ConditionValue      string               `json:"conditionValue"`
+	Environments        []*EnvironmentRef    `json:"environments,omitempty"`
+	Tags                []*TagRef            `json:"tags,omitempty"`
+	CreatedAt           *time.Time           `json:"createdAt"`
+	UpdatedAt           *time.Time           `json:"updatedAt"`
+}
+
+// GetId returns PolicyEnforcementRef.Id, and is useful for accessing the field via an interface.
+func (v *PolicyEnforcementRef) GetId() *string { return v.Id }
+
+// GetPolicy returns PolicyEnforcementRef.Policy, and is useful for accessing the field via an interface.
+func (v *PolicyEnforcementRef) GetPolicy() *PolicyDefinitionRef { return v.Policy }
+
+// GetEnforcedOrg returns PolicyEnforcementRef.EnforcedOrg, and is useful for accessing the field via an interface.
+func (v *PolicyEnforcementRef) GetEnforcedOrg() *OrganizationRef { return v.EnforcedOrg }
+
+// GetEnforcedTeam returns PolicyEnforcementRef.EnforcedTeam, and is useful for accessing the field via an interface.
+func (v *PolicyEnforcementRef) GetEnforcedTeam() *TeamRef { return v.EnforcedTeam }
+
+// GetEnforcedApplication returns PolicyEnforcementRef.EnforcedApplication, and is useful for accessing the field via an interface.
+func (v *PolicyEnforcementRef) GetEnforcedApplication() *ApplicationRef { return v.EnforcedApplication }
+
+// GetStatus returns PolicyEnforcementRef.Status, and is useful for accessing the field via an interface.
+func (v *PolicyEnforcementRef) GetStatus() *bool { return v.Status }
+
+// GetForceApply returns PolicyEnforcementRef.ForceApply, and is useful for accessing the field via an interface.
+func (v *PolicyEnforcementRef) GetForceApply() *bool { return v.ForceApply }
+
+// GetSeverity returns PolicyEnforcementRef.Severity, and is useful for accessing the field via an interface.
+func (v *PolicyEnforcementRef) GetSeverity() Severity { return v.Severity }
+
+// GetDatasourceTool returns PolicyEnforcementRef.DatasourceTool, and is useful for accessing the field via an interface.
+func (v *PolicyEnforcementRef) GetDatasourceTool() string { return v.DatasourceTool }
+
+// GetAction returns PolicyEnforcementRef.Action, and is useful for accessing the field via an interface.
+func (v *PolicyEnforcementRef) GetAction() string { return v.Action }
+
+// GetConditionValue returns PolicyEnforcementRef.ConditionValue, and is useful for accessing the field via an interface.
+func (v *PolicyEnforcementRef) GetConditionValue() string { return v.ConditionValue }
+
+// GetEnvironments returns PolicyEnforcementRef.Environments, and is useful for accessing the field via an interface.
+func (v *PolicyEnforcementRef) GetEnvironments() []*EnvironmentRef { return v.Environments }
+
+// GetTags returns PolicyEnforcementRef.Tags, and is useful for accessing the field via an interface.
+func (v *PolicyEnforcementRef) GetTags() []*TagRef { return v.Tags }
+
+// GetCreatedAt returns PolicyEnforcementRef.CreatedAt, and is useful for accessing the field via an interface.
+func (v *PolicyEnforcementRef) GetCreatedAt() *time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns PolicyEnforcementRef.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *PolicyEnforcementRef) GetUpdatedAt() *time.Time { return v.UpdatedAt }
+
+type PolicyEvaluationDataRef struct {
+	// data Type is gonna help us identify if a DB record is used to evaluate or a json
+	// current scope json is for generic policies & vuln policies will attach
+	// VulnNode -> pending redis data & other inprogram policies
+	Id                        *string               `json:"Id"`
+	DataType                  string                `json:"dataType"`
+	RawData                   string                `json:"rawData"`
+	VulnNode                  *VulnerabilityRef     `json:"vulnNode,omitempty"`
+	EnrichedAffectedResources []*EnrichedFindingRef `json:"enrichedAffectedResources,omitempty"`
+	Affects                   *RunHistoryRef        `json:"affects,omitempty"`
+	CheckedResources          *int                  `json:"checkedResources"`
+	AffectedResources         *int                  `json:"affectedResources"`
+}
+
+// GetId returns PolicyEvaluationDataRef.Id, and is useful for accessing the field via an interface.
+func (v *PolicyEvaluationDataRef) GetId() *string { return v.Id }
+
+// GetDataType returns PolicyEvaluationDataRef.DataType, and is useful for accessing the field via an interface.
+func (v *PolicyEvaluationDataRef) GetDataType() string { return v.DataType }
+
+// GetRawData returns PolicyEvaluationDataRef.RawData, and is useful for accessing the field via an interface.
+func (v *PolicyEvaluationDataRef) GetRawData() string { return v.RawData }
+
+// GetVulnNode returns PolicyEvaluationDataRef.VulnNode, and is useful for accessing the field via an interface.
+func (v *PolicyEvaluationDataRef) GetVulnNode() *VulnerabilityRef { return v.VulnNode }
+
+// GetEnrichedAffectedResources returns PolicyEvaluationDataRef.EnrichedAffectedResources, and is useful for accessing the field via an interface.
+func (v *PolicyEvaluationDataRef) GetEnrichedAffectedResources() []*EnrichedFindingRef {
+	return v.EnrichedAffectedResources
+}
+
+// GetAffects returns PolicyEvaluationDataRef.Affects, and is useful for accessing the field via an interface.
+func (v *PolicyEvaluationDataRef) GetAffects() *RunHistoryRef { return v.Affects }
+
+// GetCheckedResources returns PolicyEvaluationDataRef.CheckedResources, and is useful for accessing the field via an interface.
+func (v *PolicyEvaluationDataRef) GetCheckedResources() *int { return v.CheckedResources }
+
+// GetAffectedResources returns PolicyEvaluationDataRef.AffectedResources, and is useful for accessing the field via an interface.
+func (v *PolicyEvaluationDataRef) GetAffectedResources() *int { return v.AffectedResources }
 
 // PolicyRunHistoryScanningDeploymentsQueryApplicationDeployment includes the requested fields of the GraphQL type ApplicationDeployment.
 // The GraphQL type's documentation follows.
@@ -196,6 +1836,134 @@ func (v *PolicyRunHistoryScanningDeploymentsResponse) GetQueryApplicationDeploym
 	return v.QueryApplicationDeployment
 }
 
+type ProjectConfigRef struct {
+	Id                 *string     `json:"id"`
+	Organization       string      `json:"organization"`
+	Repository         string      `json:"repository"`
+	Branch             []string    `json:"branch"`
+	BranchPattern      string      `json:"branchPattern"`
+	ScheduleTime       *int        `json:"scheduleTime"`
+	ScheduledScan      *bool       `json:"scheduledScan"`
+	CreatedAt          *time.Time  `json:"createdAt"`
+	UpdatedAt          *time.Time  `json:"updatedAt"`
+	Project            *ProjectRef `json:"project,omitempty"`
+	ArtifactTag        []string    `json:"artifactTag"`
+	ArtifactTagPattern string      `json:"artifactTagPattern"`
+	ScanUpto           *int        `json:"scanUpto"`
+}
+
+// GetId returns ProjectConfigRef.Id, and is useful for accessing the field via an interface.
+func (v *ProjectConfigRef) GetId() *string { return v.Id }
+
+// GetOrganization returns ProjectConfigRef.Organization, and is useful for accessing the field via an interface.
+func (v *ProjectConfigRef) GetOrganization() string { return v.Organization }
+
+// GetRepository returns ProjectConfigRef.Repository, and is useful for accessing the field via an interface.
+func (v *ProjectConfigRef) GetRepository() string { return v.Repository }
+
+// GetBranch returns ProjectConfigRef.Branch, and is useful for accessing the field via an interface.
+func (v *ProjectConfigRef) GetBranch() []string { return v.Branch }
+
+// GetBranchPattern returns ProjectConfigRef.BranchPattern, and is useful for accessing the field via an interface.
+func (v *ProjectConfigRef) GetBranchPattern() string { return v.BranchPattern }
+
+// GetScheduleTime returns ProjectConfigRef.ScheduleTime, and is useful for accessing the field via an interface.
+func (v *ProjectConfigRef) GetScheduleTime() *int { return v.ScheduleTime }
+
+// GetScheduledScan returns ProjectConfigRef.ScheduledScan, and is useful for accessing the field via an interface.
+func (v *ProjectConfigRef) GetScheduledScan() *bool { return v.ScheduledScan }
+
+// GetCreatedAt returns ProjectConfigRef.CreatedAt, and is useful for accessing the field via an interface.
+func (v *ProjectConfigRef) GetCreatedAt() *time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns ProjectConfigRef.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *ProjectConfigRef) GetUpdatedAt() *time.Time { return v.UpdatedAt }
+
+// GetProject returns ProjectConfigRef.Project, and is useful for accessing the field via an interface.
+func (v *ProjectConfigRef) GetProject() *ProjectRef { return v.Project }
+
+// GetArtifactTag returns ProjectConfigRef.ArtifactTag, and is useful for accessing the field via an interface.
+func (v *ProjectConfigRef) GetArtifactTag() []string { return v.ArtifactTag }
+
+// GetArtifactTagPattern returns ProjectConfigRef.ArtifactTagPattern, and is useful for accessing the field via an interface.
+func (v *ProjectConfigRef) GetArtifactTagPattern() string { return v.ArtifactTagPattern }
+
+// GetScanUpto returns ProjectConfigRef.ScanUpto, and is useful for accessing the field via an interface.
+func (v *ProjectConfigRef) GetScanUpto() *int { return v.ScanUpto }
+
+type ProjectRef struct {
+	Id                *string               `json:"id"`
+	Name              string                `json:"name"`
+	Platform          string                `json:"platform"`
+	Organization      *OrganizationRef      `json:"organization,omitempty"`
+	Team              *TeamRef              `json:"team,omitempty"`
+	ScanType          string                `json:"scanType"`
+	Scanlevel         string                `json:"scanlevel"`
+	CreatedAt         *time.Time            `json:"createdAt"`
+	UpdatedAt         *time.Time            `json:"updatedAt"`
+	ProjectConfigs    []*ProjectConfigRef   `json:"projectConfigs,omitempty"`
+	IntegratorConfigs *IntegratorConfigsRef `json:"integratorConfigs,omitempty"`
+	Scans             []*ScanTargetRef      `json:"scans,omitempty"`
+	Type              string                `json:"type"`
+}
+
+// GetId returns ProjectRef.Id, and is useful for accessing the field via an interface.
+func (v *ProjectRef) GetId() *string { return v.Id }
+
+// GetName returns ProjectRef.Name, and is useful for accessing the field via an interface.
+func (v *ProjectRef) GetName() string { return v.Name }
+
+// GetPlatform returns ProjectRef.Platform, and is useful for accessing the field via an interface.
+func (v *ProjectRef) GetPlatform() string { return v.Platform }
+
+// GetOrganization returns ProjectRef.Organization, and is useful for accessing the field via an interface.
+func (v *ProjectRef) GetOrganization() *OrganizationRef { return v.Organization }
+
+// GetTeam returns ProjectRef.Team, and is useful for accessing the field via an interface.
+func (v *ProjectRef) GetTeam() *TeamRef { return v.Team }
+
+// GetScanType returns ProjectRef.ScanType, and is useful for accessing the field via an interface.
+func (v *ProjectRef) GetScanType() string { return v.ScanType }
+
+// GetScanlevel returns ProjectRef.Scanlevel, and is useful for accessing the field via an interface.
+func (v *ProjectRef) GetScanlevel() string { return v.Scanlevel }
+
+// GetCreatedAt returns ProjectRef.CreatedAt, and is useful for accessing the field via an interface.
+func (v *ProjectRef) GetCreatedAt() *time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns ProjectRef.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *ProjectRef) GetUpdatedAt() *time.Time { return v.UpdatedAt }
+
+// GetProjectConfigs returns ProjectRef.ProjectConfigs, and is useful for accessing the field via an interface.
+func (v *ProjectRef) GetProjectConfigs() []*ProjectConfigRef { return v.ProjectConfigs }
+
+// GetIntegratorConfigs returns ProjectRef.IntegratorConfigs, and is useful for accessing the field via an interface.
+func (v *ProjectRef) GetIntegratorConfigs() *IntegratorConfigsRef { return v.IntegratorConfigs }
+
+// GetScans returns ProjectRef.Scans, and is useful for accessing the field via an interface.
+func (v *ProjectRef) GetScans() []*ScanTargetRef { return v.Scans }
+
+// GetType returns ProjectRef.Type, and is useful for accessing the field via an interface.
+func (v *ProjectRef) GetType() string { return v.Type }
+
+// QueryRunHistoryWTeamIDNullQueryRunHistory includes the requested fields of the GraphQL type RunHistory.
+type QueryRunHistoryWTeamIDNullQueryRunHistory struct {
+	Id *string `json:"id"`
+}
+
+// GetId returns QueryRunHistoryWTeamIDNullQueryRunHistory.Id, and is useful for accessing the field via an interface.
+func (v *QueryRunHistoryWTeamIDNullQueryRunHistory) GetId() *string { return v.Id }
+
+// QueryRunHistoryWTeamIDNullResponse is returned by QueryRunHistoryWTeamIDNull on success.
+type QueryRunHistoryWTeamIDNullResponse struct {
+	QueryRunHistory []*QueryRunHistoryWTeamIDNullQueryRunHistory `json:"queryRunHistory"`
+}
+
+// GetQueryRunHistory returns QueryRunHistoryWTeamIDNullResponse.QueryRunHistory, and is useful for accessing the field via an interface.
+func (v *QueryRunHistoryWTeamIDNullResponse) GetQueryRunHistory() []*QueryRunHistoryWTeamIDNullQueryRunHistory {
+	return v.QueryRunHistory
+}
+
 // RiskStatus tells us what risk a current application instance or a deployment is at.
 type RiskStatus string
 
@@ -218,6 +1986,362 @@ var AllRiskStatus = []RiskStatus{
 	RiskStatusCompleted,
 	RiskStatusFail,
 }
+
+type RolePermission string
+
+const (
+	RolePermissionAdmin RolePermission = "admin"
+	RolePermissionWrite RolePermission = "write"
+	RolePermissionRead  RolePermission = "read"
+)
+
+var AllRolePermission = []RolePermission{
+	RolePermissionAdmin,
+	RolePermissionWrite,
+	RolePermissionRead,
+}
+
+type RoleRef struct {
+	// id is randomly assigned
+	Id string `json:"id"`
+	// group should be a URI format that includes a scope or realm
+	Group      string         `json:"group"`
+	Permission RolePermission `json:"permission"`
+}
+
+// GetId returns RoleRef.Id, and is useful for accessing the field via an interface.
+func (v *RoleRef) GetId() string { return v.Id }
+
+// GetGroup returns RoleRef.Group, and is useful for accessing the field via an interface.
+func (v *RoleRef) GetGroup() string { return v.Group }
+
+// GetPermission returns RoleRef.Permission, and is useful for accessing the field via an interface.
+func (v *RoleRef) GetPermission() RolePermission { return v.Permission }
+
+type RunHistoryRef struct {
+	Id                    *string                   `json:"id"`
+	PolicyId              string                    `json:"policyId"`
+	ApplicationDeployment *ApplicationDeploymentRef `json:"applicationDeployment,omitempty"`
+	ArtifactScan          *ArtifactScanDataRef      `json:"artifactScan,omitempty"`
+	PolicyName            string                    `json:"PolicyName"`
+	Stage                 string                    `json:"Stage"`
+	Artifact              string                    `json:"Artifact"`
+	ArtifactTag           string                    `json:"ArtifactTag"`
+	ArtifactSha           string                    `json:"ArtifactSha"`
+	ArtifactNameTag       string                    `json:"ArtifactNameTag"`
+	DatasourceTool        string                    `json:"DatasourceTool"`
+	ToolAccountName       string                    `json:"ToolAccountName"`
+	DeploymentID          string                    `json:"DeploymentID"`
+	BuildTool             string                    `json:"BuildTool"`
+	SourceTool            string                    `json:"SourceTool"`
+	ArtifactTool          string                    `json:"ArtifactTool"`
+	DeployTool            string                    `json:"DeployTool"`
+	SbomTool              string                    `json:"SbomTool"`
+	Namespace             string                    `json:"Namespace"`
+	Account               string                    `json:"Account"`
+	Cluster               string                    `json:"Cluster"`
+	Application           string                    `json:"Application"`
+	TeamID                string                    `json:"TeamID"`
+	CreatedAt             *time.Time                `json:"CreatedAt"`
+	UpdatedAt             *time.Time                `json:"UpdatedAt"`
+	DeployedAt            *time.Time                `json:"DeployedAt"`
+	Hash                  string                    `json:"Hash"`
+	Pass                  *bool                     `json:"Pass"`
+	EvalData              *PolicyEvaluationDataRef  `json:"EvalData,omitempty"`
+	FileApi               string                    `json:"FileApi"`
+	AttachedJira          *JiraRef                  `json:"AttachedJira,omitempty"`
+	Status                string                    `json:"Status"`
+	Exception             *ExceptionAffectsRef      `json:"exception,omitempty"`
+	ScheduledPolicy       *bool                     `json:"scheduledPolicy"`
+	PolicyEnforcements    *PolicyEnforcementRef     `json:"policyEnforcements,omitempty"`
+	SecurityIssue         *SecurityIssueRef         `json:"securityIssue,omitempty"`
+}
+
+// GetId returns RunHistoryRef.Id, and is useful for accessing the field via an interface.
+func (v *RunHistoryRef) GetId() *string { return v.Id }
+
+// GetPolicyId returns RunHistoryRef.PolicyId, and is useful for accessing the field via an interface.
+func (v *RunHistoryRef) GetPolicyId() string { return v.PolicyId }
+
+// GetApplicationDeployment returns RunHistoryRef.ApplicationDeployment, and is useful for accessing the field via an interface.
+func (v *RunHistoryRef) GetApplicationDeployment() *ApplicationDeploymentRef {
+	return v.ApplicationDeployment
+}
+
+// GetArtifactScan returns RunHistoryRef.ArtifactScan, and is useful for accessing the field via an interface.
+func (v *RunHistoryRef) GetArtifactScan() *ArtifactScanDataRef { return v.ArtifactScan }
+
+// GetPolicyName returns RunHistoryRef.PolicyName, and is useful for accessing the field via an interface.
+func (v *RunHistoryRef) GetPolicyName() string { return v.PolicyName }
+
+// GetStage returns RunHistoryRef.Stage, and is useful for accessing the field via an interface.
+func (v *RunHistoryRef) GetStage() string { return v.Stage }
+
+// GetArtifact returns RunHistoryRef.Artifact, and is useful for accessing the field via an interface.
+func (v *RunHistoryRef) GetArtifact() string { return v.Artifact }
+
+// GetArtifactTag returns RunHistoryRef.ArtifactTag, and is useful for accessing the field via an interface.
+func (v *RunHistoryRef) GetArtifactTag() string { return v.ArtifactTag }
+
+// GetArtifactSha returns RunHistoryRef.ArtifactSha, and is useful for accessing the field via an interface.
+func (v *RunHistoryRef) GetArtifactSha() string { return v.ArtifactSha }
+
+// GetArtifactNameTag returns RunHistoryRef.ArtifactNameTag, and is useful for accessing the field via an interface.
+func (v *RunHistoryRef) GetArtifactNameTag() string { return v.ArtifactNameTag }
+
+// GetDatasourceTool returns RunHistoryRef.DatasourceTool, and is useful for accessing the field via an interface.
+func (v *RunHistoryRef) GetDatasourceTool() string { return v.DatasourceTool }
+
+// GetToolAccountName returns RunHistoryRef.ToolAccountName, and is useful for accessing the field via an interface.
+func (v *RunHistoryRef) GetToolAccountName() string { return v.ToolAccountName }
+
+// GetDeploymentID returns RunHistoryRef.DeploymentID, and is useful for accessing the field via an interface.
+func (v *RunHistoryRef) GetDeploymentID() string { return v.DeploymentID }
+
+// GetBuildTool returns RunHistoryRef.BuildTool, and is useful for accessing the field via an interface.
+func (v *RunHistoryRef) GetBuildTool() string { return v.BuildTool }
+
+// GetSourceTool returns RunHistoryRef.SourceTool, and is useful for accessing the field via an interface.
+func (v *RunHistoryRef) GetSourceTool() string { return v.SourceTool }
+
+// GetArtifactTool returns RunHistoryRef.ArtifactTool, and is useful for accessing the field via an interface.
+func (v *RunHistoryRef) GetArtifactTool() string { return v.ArtifactTool }
+
+// GetDeployTool returns RunHistoryRef.DeployTool, and is useful for accessing the field via an interface.
+func (v *RunHistoryRef) GetDeployTool() string { return v.DeployTool }
+
+// GetSbomTool returns RunHistoryRef.SbomTool, and is useful for accessing the field via an interface.
+func (v *RunHistoryRef) GetSbomTool() string { return v.SbomTool }
+
+// GetNamespace returns RunHistoryRef.Namespace, and is useful for accessing the field via an interface.
+func (v *RunHistoryRef) GetNamespace() string { return v.Namespace }
+
+// GetAccount returns RunHistoryRef.Account, and is useful for accessing the field via an interface.
+func (v *RunHistoryRef) GetAccount() string { return v.Account }
+
+// GetCluster returns RunHistoryRef.Cluster, and is useful for accessing the field via an interface.
+func (v *RunHistoryRef) GetCluster() string { return v.Cluster }
+
+// GetApplication returns RunHistoryRef.Application, and is useful for accessing the field via an interface.
+func (v *RunHistoryRef) GetApplication() string { return v.Application }
+
+// GetTeamID returns RunHistoryRef.TeamID, and is useful for accessing the field via an interface.
+func (v *RunHistoryRef) GetTeamID() string { return v.TeamID }
+
+// GetCreatedAt returns RunHistoryRef.CreatedAt, and is useful for accessing the field via an interface.
+func (v *RunHistoryRef) GetCreatedAt() *time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns RunHistoryRef.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *RunHistoryRef) GetUpdatedAt() *time.Time { return v.UpdatedAt }
+
+// GetDeployedAt returns RunHistoryRef.DeployedAt, and is useful for accessing the field via an interface.
+func (v *RunHistoryRef) GetDeployedAt() *time.Time { return v.DeployedAt }
+
+// GetHash returns RunHistoryRef.Hash, and is useful for accessing the field via an interface.
+func (v *RunHistoryRef) GetHash() string { return v.Hash }
+
+// GetPass returns RunHistoryRef.Pass, and is useful for accessing the field via an interface.
+func (v *RunHistoryRef) GetPass() *bool { return v.Pass }
+
+// GetEvalData returns RunHistoryRef.EvalData, and is useful for accessing the field via an interface.
+func (v *RunHistoryRef) GetEvalData() *PolicyEvaluationDataRef { return v.EvalData }
+
+// GetFileApi returns RunHistoryRef.FileApi, and is useful for accessing the field via an interface.
+func (v *RunHistoryRef) GetFileApi() string { return v.FileApi }
+
+// GetAttachedJira returns RunHistoryRef.AttachedJira, and is useful for accessing the field via an interface.
+func (v *RunHistoryRef) GetAttachedJira() *JiraRef { return v.AttachedJira }
+
+// GetStatus returns RunHistoryRef.Status, and is useful for accessing the field via an interface.
+func (v *RunHistoryRef) GetStatus() string { return v.Status }
+
+// GetException returns RunHistoryRef.Exception, and is useful for accessing the field via an interface.
+func (v *RunHistoryRef) GetException() *ExceptionAffectsRef { return v.Exception }
+
+// GetScheduledPolicy returns RunHistoryRef.ScheduledPolicy, and is useful for accessing the field via an interface.
+func (v *RunHistoryRef) GetScheduledPolicy() *bool { return v.ScheduledPolicy }
+
+// GetPolicyEnforcements returns RunHistoryRef.PolicyEnforcements, and is useful for accessing the field via an interface.
+func (v *RunHistoryRef) GetPolicyEnforcements() *PolicyEnforcementRef { return v.PolicyEnforcements }
+
+// GetSecurityIssue returns RunHistoryRef.SecurityIssue, and is useful for accessing the field via an interface.
+func (v *RunHistoryRef) GetSecurityIssue() *SecurityIssueRef { return v.SecurityIssue }
+
+type ScanFileResultRef struct {
+	Id   *string `json:"id"`
+	Name string  `json:"name"`
+	Url  string  `json:"url"`
+}
+
+// GetId returns ScanFileResultRef.Id, and is useful for accessing the field via an interface.
+func (v *ScanFileResultRef) GetId() *string { return v.Id }
+
+// GetName returns ScanFileResultRef.Name, and is useful for accessing the field via an interface.
+func (v *ScanFileResultRef) GetName() string { return v.Name }
+
+// GetUrl returns ScanFileResultRef.Url, and is useful for accessing the field via an interface.
+func (v *ScanFileResultRef) GetUrl() string { return v.Url }
+
+type ScanResultRef struct {
+	Id           *string        `json:"id"`
+	Group        string         `json:"group"`
+	HeadCommit   string         `json:"headCommit"`
+	TriggerdBy   string         `json:"triggerdBy"`
+	TriggerType  string         `json:"triggerType"`
+	ScanType     string         `json:"scanType"`
+	ResultFile   string         `json:"resultFile"`
+	ScanTool     string         `json:"scanTool"`
+	ScannedAt    *time.Time     `json:"scannedAt"`
+	ScanDuration *time.Time     `json:"scanDuration"`
+	RiskStatus   RiskStatus     `json:"riskStatus"`
+	ScanTarget   *ScanTargetRef `json:"scanTarget,omitempty"`
+}
+
+// GetId returns ScanResultRef.Id, and is useful for accessing the field via an interface.
+func (v *ScanResultRef) GetId() *string { return v.Id }
+
+// GetGroup returns ScanResultRef.Group, and is useful for accessing the field via an interface.
+func (v *ScanResultRef) GetGroup() string { return v.Group }
+
+// GetHeadCommit returns ScanResultRef.HeadCommit, and is useful for accessing the field via an interface.
+func (v *ScanResultRef) GetHeadCommit() string { return v.HeadCommit }
+
+// GetTriggerdBy returns ScanResultRef.TriggerdBy, and is useful for accessing the field via an interface.
+func (v *ScanResultRef) GetTriggerdBy() string { return v.TriggerdBy }
+
+// GetTriggerType returns ScanResultRef.TriggerType, and is useful for accessing the field via an interface.
+func (v *ScanResultRef) GetTriggerType() string { return v.TriggerType }
+
+// GetScanType returns ScanResultRef.ScanType, and is useful for accessing the field via an interface.
+func (v *ScanResultRef) GetScanType() string { return v.ScanType }
+
+// GetResultFile returns ScanResultRef.ResultFile, and is useful for accessing the field via an interface.
+func (v *ScanResultRef) GetResultFile() string { return v.ResultFile }
+
+// GetScanTool returns ScanResultRef.ScanTool, and is useful for accessing the field via an interface.
+func (v *ScanResultRef) GetScanTool() string { return v.ScanTool }
+
+// GetScannedAt returns ScanResultRef.ScannedAt, and is useful for accessing the field via an interface.
+func (v *ScanResultRef) GetScannedAt() *time.Time { return v.ScannedAt }
+
+// GetScanDuration returns ScanResultRef.ScanDuration, and is useful for accessing the field via an interface.
+func (v *ScanResultRef) GetScanDuration() *time.Time { return v.ScanDuration }
+
+// GetRiskStatus returns ScanResultRef.RiskStatus, and is useful for accessing the field via an interface.
+func (v *ScanResultRef) GetRiskStatus() RiskStatus { return v.RiskStatus }
+
+// GetScanTarget returns ScanResultRef.ScanTarget, and is useful for accessing the field via an interface.
+func (v *ScanResultRef) GetScanTarget() *ScanTargetRef { return v.ScanTarget }
+
+type ScanTargetRef struct {
+	Id                *string          `json:"id"`
+	Projects          []*ProjectRef    `json:"projects,omitempty"`
+	Organization      string           `json:"organization"`
+	Repository        string           `json:"repository"`
+	Branch            string           `json:"branch"`
+	LastTriggeredBy   string           `json:"lastTriggeredBy"`
+	LastScannedTime   *time.Time       `json:"lastScannedTime"`
+	LastAttemptedTime *time.Time       `json:"lastAttemptedTime"`
+	CreatedAt         *time.Time       `json:"createdAt"`
+	UpdatedAt         *time.Time       `json:"updatedAt"`
+	ScanResults       []*ScanResultRef `json:"scanResults,omitempty"`
+	Artifact          *ArtifactRef     `json:"artifact,omitempty"`
+}
+
+// GetId returns ScanTargetRef.Id, and is useful for accessing the field via an interface.
+func (v *ScanTargetRef) GetId() *string { return v.Id }
+
+// GetProjects returns ScanTargetRef.Projects, and is useful for accessing the field via an interface.
+func (v *ScanTargetRef) GetProjects() []*ProjectRef { return v.Projects }
+
+// GetOrganization returns ScanTargetRef.Organization, and is useful for accessing the field via an interface.
+func (v *ScanTargetRef) GetOrganization() string { return v.Organization }
+
+// GetRepository returns ScanTargetRef.Repository, and is useful for accessing the field via an interface.
+func (v *ScanTargetRef) GetRepository() string { return v.Repository }
+
+// GetBranch returns ScanTargetRef.Branch, and is useful for accessing the field via an interface.
+func (v *ScanTargetRef) GetBranch() string { return v.Branch }
+
+// GetLastTriggeredBy returns ScanTargetRef.LastTriggeredBy, and is useful for accessing the field via an interface.
+func (v *ScanTargetRef) GetLastTriggeredBy() string { return v.LastTriggeredBy }
+
+// GetLastScannedTime returns ScanTargetRef.LastScannedTime, and is useful for accessing the field via an interface.
+func (v *ScanTargetRef) GetLastScannedTime() *time.Time { return v.LastScannedTime }
+
+// GetLastAttemptedTime returns ScanTargetRef.LastAttemptedTime, and is useful for accessing the field via an interface.
+func (v *ScanTargetRef) GetLastAttemptedTime() *time.Time { return v.LastAttemptedTime }
+
+// GetCreatedAt returns ScanTargetRef.CreatedAt, and is useful for accessing the field via an interface.
+func (v *ScanTargetRef) GetCreatedAt() *time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns ScanTargetRef.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *ScanTargetRef) GetUpdatedAt() *time.Time { return v.UpdatedAt }
+
+// GetScanResults returns ScanTargetRef.ScanResults, and is useful for accessing the field via an interface.
+func (v *ScanTargetRef) GetScanResults() []*ScanResultRef { return v.ScanResults }
+
+// GetArtifact returns ScanTargetRef.Artifact, and is useful for accessing the field via an interface.
+func (v *ScanTargetRef) GetArtifact() *ArtifactRef { return v.Artifact }
+
+type SecurityIssueRef struct {
+	Id                 *string               `json:"id"`
+	AlertTitle         string                `json:"AlertTitle"`
+	AlertMessage       string                `json:"AlertMessage"`
+	Suggestions        string                `json:"Suggestions"`
+	Severity           Severity              `json:"Severity"`
+	SeverityInt        *int                  `json:"SeverityInt"`
+	CreatedAt          *time.Time            `json:"CreatedAt"`
+	UpdatedAt          *time.Time            `json:"UpdatedAt"`
+	Action             string                `json:"Action"`
+	Reason             string                `json:"Reason"`
+	Error              string                `json:"Error"`
+	PolicyEnforcements *PolicyEnforcementRef `json:"policyEnforcements,omitempty"`
+	AttachedJira       []*JiraRef            `json:"AttachedJira,omitempty"`
+	Affects            []*RunHistoryRef      `json:"Affects,omitempty"`
+}
+
+// GetId returns SecurityIssueRef.Id, and is useful for accessing the field via an interface.
+func (v *SecurityIssueRef) GetId() *string { return v.Id }
+
+// GetAlertTitle returns SecurityIssueRef.AlertTitle, and is useful for accessing the field via an interface.
+func (v *SecurityIssueRef) GetAlertTitle() string { return v.AlertTitle }
+
+// GetAlertMessage returns SecurityIssueRef.AlertMessage, and is useful for accessing the field via an interface.
+func (v *SecurityIssueRef) GetAlertMessage() string { return v.AlertMessage }
+
+// GetSuggestions returns SecurityIssueRef.Suggestions, and is useful for accessing the field via an interface.
+func (v *SecurityIssueRef) GetSuggestions() string { return v.Suggestions }
+
+// GetSeverity returns SecurityIssueRef.Severity, and is useful for accessing the field via an interface.
+func (v *SecurityIssueRef) GetSeverity() Severity { return v.Severity }
+
+// GetSeverityInt returns SecurityIssueRef.SeverityInt, and is useful for accessing the field via an interface.
+func (v *SecurityIssueRef) GetSeverityInt() *int { return v.SeverityInt }
+
+// GetCreatedAt returns SecurityIssueRef.CreatedAt, and is useful for accessing the field via an interface.
+func (v *SecurityIssueRef) GetCreatedAt() *time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns SecurityIssueRef.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *SecurityIssueRef) GetUpdatedAt() *time.Time { return v.UpdatedAt }
+
+// GetAction returns SecurityIssueRef.Action, and is useful for accessing the field via an interface.
+func (v *SecurityIssueRef) GetAction() string { return v.Action }
+
+// GetReason returns SecurityIssueRef.Reason, and is useful for accessing the field via an interface.
+func (v *SecurityIssueRef) GetReason() string { return v.Reason }
+
+// GetError returns SecurityIssueRef.Error, and is useful for accessing the field via an interface.
+func (v *SecurityIssueRef) GetError() string { return v.Error }
+
+// GetPolicyEnforcements returns SecurityIssueRef.PolicyEnforcements, and is useful for accessing the field via an interface.
+func (v *SecurityIssueRef) GetPolicyEnforcements() *PolicyEnforcementRef { return v.PolicyEnforcements }
+
+// GetAttachedJira returns SecurityIssueRef.AttachedJira, and is useful for accessing the field via an interface.
+func (v *SecurityIssueRef) GetAttachedJira() []*JiraRef { return v.AttachedJira }
+
+// GetAffects returns SecurityIssueRef.Affects, and is useful for accessing the field via an interface.
+func (v *SecurityIssueRef) GetAffects() []*RunHistoryRef { return v.Affects }
 
 // SetDefaultAttemptForArtifactResponse is returned by SetDefaultAttemptForArtifact on success.
 type SetDefaultAttemptForArtifactResponse struct {
@@ -299,6 +2423,256 @@ func (v *SetDefaultScanStateForArtifactUpdateArtifactScanDataUpdateArtifactScanD
 	return v.NumUids
 }
 
+// SetDefaultTeamIDInRunHistoryResponse is returned by SetDefaultTeamIDInRunHistory on success.
+type SetDefaultTeamIDInRunHistoryResponse struct {
+	UpdateRunHistory *SetDefaultTeamIDInRunHistoryUpdateRunHistoryUpdateRunHistoryPayload `json:"updateRunHistory"`
+}
+
+// GetUpdateRunHistory returns SetDefaultTeamIDInRunHistoryResponse.UpdateRunHistory, and is useful for accessing the field via an interface.
+func (v *SetDefaultTeamIDInRunHistoryResponse) GetUpdateRunHistory() *SetDefaultTeamIDInRunHistoryUpdateRunHistoryUpdateRunHistoryPayload {
+	return v.UpdateRunHistory
+}
+
+// SetDefaultTeamIDInRunHistoryUpdateRunHistoryUpdateRunHistoryPayload includes the requested fields of the GraphQL type UpdateRunHistoryPayload.
+type SetDefaultTeamIDInRunHistoryUpdateRunHistoryUpdateRunHistoryPayload struct {
+	NumUids *int `json:"numUids"`
+}
+
+// GetNumUids returns SetDefaultTeamIDInRunHistoryUpdateRunHistoryUpdateRunHistoryPayload.NumUids, and is useful for accessing the field via an interface.
+func (v *SetDefaultTeamIDInRunHistoryUpdateRunHistoryUpdateRunHistoryPayload) GetNumUids() *int {
+	return v.NumUids
+}
+
+type Severity string
+
+const (
+	SeverityApocalypse Severity = "apocalypse"
+	SeverityCritical   Severity = "critical"
+	SeverityHigh       Severity = "high"
+	SeverityMedium     Severity = "medium"
+	SeverityLow        Severity = "low"
+	SeverityInfo       Severity = "info"
+	SeverityNone       Severity = "none"
+	SeverityUnknown    Severity = "unknown"
+)
+
+var AllSeverity = []Severity{
+	SeverityApocalypse,
+	SeverityCritical,
+	SeverityHigh,
+	SeverityMedium,
+	SeverityLow,
+	SeverityInfo,
+	SeverityNone,
+	SeverityUnknown,
+}
+
+type SourceCodeToolRef struct {
+	// id is randomly assigned
+	Id        string     `json:"id"`
+	CreatedAt *time.Time `json:"createdAt"`
+	// scm is the scm tool github/gitlab etc
+	Scm string `json:"scm"`
+	// repository is the git remote repository
+	Repository string `json:"repository"`
+	// branch is the git branch on which the artifact was built
+	Branch string `json:"branch"`
+	// headCommit is the checkout out head commit
+	HeadCommit string `json:"headCommit"`
+	// diffCommits is a comma separated string of the commits between the previous built artifact and the current
+	DiffCommits  string `json:"diffCommits"`
+	LicenseName  string `json:"licenseName"`
+	Visibility   string `json:"visibility"`
+	WorkflowName string `json:"workflowName"`
+	// parentRepo is populated in case the git repo is a fork
+	ParentRepo          string        `json:"parentRepo"`
+	BuildTool           *BuildToolRef `json:"buildTool,omitempty"`
+	SourceCodePath      string        `json:"sourceCodePath"`
+	SonarqubeProjectKey string        `json:"sonarqubeProjectKey"`
+	ArtifactNode        *ArtifactRef  `json:"artifactNode,omitempty"`
+	// digest is the sha of the artifact
+	Digest string `json:"digest"`
+	// buildDigest is the sha of the artifact as sent from the build tool
+	BuildDigest string `json:"buildDigest"`
+}
+
+// GetId returns SourceCodeToolRef.Id, and is useful for accessing the field via an interface.
+func (v *SourceCodeToolRef) GetId() string { return v.Id }
+
+// GetCreatedAt returns SourceCodeToolRef.CreatedAt, and is useful for accessing the field via an interface.
+func (v *SourceCodeToolRef) GetCreatedAt() *time.Time { return v.CreatedAt }
+
+// GetScm returns SourceCodeToolRef.Scm, and is useful for accessing the field via an interface.
+func (v *SourceCodeToolRef) GetScm() string { return v.Scm }
+
+// GetRepository returns SourceCodeToolRef.Repository, and is useful for accessing the field via an interface.
+func (v *SourceCodeToolRef) GetRepository() string { return v.Repository }
+
+// GetBranch returns SourceCodeToolRef.Branch, and is useful for accessing the field via an interface.
+func (v *SourceCodeToolRef) GetBranch() string { return v.Branch }
+
+// GetHeadCommit returns SourceCodeToolRef.HeadCommit, and is useful for accessing the field via an interface.
+func (v *SourceCodeToolRef) GetHeadCommit() string { return v.HeadCommit }
+
+// GetDiffCommits returns SourceCodeToolRef.DiffCommits, and is useful for accessing the field via an interface.
+func (v *SourceCodeToolRef) GetDiffCommits() string { return v.DiffCommits }
+
+// GetLicenseName returns SourceCodeToolRef.LicenseName, and is useful for accessing the field via an interface.
+func (v *SourceCodeToolRef) GetLicenseName() string { return v.LicenseName }
+
+// GetVisibility returns SourceCodeToolRef.Visibility, and is useful for accessing the field via an interface.
+func (v *SourceCodeToolRef) GetVisibility() string { return v.Visibility }
+
+// GetWorkflowName returns SourceCodeToolRef.WorkflowName, and is useful for accessing the field via an interface.
+func (v *SourceCodeToolRef) GetWorkflowName() string { return v.WorkflowName }
+
+// GetParentRepo returns SourceCodeToolRef.ParentRepo, and is useful for accessing the field via an interface.
+func (v *SourceCodeToolRef) GetParentRepo() string { return v.ParentRepo }
+
+// GetBuildTool returns SourceCodeToolRef.BuildTool, and is useful for accessing the field via an interface.
+func (v *SourceCodeToolRef) GetBuildTool() *BuildToolRef { return v.BuildTool }
+
+// GetSourceCodePath returns SourceCodeToolRef.SourceCodePath, and is useful for accessing the field via an interface.
+func (v *SourceCodeToolRef) GetSourceCodePath() string { return v.SourceCodePath }
+
+// GetSonarqubeProjectKey returns SourceCodeToolRef.SonarqubeProjectKey, and is useful for accessing the field via an interface.
+func (v *SourceCodeToolRef) GetSonarqubeProjectKey() string { return v.SonarqubeProjectKey }
+
+// GetArtifactNode returns SourceCodeToolRef.ArtifactNode, and is useful for accessing the field via an interface.
+func (v *SourceCodeToolRef) GetArtifactNode() *ArtifactRef { return v.ArtifactNode }
+
+// GetDigest returns SourceCodeToolRef.Digest, and is useful for accessing the field via an interface.
+func (v *SourceCodeToolRef) GetDigest() string { return v.Digest }
+
+// GetBuildDigest returns SourceCodeToolRef.BuildDigest, and is useful for accessing the field via an interface.
+func (v *SourceCodeToolRef) GetBuildDigest() string { return v.BuildDigest }
+
+type TagRef struct {
+	Id             string                  `json:"id"`
+	TagName        string                  `json:"tagName"`
+	TagValue       string                  `json:"tagValue"`
+	TagDescription string                  `json:"tagDescription"`
+	CreatedBy      string                  `json:"createdBy"`
+	CreatedAt      *time.Time              `json:"createdAt"`
+	UpdatedAt      *time.Time              `json:"updatedAt"`
+	Policies       []*PolicyEnforcementRef `json:"policies,omitempty"`
+}
+
+// GetId returns TagRef.Id, and is useful for accessing the field via an interface.
+func (v *TagRef) GetId() string { return v.Id }
+
+// GetTagName returns TagRef.TagName, and is useful for accessing the field via an interface.
+func (v *TagRef) GetTagName() string { return v.TagName }
+
+// GetTagValue returns TagRef.TagValue, and is useful for accessing the field via an interface.
+func (v *TagRef) GetTagValue() string { return v.TagValue }
+
+// GetTagDescription returns TagRef.TagDescription, and is useful for accessing the field via an interface.
+func (v *TagRef) GetTagDescription() string { return v.TagDescription }
+
+// GetCreatedBy returns TagRef.CreatedBy, and is useful for accessing the field via an interface.
+func (v *TagRef) GetCreatedBy() string { return v.CreatedBy }
+
+// GetCreatedAt returns TagRef.CreatedAt, and is useful for accessing the field via an interface.
+func (v *TagRef) GetCreatedAt() *time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns TagRef.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *TagRef) GetUpdatedAt() *time.Time { return v.UpdatedAt }
+
+// GetPolicies returns TagRef.Policies, and is useful for accessing the field via an interface.
+func (v *TagRef) GetPolicies() []*PolicyEnforcementRef { return v.Policies }
+
+type TeamRef struct {
+	// id is randomly assigned
+	Id                 string                  `json:"id"`
+	Name               string                  `json:"name"`
+	Email              string                  `json:"email"`
+	Roles              []*RoleRef              `json:"roles,omitempty"`
+	Organization       *OrganizationRef        `json:"organization,omitempty"`
+	Applications       []*ApplicationRef       `json:"applications,omitempty"`
+	Labels             []*KeyValueRef          `json:"labels,omitempty"`
+	Policies           []*PolicyDefinitionRef  `json:"policies,omitempty"`
+	PolicyEnforcements []*PolicyEnforcementRef `json:"policyEnforcements,omitempty"`
+	Exceptions         []*ExceptionAffectsRef  `json:"exceptions,omitempty"`
+	IntegratorConfigs  []*IntegratorConfigsRef `json:"integratorConfigs,omitempty"`
+	AttachedJira       []*JiraRef              `json:"AttachedJira,omitempty"`
+	Projects           []*ProjectRef           `json:"projects,omitempty"`
+}
+
+// GetId returns TeamRef.Id, and is useful for accessing the field via an interface.
+func (v *TeamRef) GetId() string { return v.Id }
+
+// GetName returns TeamRef.Name, and is useful for accessing the field via an interface.
+func (v *TeamRef) GetName() string { return v.Name }
+
+// GetEmail returns TeamRef.Email, and is useful for accessing the field via an interface.
+func (v *TeamRef) GetEmail() string { return v.Email }
+
+// GetRoles returns TeamRef.Roles, and is useful for accessing the field via an interface.
+func (v *TeamRef) GetRoles() []*RoleRef { return v.Roles }
+
+// GetOrganization returns TeamRef.Organization, and is useful for accessing the field via an interface.
+func (v *TeamRef) GetOrganization() *OrganizationRef { return v.Organization }
+
+// GetApplications returns TeamRef.Applications, and is useful for accessing the field via an interface.
+func (v *TeamRef) GetApplications() []*ApplicationRef { return v.Applications }
+
+// GetLabels returns TeamRef.Labels, and is useful for accessing the field via an interface.
+func (v *TeamRef) GetLabels() []*KeyValueRef { return v.Labels }
+
+// GetPolicies returns TeamRef.Policies, and is useful for accessing the field via an interface.
+func (v *TeamRef) GetPolicies() []*PolicyDefinitionRef { return v.Policies }
+
+// GetPolicyEnforcements returns TeamRef.PolicyEnforcements, and is useful for accessing the field via an interface.
+func (v *TeamRef) GetPolicyEnforcements() []*PolicyEnforcementRef { return v.PolicyEnforcements }
+
+// GetExceptions returns TeamRef.Exceptions, and is useful for accessing the field via an interface.
+func (v *TeamRef) GetExceptions() []*ExceptionAffectsRef { return v.Exceptions }
+
+// GetIntegratorConfigs returns TeamRef.IntegratorConfigs, and is useful for accessing the field via an interface.
+func (v *TeamRef) GetIntegratorConfigs() []*IntegratorConfigsRef { return v.IntegratorConfigs }
+
+// GetAttachedJira returns TeamRef.AttachedJira, and is useful for accessing the field via an interface.
+func (v *TeamRef) GetAttachedJira() []*JiraRef { return v.AttachedJira }
+
+// GetProjects returns TeamRef.Projects, and is useful for accessing the field via an interface.
+func (v *TeamRef) GetProjects() []*ProjectRef { return v.Projects }
+
+type ToolsUsedRef struct {
+	Id         *string  `json:"id"`
+	Source     string   `json:"source"`
+	Build      string   `json:"build"`
+	Artifact   string   `json:"artifact"`
+	Deploy     string   `json:"deploy"`
+	Postdeploy string   `json:"postdeploy"`
+	Sbom       string   `json:"sbom"`
+	Misc       []string `json:"misc"`
+}
+
+// GetId returns ToolsUsedRef.Id, and is useful for accessing the field via an interface.
+func (v *ToolsUsedRef) GetId() *string { return v.Id }
+
+// GetSource returns ToolsUsedRef.Source, and is useful for accessing the field via an interface.
+func (v *ToolsUsedRef) GetSource() string { return v.Source }
+
+// GetBuild returns ToolsUsedRef.Build, and is useful for accessing the field via an interface.
+func (v *ToolsUsedRef) GetBuild() string { return v.Build }
+
+// GetArtifact returns ToolsUsedRef.Artifact, and is useful for accessing the field via an interface.
+func (v *ToolsUsedRef) GetArtifact() string { return v.Artifact }
+
+// GetDeploy returns ToolsUsedRef.Deploy, and is useful for accessing the field via an interface.
+func (v *ToolsUsedRef) GetDeploy() string { return v.Deploy }
+
+// GetPostdeploy returns ToolsUsedRef.Postdeploy, and is useful for accessing the field via an interface.
+func (v *ToolsUsedRef) GetPostdeploy() string { return v.Postdeploy }
+
+// GetSbom returns ToolsUsedRef.Sbom, and is useful for accessing the field via an interface.
+func (v *ToolsUsedRef) GetSbom() string { return v.Sbom }
+
+// GetMisc returns ToolsUsedRef.Misc, and is useful for accessing the field via an interface.
+func (v *ToolsUsedRef) GetMisc() []string { return v.Misc }
+
 // UpdateApplicationDeploymentResponse is returned by UpdateApplicationDeployment on success.
 type UpdateApplicationDeploymentResponse struct {
 	UpdateApplicationDeployment *UpdateApplicationDeploymentUpdateApplicationDeploymentUpdateApplicationDeploymentPayload `json:"updateApplicationDeployment"`
@@ -319,6 +2693,127 @@ func (v *UpdateApplicationDeploymentUpdateApplicationDeploymentUpdateApplication
 	return v.NumUids
 }
 
+// UpdatePolicyEnforcementResponse is returned by UpdatePolicyEnforcement on success.
+type UpdatePolicyEnforcementResponse struct {
+	UpdatePolicyEnforcement *UpdatePolicyEnforcementUpdatePolicyEnforcementUpdatePolicyEnforcementPayload `json:"updatePolicyEnforcement"`
+}
+
+// GetUpdatePolicyEnforcement returns UpdatePolicyEnforcementResponse.UpdatePolicyEnforcement, and is useful for accessing the field via an interface.
+func (v *UpdatePolicyEnforcementResponse) GetUpdatePolicyEnforcement() *UpdatePolicyEnforcementUpdatePolicyEnforcementUpdatePolicyEnforcementPayload {
+	return v.UpdatePolicyEnforcement
+}
+
+// UpdatePolicyEnforcementUpdatePolicyEnforcementUpdatePolicyEnforcementPayload includes the requested fields of the GraphQL type UpdatePolicyEnforcementPayload.
+type UpdatePolicyEnforcementUpdatePolicyEnforcementUpdatePolicyEnforcementPayload struct {
+	NumUids *int `json:"numUids"`
+}
+
+// GetNumUids returns UpdatePolicyEnforcementUpdatePolicyEnforcementUpdatePolicyEnforcementPayload.NumUids, and is useful for accessing the field via an interface.
+func (v *UpdatePolicyEnforcementUpdatePolicyEnforcementUpdatePolicyEnforcementPayload) GetNumUids() *int {
+	return v.NumUids
+}
+
+type VulnerabilityRef struct {
+	Id               string                     `json:"id"`
+	Parent           string                     `json:"parent"`
+	Ratings          Severity                   `json:"ratings"`
+	RatingsInt       *int                       `json:"ratingsInt"`
+	Cwes             []*CWERef                  `json:"cwes,omitempty"`
+	Summary          string                     `json:"summary"`
+	Detail           string                     `json:"detail"`
+	Recommendation   string                     `json:"recommendation"`
+	Published        *time.Time                 `json:"published"`
+	Modified         *time.Time                 `json:"modified"`
+	CreatedAt        *time.Time                 `json:"createdAt"`
+	Cvss             float64                    `json:"cvss"`
+	AttackVector     string                     `json:"attackVector"`
+	Priority         string                     `json:"priority"`
+	PriorityInt      *int                       `json:"priorityInt"`
+	Epss             float64                    `json:"epss"`
+	Cisa_kev         string                     `json:"cisa_kev"`
+	Exploitation     string                     `json:"exploitation"`
+	Automatable      string                     `json:"automatable"`
+	TechnicalImpact  string                     `json:"technicalImpact"`
+	Affects          []*ComponentRef            `json:"affects,omitempty"`
+	PolicyEvaluation []*PolicyEvaluationDataRef `json:"policyEvaluation,omitempty"`
+}
+
+// GetId returns VulnerabilityRef.Id, and is useful for accessing the field via an interface.
+func (v *VulnerabilityRef) GetId() string { return v.Id }
+
+// GetParent returns VulnerabilityRef.Parent, and is useful for accessing the field via an interface.
+func (v *VulnerabilityRef) GetParent() string { return v.Parent }
+
+// GetRatings returns VulnerabilityRef.Ratings, and is useful for accessing the field via an interface.
+func (v *VulnerabilityRef) GetRatings() Severity { return v.Ratings }
+
+// GetRatingsInt returns VulnerabilityRef.RatingsInt, and is useful for accessing the field via an interface.
+func (v *VulnerabilityRef) GetRatingsInt() *int { return v.RatingsInt }
+
+// GetCwes returns VulnerabilityRef.Cwes, and is useful for accessing the field via an interface.
+func (v *VulnerabilityRef) GetCwes() []*CWERef { return v.Cwes }
+
+// GetSummary returns VulnerabilityRef.Summary, and is useful for accessing the field via an interface.
+func (v *VulnerabilityRef) GetSummary() string { return v.Summary }
+
+// GetDetail returns VulnerabilityRef.Detail, and is useful for accessing the field via an interface.
+func (v *VulnerabilityRef) GetDetail() string { return v.Detail }
+
+// GetRecommendation returns VulnerabilityRef.Recommendation, and is useful for accessing the field via an interface.
+func (v *VulnerabilityRef) GetRecommendation() string { return v.Recommendation }
+
+// GetPublished returns VulnerabilityRef.Published, and is useful for accessing the field via an interface.
+func (v *VulnerabilityRef) GetPublished() *time.Time { return v.Published }
+
+// GetModified returns VulnerabilityRef.Modified, and is useful for accessing the field via an interface.
+func (v *VulnerabilityRef) GetModified() *time.Time { return v.Modified }
+
+// GetCreatedAt returns VulnerabilityRef.CreatedAt, and is useful for accessing the field via an interface.
+func (v *VulnerabilityRef) GetCreatedAt() *time.Time { return v.CreatedAt }
+
+// GetCvss returns VulnerabilityRef.Cvss, and is useful for accessing the field via an interface.
+func (v *VulnerabilityRef) GetCvss() float64 { return v.Cvss }
+
+// GetAttackVector returns VulnerabilityRef.AttackVector, and is useful for accessing the field via an interface.
+func (v *VulnerabilityRef) GetAttackVector() string { return v.AttackVector }
+
+// GetPriority returns VulnerabilityRef.Priority, and is useful for accessing the field via an interface.
+func (v *VulnerabilityRef) GetPriority() string { return v.Priority }
+
+// GetPriorityInt returns VulnerabilityRef.PriorityInt, and is useful for accessing the field via an interface.
+func (v *VulnerabilityRef) GetPriorityInt() *int { return v.PriorityInt }
+
+// GetEpss returns VulnerabilityRef.Epss, and is useful for accessing the field via an interface.
+func (v *VulnerabilityRef) GetEpss() float64 { return v.Epss }
+
+// GetCisa_kev returns VulnerabilityRef.Cisa_kev, and is useful for accessing the field via an interface.
+func (v *VulnerabilityRef) GetCisa_kev() string { return v.Cisa_kev }
+
+// GetExploitation returns VulnerabilityRef.Exploitation, and is useful for accessing the field via an interface.
+func (v *VulnerabilityRef) GetExploitation() string { return v.Exploitation }
+
+// GetAutomatable returns VulnerabilityRef.Automatable, and is useful for accessing the field via an interface.
+func (v *VulnerabilityRef) GetAutomatable() string { return v.Automatable }
+
+// GetTechnicalImpact returns VulnerabilityRef.TechnicalImpact, and is useful for accessing the field via an interface.
+func (v *VulnerabilityRef) GetTechnicalImpact() string { return v.TechnicalImpact }
+
+// GetAffects returns VulnerabilityRef.Affects, and is useful for accessing the field via an interface.
+func (v *VulnerabilityRef) GetAffects() []*ComponentRef { return v.Affects }
+
+// GetPolicyEvaluation returns VulnerabilityRef.PolicyEvaluation, and is useful for accessing the field via an interface.
+func (v *VulnerabilityRef) GetPolicyEvaluation() []*PolicyEvaluationDataRef {
+	return v.PolicyEvaluation
+}
+
+// __AddPolicyDefinitionInput is used internally by genqlient
+type __AddPolicyDefinitionInput struct {
+	Policy *AddPolicyDefinitionInput `json:"policy,omitempty"`
+}
+
+// GetPolicy returns __AddPolicyDefinitionInput.Policy, and is useful for accessing the field via an interface.
+func (v *__AddPolicyDefinitionInput) GetPolicy() *AddPolicyDefinitionInput { return v.Policy }
+
 // __DeleteArtifactScanDataInput is used internally by genqlient
 type __DeleteArtifactScanDataInput struct {
 	ScanIDs []string `json:"scanIDs"`
@@ -326,6 +2821,14 @@ type __DeleteArtifactScanDataInput struct {
 
 // GetScanIDs returns __DeleteArtifactScanDataInput.ScanIDs, and is useful for accessing the field via an interface.
 func (v *__DeleteArtifactScanDataInput) GetScanIDs() []string { return v.ScanIDs }
+
+// __DeletePolicyDefinitionInput is used internally by genqlient
+type __DeletePolicyDefinitionInput struct {
+	PolicyIDs []string `json:"policyIDs"`
+}
+
+// GetPolicyIDs returns __DeletePolicyDefinitionInput.PolicyIDs, and is useful for accessing the field via an interface.
+func (v *__DeletePolicyDefinitionInput) GetPolicyIDs() []string { return v.PolicyIDs }
 
 // __DeleteRunHistoryInput is used internally by genqlient
 type __DeleteRunHistoryInput struct {
@@ -335,6 +2838,22 @@ type __DeleteRunHistoryInput struct {
 // GetIds returns __DeleteRunHistoryInput.Ids, and is useful for accessing the field via an interface.
 func (v *__DeleteRunHistoryInput) GetIds() []*string { return v.Ids }
 
+// __ExtraPoliciesInput is used internally by genqlient
+type __ExtraPoliciesInput struct {
+	PolicyNames []string `json:"policyNames"`
+}
+
+// GetPolicyNames returns __ExtraPoliciesInput.PolicyNames, and is useful for accessing the field via an interface.
+func (v *__ExtraPoliciesInput) GetPolicyNames() []string { return v.PolicyNames }
+
+// __GetPolicyEnfIDOfPolicyDefInput is used internally by genqlient
+type __GetPolicyEnfIDOfPolicyDefInput struct {
+	PolicyName string `json:"policyName"`
+}
+
+// GetPolicyName returns __GetPolicyEnfIDOfPolicyDefInput.PolicyName, and is useful for accessing the field via an interface.
+func (v *__GetPolicyEnfIDOfPolicyDefInput) GetPolicyName() string { return v.PolicyName }
+
 // __SetDefaultRunhistoryValuesInput is used internally by genqlient
 type __SetDefaultRunhistoryValuesInput struct {
 	RunhistoryID []*string `json:"runhistoryID"`
@@ -342,6 +2861,60 @@ type __SetDefaultRunhistoryValuesInput struct {
 
 // GetRunhistoryID returns __SetDefaultRunhistoryValuesInput.RunhistoryID, and is useful for accessing the field via an interface.
 func (v *__SetDefaultRunhistoryValuesInput) GetRunhistoryID() []*string { return v.RunhistoryID }
+
+// __SetDefaultTeamIDInRunHistoryInput is used internally by genqlient
+type __SetDefaultTeamIDInRunHistoryInput struct {
+	Ids []*string `json:"ids"`
+}
+
+// GetIds returns __SetDefaultTeamIDInRunHistoryInput.Ids, and is useful for accessing the field via an interface.
+func (v *__SetDefaultTeamIDInRunHistoryInput) GetIds() []*string { return v.Ids }
+
+// __UpdatePolicyEnforcementInput is used internally by genqlient
+type __UpdatePolicyEnforcementInput struct {
+	PolicyEnfIDs []*string `json:"policyEnfIDs"`
+	PolicyDefID  string    `json:"policyDefID"`
+}
+
+// GetPolicyEnfIDs returns __UpdatePolicyEnforcementInput.PolicyEnfIDs, and is useful for accessing the field via an interface.
+func (v *__UpdatePolicyEnforcementInput) GetPolicyEnfIDs() []*string { return v.PolicyEnfIDs }
+
+// GetPolicyDefID returns __UpdatePolicyEnforcementInput.PolicyDefID, and is useful for accessing the field via an interface.
+func (v *__UpdatePolicyEnforcementInput) GetPolicyDefID() string { return v.PolicyDefID }
+
+// The mutation executed by AddPolicyDefinition.
+const AddPolicyDefinition_Operation = `
+mutation AddPolicyDefinition ($policy: AddPolicyDefinitionInput!) {
+	addPolicyDefinition(input: [$policy]) {
+		numUids
+	}
+}
+`
+
+func AddPolicyDefinition(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	policy *AddPolicyDefinitionInput,
+) (data_ *AddPolicyDefinitionResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "AddPolicyDefinition",
+		Query:  AddPolicyDefinition_Operation,
+		Variables: &__AddPolicyDefinitionInput{
+			Policy: policy,
+		},
+	}
+
+	data_ = &AddPolicyDefinitionResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
 
 // The mutation executed by DeleteArtifactScanData.
 const DeleteArtifactScanData_Operation = `
@@ -367,6 +2940,41 @@ func DeleteArtifactScanData(
 	}
 
 	data_ = &DeleteArtifactScanDataResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by DeletePolicyDefinition.
+const DeletePolicyDefinition_Operation = `
+mutation DeletePolicyDefinition ($policyIDs: [String!]) {
+	deletePolicyDefinition(filter: {id:{in:$policyIDs}}) {
+		msg
+		numUids
+	}
+}
+`
+
+func DeletePolicyDefinition(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	policyIDs []string,
+) (data_ *DeletePolicyDefinitionResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "DeletePolicyDefinition",
+		Query:  DeletePolicyDefinition_Operation,
+		Variables: &__DeletePolicyDefinitionInput{
+			PolicyIDs: policyIDs,
+		},
+	}
+
+	data_ = &DeletePolicyDefinitionResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
@@ -413,6 +3021,41 @@ func DeleteRunHistory(
 	return data_, err_
 }
 
+// The query executed by ExtraPolicies.
+const ExtraPolicies_Operation = `
+query ExtraPolicies ($policyNames: [String!]) {
+	queryPolicyDefinition(filter: {not:{policyName:{in:$policyNames}}}) {
+		id
+		policyName
+	}
+}
+`
+
+func ExtraPolicies(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	policyNames []string,
+) (data_ *ExtraPoliciesResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "ExtraPolicies",
+		Query:  ExtraPolicies_Operation,
+		Variables: &__ExtraPoliciesInput{
+			PolicyNames: policyNames,
+		},
+	}
+
+	data_ = &ExtraPoliciesResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
 // The query executed by GetArtifacts.
 const GetArtifacts_Operation = `
 query GetArtifacts {
@@ -447,6 +3090,57 @@ func GetArtifacts(
 	}
 
 	data_ = &GetArtifactsResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by GetPolicyEnfIDOfPolicyDef.
+const GetPolicyEnfIDOfPolicyDef_Operation = `
+query GetPolicyEnfIDOfPolicyDef ($policyName: String!) {
+	queryPolicyEnforcement @cascade(fields: "policy") {
+		id
+		policy(filter: {policyName:{eq:$policyName}}) {
+			id
+			createdAt
+			updatedAt
+			policyName
+			category
+			stage
+			description
+			scheduledPolicy
+			script
+			variables
+			conditionName
+			suggestion
+			ownerOrg {
+				id
+			}
+		}
+	}
+}
+`
+
+func GetPolicyEnfIDOfPolicyDef(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	policyName string,
+) (data_ *GetPolicyEnfIDOfPolicyDefResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "GetPolicyEnfIDOfPolicyDef",
+		Query:  GetPolicyEnfIDOfPolicyDef_Operation,
+		Variables: &__GetPolicyEnfIDOfPolicyDefInput{
+			PolicyName: policyName,
+		},
+	}
+
+	data_ = &GetPolicyEnfIDOfPolicyDefResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
@@ -509,6 +3203,36 @@ func PolicyRunHistoryScanningDeployments(
 	}
 
 	data_ = &PolicyRunHistoryScanningDeploymentsResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by QueryRunHistoryWTeamIDNull.
+const QueryRunHistoryWTeamIDNull_Operation = `
+query QueryRunHistoryWTeamIDNull {
+	queryRunHistory(filter: {TeamID:{eq:null}}) {
+		id
+	}
+}
+`
+
+func QueryRunHistoryWTeamIDNull(
+	ctx_ context.Context,
+	client_ graphql.Client,
+) (data_ *QueryRunHistoryWTeamIDNullResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "QueryRunHistoryWTeamIDNull",
+		Query:  QueryRunHistoryWTeamIDNull_Operation,
+	}
+
+	data_ = &QueryRunHistoryWTeamIDNullResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
@@ -644,6 +3368,40 @@ func SetDefaultScanStateForArtifact(
 	return data_, err_
 }
 
+// The mutation executed by SetDefaultTeamIDInRunHistory.
+const SetDefaultTeamIDInRunHistory_Operation = `
+mutation SetDefaultTeamIDInRunHistory ($ids: [ID!]) {
+	updateRunHistory(input: {set:{TeamID:""},filter:{id:$ids}}) {
+		numUids
+	}
+}
+`
+
+func SetDefaultTeamIDInRunHistory(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	ids []*string,
+) (data_ *SetDefaultTeamIDInRunHistoryResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "SetDefaultTeamIDInRunHistory",
+		Query:  SetDefaultTeamIDInRunHistory_Operation,
+		Variables: &__SetDefaultTeamIDInRunHistoryInput{
+			Ids: ids,
+		},
+	}
+
+	data_ = &SetDefaultTeamIDInRunHistoryResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
 // The mutation executed by UpdateApplicationDeployment.
 const UpdateApplicationDeployment_Operation = `
 mutation UpdateApplicationDeployment {
@@ -663,6 +3421,42 @@ func UpdateApplicationDeployment(
 	}
 
 	data_ = &UpdateApplicationDeploymentResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by UpdatePolicyEnforcement.
+const UpdatePolicyEnforcement_Operation = `
+mutation UpdatePolicyEnforcement ($policyEnfIDs: [ID!], $policyDefID: String!) {
+	updatePolicyEnforcement(input: {set:{policy:{id:$policyDefID}},filter:{id:$policyEnfIDs}}) {
+		numUids
+	}
+}
+`
+
+func UpdatePolicyEnforcement(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	policyEnfIDs []*string,
+	policyDefID string,
+) (data_ *UpdatePolicyEnforcementResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "UpdatePolicyEnforcement",
+		Query:  UpdatePolicyEnforcement_Operation,
+		Variables: &__UpdatePolicyEnforcementInput{
+			PolicyEnfIDs: policyEnfIDs,
+			PolicyDefID:  policyDefID,
+		},
+	}
+
+	data_ = &UpdatePolicyEnforcementResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
