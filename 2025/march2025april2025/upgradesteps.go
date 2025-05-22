@@ -145,7 +145,35 @@ func UpgradeToApril2025(prodGraphUrl, prodToken string, prodDgraphClient graphql
 		}
 	}
 
-	SyncPoliciesWRepo(prodDgraphClient)
+	if err := SyncPoliciesWRepo(prodDgraphClient); err != nil {
+		return fmt.Errorf("UpgradeToApril2025: SyncPoliciesWRepo: error: %s", err.Error())
+	}
+
+	runHistoriesToDelete, err := QueryAlertsToDelete(context.Background(), prodDgraphClient)
+	if err != nil {
+		return fmt.Errorf("UpgradeToApril2025: QueryAlertsToDelete: error: %s", err.Error())
+	}
+
+	runHistoryIDs = []*string{}
+	for _, runhistory := range runHistoriesToDelete.QueryRunHistory {
+		runHistoryIDs = append(runHistoryIDs, runhistory.Id)
+		if len(runHistoryIDs) == 1000 {
+			if _, err := DeleteRunHistories(context.Background(), prodDgraphClient, runHistoryIDs); err != nil {
+				return fmt.Errorf("error: UpgradeToApril2025: DeleteRunHistories: %s", err.Error())
+			}
+			runHistoryIDs = []*string{}
+		}
+	}
+
+	if len(runHistoryIDs) != 0 {
+		if _, err := DeleteRunHistories(context.Background(), prodDgraphClient, runHistoryIDs); err != nil {
+			return fmt.Errorf("error: UpgradeToApril2025: DeleteRunHistories: %s", err.Error())
+		}
+	}
+
+	if _, err := CleanUpSecurityIssue(context.Background(), prodDgraphClient); err != nil {
+		return fmt.Errorf("UpgradeToApril2025: CleanUpSecurityIssue error: %s", err.Error())
+	}
 
 	logger.Logger.Info("--------------Completed UpgradeToApril2025------------------")
 

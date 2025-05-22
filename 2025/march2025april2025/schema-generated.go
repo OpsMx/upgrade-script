@@ -713,6 +713,26 @@ func (v *CWERef) GetName() string { return v.Name }
 // GetDescription returns CWERef.Description, and is useful for accessing the field via an interface.
 func (v *CWERef) GetDescription() string { return v.Description }
 
+// CleanUpSecurityIssueDeleteSecurityIssueDeleteSecurityIssuePayload includes the requested fields of the GraphQL type DeleteSecurityIssuePayload.
+type CleanUpSecurityIssueDeleteSecurityIssueDeleteSecurityIssuePayload struct {
+	NumUids *int `json:"numUids"`
+}
+
+// GetNumUids returns CleanUpSecurityIssueDeleteSecurityIssueDeleteSecurityIssuePayload.NumUids, and is useful for accessing the field via an interface.
+func (v *CleanUpSecurityIssueDeleteSecurityIssueDeleteSecurityIssuePayload) GetNumUids() *int {
+	return v.NumUids
+}
+
+// CleanUpSecurityIssueResponse is returned by CleanUpSecurityIssue on success.
+type CleanUpSecurityIssueResponse struct {
+	DeleteSecurityIssue *CleanUpSecurityIssueDeleteSecurityIssueDeleteSecurityIssuePayload `json:"deleteSecurityIssue"`
+}
+
+// GetDeleteSecurityIssue returns CleanUpSecurityIssueResponse.DeleteSecurityIssue, and is useful for accessing the field via an interface.
+func (v *CleanUpSecurityIssueResponse) GetDeleteSecurityIssue() *CleanUpSecurityIssueDeleteSecurityIssueDeleteSecurityIssuePayload {
+	return v.DeleteSecurityIssue
+}
+
 type CommitMetaDataRef struct {
 	// id is randomly assigned
 	Id *string `json:"id"`
@@ -931,6 +951,52 @@ type DeletePolicyDefinitionResponse struct {
 // GetDeletePolicyDefinition returns DeletePolicyDefinitionResponse.DeletePolicyDefinition, and is useful for accessing the field via an interface.
 func (v *DeletePolicyDefinitionResponse) GetDeletePolicyDefinition() *DeletePolicyDefinitionDeletePolicyDefinitionDeletePolicyDefinitionPayload {
 	return v.DeletePolicyDefinition
+}
+
+// DeletePolicyEnforcementDeletePolicyEnforcementDeletePolicyEnforcementPayload includes the requested fields of the GraphQL type DeletePolicyEnforcementPayload.
+type DeletePolicyEnforcementDeletePolicyEnforcementDeletePolicyEnforcementPayload struct {
+	Msg     string `json:"msg"`
+	NumUids *int   `json:"numUids"`
+}
+
+// GetMsg returns DeletePolicyEnforcementDeletePolicyEnforcementDeletePolicyEnforcementPayload.Msg, and is useful for accessing the field via an interface.
+func (v *DeletePolicyEnforcementDeletePolicyEnforcementDeletePolicyEnforcementPayload) GetMsg() string {
+	return v.Msg
+}
+
+// GetNumUids returns DeletePolicyEnforcementDeletePolicyEnforcementDeletePolicyEnforcementPayload.NumUids, and is useful for accessing the field via an interface.
+func (v *DeletePolicyEnforcementDeletePolicyEnforcementDeletePolicyEnforcementPayload) GetNumUids() *int {
+	return v.NumUids
+}
+
+// DeletePolicyEnforcementResponse is returned by DeletePolicyEnforcement on success.
+type DeletePolicyEnforcementResponse struct {
+	DeletePolicyEnforcement *DeletePolicyEnforcementDeletePolicyEnforcementDeletePolicyEnforcementPayload `json:"deletePolicyEnforcement"`
+}
+
+// GetDeletePolicyEnforcement returns DeletePolicyEnforcementResponse.DeletePolicyEnforcement, and is useful for accessing the field via an interface.
+func (v *DeletePolicyEnforcementResponse) GetDeletePolicyEnforcement() *DeletePolicyEnforcementDeletePolicyEnforcementDeletePolicyEnforcementPayload {
+	return v.DeletePolicyEnforcement
+}
+
+// DeleteRunHistoriesDeleteRunHistoryDeleteRunHistoryPayload includes the requested fields of the GraphQL type DeleteRunHistoryPayload.
+type DeleteRunHistoriesDeleteRunHistoryDeleteRunHistoryPayload struct {
+	NumUids *int `json:"numUids"`
+}
+
+// GetNumUids returns DeleteRunHistoriesDeleteRunHistoryDeleteRunHistoryPayload.NumUids, and is useful for accessing the field via an interface.
+func (v *DeleteRunHistoriesDeleteRunHistoryDeleteRunHistoryPayload) GetNumUids() *int {
+	return v.NumUids
+}
+
+// DeleteRunHistoriesResponse is returned by DeleteRunHistories on success.
+type DeleteRunHistoriesResponse struct {
+	DeleteRunHistory *DeleteRunHistoriesDeleteRunHistoryDeleteRunHistoryPayload `json:"deleteRunHistory"`
+}
+
+// GetDeleteRunHistory returns DeleteRunHistoriesResponse.DeleteRunHistory, and is useful for accessing the field via an interface.
+func (v *DeleteRunHistoriesResponse) GetDeleteRunHistory() *DeleteRunHistoriesDeleteRunHistoryDeleteRunHistoryPayload {
+	return v.DeleteRunHistory
 }
 
 // DeleteRunHistoryDeleteRunHistoryDeleteRunHistoryPayload includes the requested fields of the GraphQL type DeleteRunHistoryPayload.
@@ -1946,6 +2012,24 @@ func (v *ProjectRef) GetScans() []*ScanTargetRef { return v.Scans }
 // GetType returns ProjectRef.Type, and is useful for accessing the field via an interface.
 func (v *ProjectRef) GetType() string { return v.Type }
 
+// QueryAlertsToDeleteQueryRunHistory includes the requested fields of the GraphQL type RunHistory.
+type QueryAlertsToDeleteQueryRunHistory struct {
+	Id *string `json:"id"`
+}
+
+// GetId returns QueryAlertsToDeleteQueryRunHistory.Id, and is useful for accessing the field via an interface.
+func (v *QueryAlertsToDeleteQueryRunHistory) GetId() *string { return v.Id }
+
+// QueryAlertsToDeleteResponse is returned by QueryAlertsToDelete on success.
+type QueryAlertsToDeleteResponse struct {
+	QueryRunHistory []*QueryAlertsToDeleteQueryRunHistory `json:"queryRunHistory"`
+}
+
+// GetQueryRunHistory returns QueryAlertsToDeleteResponse.QueryRunHistory, and is useful for accessing the field via an interface.
+func (v *QueryAlertsToDeleteResponse) GetQueryRunHistory() []*QueryAlertsToDeleteQueryRunHistory {
+	return v.QueryRunHistory
+}
+
 // QueryRunHistoryWTeamIDNullQueryRunHistory includes the requested fields of the GraphQL type RunHistory.
 type QueryRunHistoryWTeamIDNullQueryRunHistory struct {
 	Id *string `json:"id"`
@@ -2830,6 +2914,14 @@ type __DeletePolicyDefinitionInput struct {
 // GetPolicyIDs returns __DeletePolicyDefinitionInput.PolicyIDs, and is useful for accessing the field via an interface.
 func (v *__DeletePolicyDefinitionInput) GetPolicyIDs() []string { return v.PolicyIDs }
 
+// __DeleteRunHistoriesInput is used internally by genqlient
+type __DeleteRunHistoriesInput struct {
+	Ids []*string `json:"ids"`
+}
+
+// GetIds returns __DeleteRunHistoriesInput.Ids, and is useful for accessing the field via an interface.
+func (v *__DeleteRunHistoriesInput) GetIds() []*string { return v.Ids }
+
 // __DeleteRunHistoryInput is used internally by genqlient
 type __DeleteRunHistoryInput struct {
 	Ids []*string `json:"ids"`
@@ -2916,6 +3008,36 @@ func AddPolicyDefinition(
 	return data_, err_
 }
 
+// The mutation executed by CleanUpSecurityIssue.
+const CleanUpSecurityIssue_Operation = `
+mutation CleanUpSecurityIssue {
+	deleteSecurityIssue(filter: {not:{has:Affects}}) {
+		numUids
+	}
+}
+`
+
+func CleanUpSecurityIssue(
+	ctx_ context.Context,
+	client_ graphql.Client,
+) (data_ *CleanUpSecurityIssueResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "CleanUpSecurityIssue",
+		Query:  CleanUpSecurityIssue_Operation,
+	}
+
+	data_ = &CleanUpSecurityIssueResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
 // The mutation executed by DeleteArtifactScanData.
 const DeleteArtifactScanData_Operation = `
 mutation DeleteArtifactScanData ($scanIDs: [String]) {
@@ -2975,6 +3097,71 @@ func DeletePolicyDefinition(
 	}
 
 	data_ = &DeletePolicyDefinitionResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by DeletePolicyEnforcement.
+const DeletePolicyEnforcement_Operation = `
+mutation DeletePolicyEnforcement {
+	deletePolicyEnforcement(filter: {not:{has:policy}}) {
+		msg
+		numUids
+	}
+}
+`
+
+func DeletePolicyEnforcement(
+	ctx_ context.Context,
+	client_ graphql.Client,
+) (data_ *DeletePolicyEnforcementResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "DeletePolicyEnforcement",
+		Query:  DeletePolicyEnforcement_Operation,
+	}
+
+	data_ = &DeletePolicyEnforcementResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by DeleteRunHistories.
+const DeleteRunHistories_Operation = `
+mutation DeleteRunHistories ($ids: [ID!]) {
+	deleteRunHistory(filter: {id:$ids}) {
+		numUids
+	}
+}
+`
+
+func DeleteRunHistories(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	ids []*string,
+) (data_ *DeleteRunHistoriesResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "DeleteRunHistories",
+		Query:  DeleteRunHistories_Operation,
+		Variables: &__DeleteRunHistoriesInput{
+			Ids: ids,
+		},
+	}
+
+	data_ = &DeleteRunHistoriesResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
@@ -3203,6 +3390,36 @@ func PolicyRunHistoryScanningDeployments(
 	}
 
 	data_ = &PolicyRunHistoryScanningDeploymentsResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by QueryAlertsToDelete.
+const QueryAlertsToDelete_Operation = `
+query QueryAlertsToDelete {
+	queryRunHistory(filter: {not:{has:policyEnforcements}}) {
+		id
+	}
+}
+`
+
+func QueryAlertsToDelete(
+	ctx_ context.Context,
+	client_ graphql.Client,
+) (data_ *QueryAlertsToDeleteResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "QueryAlertsToDelete",
+		Query:  QueryAlertsToDelete_Operation,
+	}
+
+	data_ = &QueryAlertsToDeleteResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(

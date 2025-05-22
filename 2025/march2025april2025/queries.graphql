@@ -165,3 +165,28 @@ mutation UpdatePolicyEnforcement($policyEnfIDs:[ID!],$policyDefID:String!) {
         numUids
     }
 }
+
+mutation DeletePolicyEnforcement {
+    deletePolicyEnforcement(filter: { not: { has: policy } }) {
+        msg
+        numUids
+    }
+}
+
+query QueryAlertsToDelete {
+    queryRunHistory(filter: { not: { has: policyEnforcements } }) {
+        id
+    }
+}
+
+mutation DeleteRunHistories($ids:[ID!]) {
+    deleteRunHistory(filter: { id: $ids }) {
+        numUids
+    }
+}
+
+mutation CleanUpSecurityIssue {
+    deleteSecurityIssue(filter: { not: { has: Affects } }) {
+        numUids
+    }
+}
