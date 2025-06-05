@@ -77,6 +77,7 @@ var expDgraphSchemaMap = map[int]bool{
 	February2025Version.Int():  false,
 	March2025Version.Int():     false,
 	April2025Version.Int():     false,
+	May2025Version.Int():       false,
 }
 
 func (e SchemaOrder) NameOfSchema() string {
