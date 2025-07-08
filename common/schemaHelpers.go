@@ -24,6 +24,7 @@ const (
 	March2025Version
 	April2025Version
 	May2025Version
+	June2025Version
 )
 
 var SchemasString = map[SchemaOrder]string{
@@ -42,6 +43,7 @@ var SchemasString = map[SchemaOrder]string{
 	March2025Version:     schemas.March2025Schema,
 	April2025Version:     schemas.April2025Schema,
 	May2025Version:       schemas.May2025Schema,
+	June2025Version:      schemas.June2025Schema,
 }
 
 var schemaOrderMap = map[string]SchemaOrder{
@@ -60,6 +62,7 @@ var schemaOrderMap = map[string]SchemaOrder{
 	"March2025":     March2025Version,
 	"April2025":     April2025Version,
 	"May2025":       May2025Version,
+	"June2025":      June2025Version,
 }
 
 var expDgraphSchemaMap = map[int]bool{
@@ -78,6 +81,7 @@ var expDgraphSchemaMap = map[int]bool{
 	March2025Version.Int():     false,
 	April2025Version.Int():     false,
 	May2025Version.Int():       false,
+	June2025Version.Int():      false,
 }
 
 func (e SchemaOrder) NameOfSchema() string {

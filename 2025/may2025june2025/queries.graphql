@@ -1,0 +1,6 @@
+
+mutation SetProjectRiskAsCompleted {
+    updateProject(input: { set: { riskStatus: completed }, filter: { has: name } }) {
+        numUids
+    }
+}
