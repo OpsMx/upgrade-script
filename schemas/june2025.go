@@ -745,6 +745,7 @@ type ComponentLicenses {
     Id: ID!
     Name: String! @search(by: [exact,regexp])
     Category: String! @search(by: [exact,regexp])
+    Url: String @search(by: [exact,regexp])
 }
 
 enum Severity {
@@ -1239,5 +1240,4 @@ type ScanResult
 }
 
 # Dgraph.Allow-Origin "http://localhost:4200"
-# Dgraph.Authorization {"VerificationKey":"","Header":"X-OpsMx-Auth","jwkurl":"http://token-machine:8050/jwk","Namespace":"ssd.opsmx.io","Algo":"","Audience":["ssd.opsmx.io"],"ClosedByDefault":false} 
-`
+# Dgraph.Authorization {"VerificationKey":"","Header":"X-OpsMx-Auth","jwkurl":"http://token-machine:8050/jwk","Namespace":"ssd.opsmx.io","Algo":"","Audience":["ssd.opsmx.io"],"ClosedByDefault":false} `
