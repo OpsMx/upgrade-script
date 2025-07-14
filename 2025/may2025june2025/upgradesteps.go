@@ -14,7 +14,7 @@ func UpgradeToJune2025(prodGraphUrl, prodToken string, prodDgraphClient graphql.
 
 	logger.Logger.Info("--------------Starting UpgradeToJune2025------------------")
 
-	if err := graphqlfunc.UpdateSchema(prodGraphUrl, prodToken, []byte(schemas.May2025Schema)); err != nil {
+	if err := graphqlfunc.UpdateSchema(prodGraphUrl, prodToken, []byte(schemas.June2025Schema)); err != nil {
 		return fmt.Errorf("error: UpgradeToJune2025: UpdateSchema: %s", err.Error())
 	}
 
