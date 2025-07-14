@@ -19,6 +19,7 @@ import (
 	"upgradationScript/2025/february2025march2025"
 	"upgradationScript/2025/january2025february2025"
 	"upgradationScript/2025/march2025april2025"
+	"upgradationScript/2025/may2025june2025"
 	featuretable "upgradationScript/featureTable"
 	graphqlfunc "upgradationScript/graphqlFunc"
 
@@ -194,6 +195,9 @@ func beginProcessOfUpgrade(upgradeTo SchemaOrder, isSecondDgraphRequired, isLast
 
 	case May2025Version:
 		return april2025may2025.UpgradeToMay2025(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, prodGraphqlClient)
+
+	case June2025Version:
+		return may2025june2025.UpgradeToJune2025(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, prodGraphqlClient)
 	}
 
 	logger.Sl.Debugf("no upgrade steps for %s", upgradeTo.NameOfSchema())
