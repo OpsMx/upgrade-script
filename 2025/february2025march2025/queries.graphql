@@ -25,29 +25,78 @@ query QueryRunHistoryWithApplicationDeployment {
     }
 }
 
-mutation UpdateRunHistoryDeploymentFields(
-    $runHistoryID: ID!
+mutation UpdateRunHistoryWAppDeploymentID(
+    $runHistoryID: [ID!]
     $deploymentID: String!
+) {
+    updateRunHistory(
+        input: { filter: { id: $runHistoryID }, set: { DeploymentID: $deploymentID } }
+    ) {
+        numUids
+    }
+}
+
+mutation UpdateRunHistoryWSbomTool(
+    $runHistoryID: [ID!]
     $sbomTool: String!
+) {
+    updateRunHistory(
+        input: { filter: { id: $runHistoryID }, set: { SbomTool: $sbomTool } }
+    ) {
+        numUids
+    }
+}
+
+mutation UpdateRunHistoryWNamespace(
+    $runHistoryID: [ID!]
     $namespace: String!
+) {
+    updateRunHistory(
+        input: { filter: { id: $runHistoryID }, set: { Namespace: $namespace } }
+    ) {
+        numUids
+    }
+}
+
+mutation UpdateRunHistoryWAccount(
+    $runHistoryID: [ID!]
     $account: String!
+) {
+    updateRunHistory(
+        input: { filter: { id: $runHistoryID }, set: { Account: $account } }
+    ) {
+        numUids
+    }
+}
+
+mutation UpdateRunHistoryWCluster(
+    $runHistoryID: [ID!]
     $cluster: String!
+) {
+    updateRunHistory(
+        input: { filter: { id: $runHistoryID }, set: { Cluster: $cluster } }
+    ) {
+        numUids
+    }
+}
+
+mutation UpdateRunHistoryWApplication(
+    $runHistoryID: [ID!]
     $application: String!
+) {
+    updateRunHistory(
+        input: { filter: { id: $runHistoryID }, set: { Application: $application } }
+    ) {
+        numUids
+    }
+}
+
+mutation UpdateRunHistoryWTeamID(
+    $runHistoryID: [ID!]
     $teamID: String!
 ) {
     updateRunHistory(
-        input: {
-            filter: { id: [$runHistoryID] }
-            set: {
-                DeploymentID: $deploymentID
-                SbomTool: $sbomTool
-                Namespace: $namespace
-                Account: $account
-                Cluster: $cluster
-                Application: $application
-                TeamID: $teamID
-            }
-        }
+        input: { filter: { id: $runHistoryID }, set: { TeamID: $teamID } }
     ) {
         numUids
     }
@@ -59,18 +108,6 @@ query QueryRunHistoryWithArtifactScanData {
         artifactScan {
             tool
         }
-    }
-}
-
-mutation UpdateArtifactRunHistory(
-    $runHistoryID: ID!
-    $sbomTool: String!
-) {
-    updateRunHistory(input: { filter: { id: [$runHistoryID] }, set: {
-        SbomTool: $sbomTool
-
-    } }) {
-        numUids
     }
 }
 

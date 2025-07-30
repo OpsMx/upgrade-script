@@ -289,26 +289,6 @@ func (v *SetKubescapeLatestFileTSNodeToDefaultUpdateDeploymentTargetUpdateDeploy
 	return v.NumUids
 }
 
-// UpdateArtifactRunHistoryResponse is returned by UpdateArtifactRunHistory on success.
-type UpdateArtifactRunHistoryResponse struct {
-	UpdateRunHistory *UpdateArtifactRunHistoryUpdateRunHistoryUpdateRunHistoryPayload `json:"updateRunHistory"`
-}
-
-// GetUpdateRunHistory returns UpdateArtifactRunHistoryResponse.UpdateRunHistory, and is useful for accessing the field via an interface.
-func (v *UpdateArtifactRunHistoryResponse) GetUpdateRunHistory() *UpdateArtifactRunHistoryUpdateRunHistoryUpdateRunHistoryPayload {
-	return v.UpdateRunHistory
-}
-
-// UpdateArtifactRunHistoryUpdateRunHistoryUpdateRunHistoryPayload includes the requested fields of the GraphQL type UpdateRunHistoryPayload.
-type UpdateArtifactRunHistoryUpdateRunHistoryUpdateRunHistoryPayload struct {
-	NumUids *int `json:"numUids"`
-}
-
-// GetNumUids returns UpdateArtifactRunHistoryUpdateRunHistoryUpdateRunHistoryPayload.NumUids, and is useful for accessing the field via an interface.
-func (v *UpdateArtifactRunHistoryUpdateRunHistoryUpdateRunHistoryPayload) GetNumUids() *int {
-	return v.NumUids
-}
-
 // UpdateBlockedApplicationDeploymentResponse is returned by UpdateBlockedApplicationDeployment on success.
 type UpdateBlockedApplicationDeploymentResponse struct {
 	UpdateApplicationDeployment *UpdateBlockedApplicationDeploymentUpdateApplicationDeploymentUpdateApplicationDeploymentPayload `json:"updateApplicationDeployment"`
@@ -349,23 +329,143 @@ func (v *UpdateNonBlockedApplicationDeploymentUpdateApplicationDeploymentUpdateA
 	return v.NumUids
 }
 
-// UpdateRunHistoryDeploymentFieldsResponse is returned by UpdateRunHistoryDeploymentFields on success.
-type UpdateRunHistoryDeploymentFieldsResponse struct {
-	UpdateRunHistory *UpdateRunHistoryDeploymentFieldsUpdateRunHistoryUpdateRunHistoryPayload `json:"updateRunHistory"`
+// UpdateRunHistoryWAccountResponse is returned by UpdateRunHistoryWAccount on success.
+type UpdateRunHistoryWAccountResponse struct {
+	UpdateRunHistory *UpdateRunHistoryWAccountUpdateRunHistoryUpdateRunHistoryPayload `json:"updateRunHistory"`
 }
 
-// GetUpdateRunHistory returns UpdateRunHistoryDeploymentFieldsResponse.UpdateRunHistory, and is useful for accessing the field via an interface.
-func (v *UpdateRunHistoryDeploymentFieldsResponse) GetUpdateRunHistory() *UpdateRunHistoryDeploymentFieldsUpdateRunHistoryUpdateRunHistoryPayload {
+// GetUpdateRunHistory returns UpdateRunHistoryWAccountResponse.UpdateRunHistory, and is useful for accessing the field via an interface.
+func (v *UpdateRunHistoryWAccountResponse) GetUpdateRunHistory() *UpdateRunHistoryWAccountUpdateRunHistoryUpdateRunHistoryPayload {
 	return v.UpdateRunHistory
 }
 
-// UpdateRunHistoryDeploymentFieldsUpdateRunHistoryUpdateRunHistoryPayload includes the requested fields of the GraphQL type UpdateRunHistoryPayload.
-type UpdateRunHistoryDeploymentFieldsUpdateRunHistoryUpdateRunHistoryPayload struct {
+// UpdateRunHistoryWAccountUpdateRunHistoryUpdateRunHistoryPayload includes the requested fields of the GraphQL type UpdateRunHistoryPayload.
+type UpdateRunHistoryWAccountUpdateRunHistoryUpdateRunHistoryPayload struct {
 	NumUids *int `json:"numUids"`
 }
 
-// GetNumUids returns UpdateRunHistoryDeploymentFieldsUpdateRunHistoryUpdateRunHistoryPayload.NumUids, and is useful for accessing the field via an interface.
-func (v *UpdateRunHistoryDeploymentFieldsUpdateRunHistoryUpdateRunHistoryPayload) GetNumUids() *int {
+// GetNumUids returns UpdateRunHistoryWAccountUpdateRunHistoryUpdateRunHistoryPayload.NumUids, and is useful for accessing the field via an interface.
+func (v *UpdateRunHistoryWAccountUpdateRunHistoryUpdateRunHistoryPayload) GetNumUids() *int {
+	return v.NumUids
+}
+
+// UpdateRunHistoryWAppDeploymentIDResponse is returned by UpdateRunHistoryWAppDeploymentID on success.
+type UpdateRunHistoryWAppDeploymentIDResponse struct {
+	UpdateRunHistory *UpdateRunHistoryWAppDeploymentIDUpdateRunHistoryUpdateRunHistoryPayload `json:"updateRunHistory"`
+}
+
+// GetUpdateRunHistory returns UpdateRunHistoryWAppDeploymentIDResponse.UpdateRunHistory, and is useful for accessing the field via an interface.
+func (v *UpdateRunHistoryWAppDeploymentIDResponse) GetUpdateRunHistory() *UpdateRunHistoryWAppDeploymentIDUpdateRunHistoryUpdateRunHistoryPayload {
+	return v.UpdateRunHistory
+}
+
+// UpdateRunHistoryWAppDeploymentIDUpdateRunHistoryUpdateRunHistoryPayload includes the requested fields of the GraphQL type UpdateRunHistoryPayload.
+type UpdateRunHistoryWAppDeploymentIDUpdateRunHistoryUpdateRunHistoryPayload struct {
+	NumUids *int `json:"numUids"`
+}
+
+// GetNumUids returns UpdateRunHistoryWAppDeploymentIDUpdateRunHistoryUpdateRunHistoryPayload.NumUids, and is useful for accessing the field via an interface.
+func (v *UpdateRunHistoryWAppDeploymentIDUpdateRunHistoryUpdateRunHistoryPayload) GetNumUids() *int {
+	return v.NumUids
+}
+
+// UpdateRunHistoryWApplicationResponse is returned by UpdateRunHistoryWApplication on success.
+type UpdateRunHistoryWApplicationResponse struct {
+	UpdateRunHistory *UpdateRunHistoryWApplicationUpdateRunHistoryUpdateRunHistoryPayload `json:"updateRunHistory"`
+}
+
+// GetUpdateRunHistory returns UpdateRunHistoryWApplicationResponse.UpdateRunHistory, and is useful for accessing the field via an interface.
+func (v *UpdateRunHistoryWApplicationResponse) GetUpdateRunHistory() *UpdateRunHistoryWApplicationUpdateRunHistoryUpdateRunHistoryPayload {
+	return v.UpdateRunHistory
+}
+
+// UpdateRunHistoryWApplicationUpdateRunHistoryUpdateRunHistoryPayload includes the requested fields of the GraphQL type UpdateRunHistoryPayload.
+type UpdateRunHistoryWApplicationUpdateRunHistoryUpdateRunHistoryPayload struct {
+	NumUids *int `json:"numUids"`
+}
+
+// GetNumUids returns UpdateRunHistoryWApplicationUpdateRunHistoryUpdateRunHistoryPayload.NumUids, and is useful for accessing the field via an interface.
+func (v *UpdateRunHistoryWApplicationUpdateRunHistoryUpdateRunHistoryPayload) GetNumUids() *int {
+	return v.NumUids
+}
+
+// UpdateRunHistoryWClusterResponse is returned by UpdateRunHistoryWCluster on success.
+type UpdateRunHistoryWClusterResponse struct {
+	UpdateRunHistory *UpdateRunHistoryWClusterUpdateRunHistoryUpdateRunHistoryPayload `json:"updateRunHistory"`
+}
+
+// GetUpdateRunHistory returns UpdateRunHistoryWClusterResponse.UpdateRunHistory, and is useful for accessing the field via an interface.
+func (v *UpdateRunHistoryWClusterResponse) GetUpdateRunHistory() *UpdateRunHistoryWClusterUpdateRunHistoryUpdateRunHistoryPayload {
+	return v.UpdateRunHistory
+}
+
+// UpdateRunHistoryWClusterUpdateRunHistoryUpdateRunHistoryPayload includes the requested fields of the GraphQL type UpdateRunHistoryPayload.
+type UpdateRunHistoryWClusterUpdateRunHistoryUpdateRunHistoryPayload struct {
+	NumUids *int `json:"numUids"`
+}
+
+// GetNumUids returns UpdateRunHistoryWClusterUpdateRunHistoryUpdateRunHistoryPayload.NumUids, and is useful for accessing the field via an interface.
+func (v *UpdateRunHistoryWClusterUpdateRunHistoryUpdateRunHistoryPayload) GetNumUids() *int {
+	return v.NumUids
+}
+
+// UpdateRunHistoryWNamespaceResponse is returned by UpdateRunHistoryWNamespace on success.
+type UpdateRunHistoryWNamespaceResponse struct {
+	UpdateRunHistory *UpdateRunHistoryWNamespaceUpdateRunHistoryUpdateRunHistoryPayload `json:"updateRunHistory"`
+}
+
+// GetUpdateRunHistory returns UpdateRunHistoryWNamespaceResponse.UpdateRunHistory, and is useful for accessing the field via an interface.
+func (v *UpdateRunHistoryWNamespaceResponse) GetUpdateRunHistory() *UpdateRunHistoryWNamespaceUpdateRunHistoryUpdateRunHistoryPayload {
+	return v.UpdateRunHistory
+}
+
+// UpdateRunHistoryWNamespaceUpdateRunHistoryUpdateRunHistoryPayload includes the requested fields of the GraphQL type UpdateRunHistoryPayload.
+type UpdateRunHistoryWNamespaceUpdateRunHistoryUpdateRunHistoryPayload struct {
+	NumUids *int `json:"numUids"`
+}
+
+// GetNumUids returns UpdateRunHistoryWNamespaceUpdateRunHistoryUpdateRunHistoryPayload.NumUids, and is useful for accessing the field via an interface.
+func (v *UpdateRunHistoryWNamespaceUpdateRunHistoryUpdateRunHistoryPayload) GetNumUids() *int {
+	return v.NumUids
+}
+
+// UpdateRunHistoryWSbomToolResponse is returned by UpdateRunHistoryWSbomTool on success.
+type UpdateRunHistoryWSbomToolResponse struct {
+	UpdateRunHistory *UpdateRunHistoryWSbomToolUpdateRunHistoryUpdateRunHistoryPayload `json:"updateRunHistory"`
+}
+
+// GetUpdateRunHistory returns UpdateRunHistoryWSbomToolResponse.UpdateRunHistory, and is useful for accessing the field via an interface.
+func (v *UpdateRunHistoryWSbomToolResponse) GetUpdateRunHistory() *UpdateRunHistoryWSbomToolUpdateRunHistoryUpdateRunHistoryPayload {
+	return v.UpdateRunHistory
+}
+
+// UpdateRunHistoryWSbomToolUpdateRunHistoryUpdateRunHistoryPayload includes the requested fields of the GraphQL type UpdateRunHistoryPayload.
+type UpdateRunHistoryWSbomToolUpdateRunHistoryUpdateRunHistoryPayload struct {
+	NumUids *int `json:"numUids"`
+}
+
+// GetNumUids returns UpdateRunHistoryWSbomToolUpdateRunHistoryUpdateRunHistoryPayload.NumUids, and is useful for accessing the field via an interface.
+func (v *UpdateRunHistoryWSbomToolUpdateRunHistoryUpdateRunHistoryPayload) GetNumUids() *int {
+	return v.NumUids
+}
+
+// UpdateRunHistoryWTeamIDResponse is returned by UpdateRunHistoryWTeamID on success.
+type UpdateRunHistoryWTeamIDResponse struct {
+	UpdateRunHistory *UpdateRunHistoryWTeamIDUpdateRunHistoryUpdateRunHistoryPayload `json:"updateRunHistory"`
+}
+
+// GetUpdateRunHistory returns UpdateRunHistoryWTeamIDResponse.UpdateRunHistory, and is useful for accessing the field via an interface.
+func (v *UpdateRunHistoryWTeamIDResponse) GetUpdateRunHistory() *UpdateRunHistoryWTeamIDUpdateRunHistoryUpdateRunHistoryPayload {
+	return v.UpdateRunHistory
+}
+
+// UpdateRunHistoryWTeamIDUpdateRunHistoryUpdateRunHistoryPayload includes the requested fields of the GraphQL type UpdateRunHistoryPayload.
+type UpdateRunHistoryWTeamIDUpdateRunHistoryUpdateRunHistoryPayload struct {
+	NumUids *int `json:"numUids"`
+}
+
+// GetNumUids returns UpdateRunHistoryWTeamIDUpdateRunHistoryUpdateRunHistoryPayload.NumUids, and is useful for accessing the field via an interface.
+func (v *UpdateRunHistoryWTeamIDUpdateRunHistoryUpdateRunHistoryPayload) GetNumUids() *int {
 	return v.NumUids
 }
 
@@ -377,53 +477,89 @@ type __DeletePolicyEnforcementInput struct {
 // GetId returns __DeletePolicyEnforcementInput.Id, and is useful for accessing the field via an interface.
 func (v *__DeletePolicyEnforcementInput) GetId() *string { return v.Id }
 
-// __UpdateArtifactRunHistoryInput is used internally by genqlient
-type __UpdateArtifactRunHistoryInput struct {
-	RunHistoryID *string `json:"runHistoryID"`
-	SbomTool     string  `json:"sbomTool"`
+// __UpdateRunHistoryWAccountInput is used internally by genqlient
+type __UpdateRunHistoryWAccountInput struct {
+	RunHistoryID []*string `json:"runHistoryID"`
+	Account      string    `json:"account"`
 }
 
-// GetRunHistoryID returns __UpdateArtifactRunHistoryInput.RunHistoryID, and is useful for accessing the field via an interface.
-func (v *__UpdateArtifactRunHistoryInput) GetRunHistoryID() *string { return v.RunHistoryID }
+// GetRunHistoryID returns __UpdateRunHistoryWAccountInput.RunHistoryID, and is useful for accessing the field via an interface.
+func (v *__UpdateRunHistoryWAccountInput) GetRunHistoryID() []*string { return v.RunHistoryID }
 
-// GetSbomTool returns __UpdateArtifactRunHistoryInput.SbomTool, and is useful for accessing the field via an interface.
-func (v *__UpdateArtifactRunHistoryInput) GetSbomTool() string { return v.SbomTool }
+// GetAccount returns __UpdateRunHistoryWAccountInput.Account, and is useful for accessing the field via an interface.
+func (v *__UpdateRunHistoryWAccountInput) GetAccount() string { return v.Account }
 
-// __UpdateRunHistoryDeploymentFieldsInput is used internally by genqlient
-type __UpdateRunHistoryDeploymentFieldsInput struct {
-	RunHistoryID *string `json:"runHistoryID"`
-	DeploymentID string  `json:"deploymentID"`
-	SbomTool     string  `json:"sbomTool"`
-	Namespace    string  `json:"namespace"`
-	Account      string  `json:"account"`
-	Cluster      string  `json:"cluster"`
-	Application  string  `json:"application"`
-	TeamID       string  `json:"teamID"`
+// __UpdateRunHistoryWAppDeploymentIDInput is used internally by genqlient
+type __UpdateRunHistoryWAppDeploymentIDInput struct {
+	RunHistoryID []*string `json:"runHistoryID"`
+	DeploymentID string    `json:"deploymentID"`
 }
 
-// GetRunHistoryID returns __UpdateRunHistoryDeploymentFieldsInput.RunHistoryID, and is useful for accessing the field via an interface.
-func (v *__UpdateRunHistoryDeploymentFieldsInput) GetRunHistoryID() *string { return v.RunHistoryID }
+// GetRunHistoryID returns __UpdateRunHistoryWAppDeploymentIDInput.RunHistoryID, and is useful for accessing the field via an interface.
+func (v *__UpdateRunHistoryWAppDeploymentIDInput) GetRunHistoryID() []*string { return v.RunHistoryID }
 
-// GetDeploymentID returns __UpdateRunHistoryDeploymentFieldsInput.DeploymentID, and is useful for accessing the field via an interface.
-func (v *__UpdateRunHistoryDeploymentFieldsInput) GetDeploymentID() string { return v.DeploymentID }
+// GetDeploymentID returns __UpdateRunHistoryWAppDeploymentIDInput.DeploymentID, and is useful for accessing the field via an interface.
+func (v *__UpdateRunHistoryWAppDeploymentIDInput) GetDeploymentID() string { return v.DeploymentID }
 
-// GetSbomTool returns __UpdateRunHistoryDeploymentFieldsInput.SbomTool, and is useful for accessing the field via an interface.
-func (v *__UpdateRunHistoryDeploymentFieldsInput) GetSbomTool() string { return v.SbomTool }
+// __UpdateRunHistoryWApplicationInput is used internally by genqlient
+type __UpdateRunHistoryWApplicationInput struct {
+	RunHistoryID []*string `json:"runHistoryID"`
+	Application  string    `json:"application"`
+}
 
-// GetNamespace returns __UpdateRunHistoryDeploymentFieldsInput.Namespace, and is useful for accessing the field via an interface.
-func (v *__UpdateRunHistoryDeploymentFieldsInput) GetNamespace() string { return v.Namespace }
+// GetRunHistoryID returns __UpdateRunHistoryWApplicationInput.RunHistoryID, and is useful for accessing the field via an interface.
+func (v *__UpdateRunHistoryWApplicationInput) GetRunHistoryID() []*string { return v.RunHistoryID }
 
-// GetAccount returns __UpdateRunHistoryDeploymentFieldsInput.Account, and is useful for accessing the field via an interface.
-func (v *__UpdateRunHistoryDeploymentFieldsInput) GetAccount() string { return v.Account }
+// GetApplication returns __UpdateRunHistoryWApplicationInput.Application, and is useful for accessing the field via an interface.
+func (v *__UpdateRunHistoryWApplicationInput) GetApplication() string { return v.Application }
 
-// GetCluster returns __UpdateRunHistoryDeploymentFieldsInput.Cluster, and is useful for accessing the field via an interface.
-func (v *__UpdateRunHistoryDeploymentFieldsInput) GetCluster() string { return v.Cluster }
+// __UpdateRunHistoryWClusterInput is used internally by genqlient
+type __UpdateRunHistoryWClusterInput struct {
+	RunHistoryID []*string `json:"runHistoryID"`
+	Cluster      string    `json:"cluster"`
+}
 
-// GetApplication returns __UpdateRunHistoryDeploymentFieldsInput.Application, and is useful for accessing the field via an interface.
-func (v *__UpdateRunHistoryDeploymentFieldsInput) GetApplication() string { return v.Application }
+// GetRunHistoryID returns __UpdateRunHistoryWClusterInput.RunHistoryID, and is useful for accessing the field via an interface.
+func (v *__UpdateRunHistoryWClusterInput) GetRunHistoryID() []*string { return v.RunHistoryID }
 
-// GetTeamID returns __UpdateRunHistoryDeploymentFieldsInput.TeamID, and is useful for accessing the field via an interface.
-func (v *__UpdateRunHistoryDeploymentFieldsInput) GetTeamID() string { return v.TeamID }
+// GetCluster returns __UpdateRunHistoryWClusterInput.Cluster, and is useful for accessing the field via an interface.
+func (v *__UpdateRunHistoryWClusterInput) GetCluster() string { return v.Cluster }
+
+// __UpdateRunHistoryWNamespaceInput is used internally by genqlient
+type __UpdateRunHistoryWNamespaceInput struct {
+	RunHistoryID []*string `json:"runHistoryID"`
+	Namespace    string    `json:"namespace"`
+}
+
+// GetRunHistoryID returns __UpdateRunHistoryWNamespaceInput.RunHistoryID, and is useful for accessing the field via an interface.
+func (v *__UpdateRunHistoryWNamespaceInput) GetRunHistoryID() []*string { return v.RunHistoryID }
+
+// GetNamespace returns __UpdateRunHistoryWNamespaceInput.Namespace, and is useful for accessing the field via an interface.
+func (v *__UpdateRunHistoryWNamespaceInput) GetNamespace() string { return v.Namespace }
+
+// __UpdateRunHistoryWSbomToolInput is used internally by genqlient
+type __UpdateRunHistoryWSbomToolInput struct {
+	RunHistoryID []*string `json:"runHistoryID"`
+	SbomTool     string    `json:"sbomTool"`
+}
+
+// GetRunHistoryID returns __UpdateRunHistoryWSbomToolInput.RunHistoryID, and is useful for accessing the field via an interface.
+func (v *__UpdateRunHistoryWSbomToolInput) GetRunHistoryID() []*string { return v.RunHistoryID }
+
+// GetSbomTool returns __UpdateRunHistoryWSbomToolInput.SbomTool, and is useful for accessing the field via an interface.
+func (v *__UpdateRunHistoryWSbomToolInput) GetSbomTool() string { return v.SbomTool }
+
+// __UpdateRunHistoryWTeamIDInput is used internally by genqlient
+type __UpdateRunHistoryWTeamIDInput struct {
+	RunHistoryID []*string `json:"runHistoryID"`
+	TeamID       string    `json:"teamID"`
+}
+
+// GetRunHistoryID returns __UpdateRunHistoryWTeamIDInput.RunHistoryID, and is useful for accessing the field via an interface.
+func (v *__UpdateRunHistoryWTeamIDInput) GetRunHistoryID() []*string { return v.RunHistoryID }
+
+// GetTeamID returns __UpdateRunHistoryWTeamIDInput.TeamID, and is useful for accessing the field via an interface.
+func (v *__UpdateRunHistoryWTeamIDInput) GetTeamID() string { return v.TeamID }
 
 // The mutation executed by DeletePolicyDefinition.
 const DeletePolicyDefinition_Operation = `
@@ -637,42 +773,6 @@ func SetKubescapeLatestFileTSNodeToDefault(
 	return data_, err_
 }
 
-// The mutation executed by UpdateArtifactRunHistory.
-const UpdateArtifactRunHistory_Operation = `
-mutation UpdateArtifactRunHistory ($runHistoryID: ID!, $sbomTool: String!) {
-	updateRunHistory(input: {filter:{id:[$runHistoryID]},set:{SbomTool:$sbomTool}}) {
-		numUids
-	}
-}
-`
-
-func UpdateArtifactRunHistory(
-	ctx_ context.Context,
-	client_ graphql.Client,
-	runHistoryID *string,
-	sbomTool string,
-) (data_ *UpdateArtifactRunHistoryResponse, err_ error) {
-	req_ := &graphql.Request{
-		OpName: "UpdateArtifactRunHistory",
-		Query:  UpdateArtifactRunHistory_Operation,
-		Variables: &__UpdateArtifactRunHistoryInput{
-			RunHistoryID: runHistoryID,
-			SbomTool:     sbomTool,
-		},
-	}
-
-	data_ = &UpdateArtifactRunHistoryResponse{}
-	resp_ := &graphql.Response{Data: data_}
-
-	err_ = client_.MakeRequest(
-		ctx_,
-		req_,
-		resp_,
-	)
-
-	return data_, err_
-}
-
 // The mutation executed by UpdateBlockedApplicationDeployment.
 const UpdateBlockedApplicationDeployment_Operation = `
 mutation UpdateBlockedApplicationDeployment {
@@ -733,43 +833,247 @@ func UpdateNonBlockedApplicationDeployment(
 	return data_, err_
 }
 
-// The mutation executed by UpdateRunHistoryDeploymentFields.
-const UpdateRunHistoryDeploymentFields_Operation = `
-mutation UpdateRunHistoryDeploymentFields ($runHistoryID: ID!, $deploymentID: String!, $sbomTool: String!, $namespace: String!, $account: String!, $cluster: String!, $application: String!, $teamID: String!) {
-	updateRunHistory(input: {filter:{id:[$runHistoryID]},set:{DeploymentID:$deploymentID,SbomTool:$sbomTool,Namespace:$namespace,Account:$account,Cluster:$cluster,Application:$application,TeamID:$teamID}}) {
+// The mutation executed by UpdateRunHistoryWAccount.
+const UpdateRunHistoryWAccount_Operation = `
+mutation UpdateRunHistoryWAccount ($runHistoryID: [ID!], $account: String!) {
+	updateRunHistory(input: {filter:{id:$runHistoryID},set:{Account:$account}}) {
 		numUids
 	}
 }
 `
 
-func UpdateRunHistoryDeploymentFields(
+func UpdateRunHistoryWAccount(
 	ctx_ context.Context,
 	client_ graphql.Client,
-	runHistoryID *string,
-	deploymentID string,
-	sbomTool string,
-	namespace string,
+	runHistoryID []*string,
 	account string,
-	cluster string,
-	application string,
-	teamID string,
-) (data_ *UpdateRunHistoryDeploymentFieldsResponse, err_ error) {
+) (data_ *UpdateRunHistoryWAccountResponse, err_ error) {
 	req_ := &graphql.Request{
-		OpName: "UpdateRunHistoryDeploymentFields",
-		Query:  UpdateRunHistoryDeploymentFields_Operation,
-		Variables: &__UpdateRunHistoryDeploymentFieldsInput{
+		OpName: "UpdateRunHistoryWAccount",
+		Query:  UpdateRunHistoryWAccount_Operation,
+		Variables: &__UpdateRunHistoryWAccountInput{
+			RunHistoryID: runHistoryID,
+			Account:      account,
+		},
+	}
+
+	data_ = &UpdateRunHistoryWAccountResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by UpdateRunHistoryWAppDeploymentID.
+const UpdateRunHistoryWAppDeploymentID_Operation = `
+mutation UpdateRunHistoryWAppDeploymentID ($runHistoryID: [ID!], $deploymentID: String!) {
+	updateRunHistory(input: {filter:{id:$runHistoryID},set:{DeploymentID:$deploymentID}}) {
+		numUids
+	}
+}
+`
+
+func UpdateRunHistoryWAppDeploymentID(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	runHistoryID []*string,
+	deploymentID string,
+) (data_ *UpdateRunHistoryWAppDeploymentIDResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "UpdateRunHistoryWAppDeploymentID",
+		Query:  UpdateRunHistoryWAppDeploymentID_Operation,
+		Variables: &__UpdateRunHistoryWAppDeploymentIDInput{
 			RunHistoryID: runHistoryID,
 			DeploymentID: deploymentID,
-			SbomTool:     sbomTool,
-			Namespace:    namespace,
-			Account:      account,
-			Cluster:      cluster,
+		},
+	}
+
+	data_ = &UpdateRunHistoryWAppDeploymentIDResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by UpdateRunHistoryWApplication.
+const UpdateRunHistoryWApplication_Operation = `
+mutation UpdateRunHistoryWApplication ($runHistoryID: [ID!], $application: String!) {
+	updateRunHistory(input: {filter:{id:$runHistoryID},set:{Application:$application}}) {
+		numUids
+	}
+}
+`
+
+func UpdateRunHistoryWApplication(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	runHistoryID []*string,
+	application string,
+) (data_ *UpdateRunHistoryWApplicationResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "UpdateRunHistoryWApplication",
+		Query:  UpdateRunHistoryWApplication_Operation,
+		Variables: &__UpdateRunHistoryWApplicationInput{
+			RunHistoryID: runHistoryID,
 			Application:  application,
+		},
+	}
+
+	data_ = &UpdateRunHistoryWApplicationResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by UpdateRunHistoryWCluster.
+const UpdateRunHistoryWCluster_Operation = `
+mutation UpdateRunHistoryWCluster ($runHistoryID: [ID!], $cluster: String!) {
+	updateRunHistory(input: {filter:{id:$runHistoryID},set:{Cluster:$cluster}}) {
+		numUids
+	}
+}
+`
+
+func UpdateRunHistoryWCluster(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	runHistoryID []*string,
+	cluster string,
+) (data_ *UpdateRunHistoryWClusterResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "UpdateRunHistoryWCluster",
+		Query:  UpdateRunHistoryWCluster_Operation,
+		Variables: &__UpdateRunHistoryWClusterInput{
+			RunHistoryID: runHistoryID,
+			Cluster:      cluster,
+		},
+	}
+
+	data_ = &UpdateRunHistoryWClusterResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by UpdateRunHistoryWNamespace.
+const UpdateRunHistoryWNamespace_Operation = `
+mutation UpdateRunHistoryWNamespace ($runHistoryID: [ID!], $namespace: String!) {
+	updateRunHistory(input: {filter:{id:$runHistoryID},set:{Namespace:$namespace}}) {
+		numUids
+	}
+}
+`
+
+func UpdateRunHistoryWNamespace(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	runHistoryID []*string,
+	namespace string,
+) (data_ *UpdateRunHistoryWNamespaceResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "UpdateRunHistoryWNamespace",
+		Query:  UpdateRunHistoryWNamespace_Operation,
+		Variables: &__UpdateRunHistoryWNamespaceInput{
+			RunHistoryID: runHistoryID,
+			Namespace:    namespace,
+		},
+	}
+
+	data_ = &UpdateRunHistoryWNamespaceResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by UpdateRunHistoryWSbomTool.
+const UpdateRunHistoryWSbomTool_Operation = `
+mutation UpdateRunHistoryWSbomTool ($runHistoryID: [ID!], $sbomTool: String!) {
+	updateRunHistory(input: {filter:{id:$runHistoryID},set:{SbomTool:$sbomTool}}) {
+		numUids
+	}
+}
+`
+
+func UpdateRunHistoryWSbomTool(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	runHistoryID []*string,
+	sbomTool string,
+) (data_ *UpdateRunHistoryWSbomToolResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "UpdateRunHistoryWSbomTool",
+		Query:  UpdateRunHistoryWSbomTool_Operation,
+		Variables: &__UpdateRunHistoryWSbomToolInput{
+			RunHistoryID: runHistoryID,
+			SbomTool:     sbomTool,
+		},
+	}
+
+	data_ = &UpdateRunHistoryWSbomToolResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by UpdateRunHistoryWTeamID.
+const UpdateRunHistoryWTeamID_Operation = `
+mutation UpdateRunHistoryWTeamID ($runHistoryID: [ID!], $teamID: String!) {
+	updateRunHistory(input: {filter:{id:$runHistoryID},set:{TeamID:$teamID}}) {
+		numUids
+	}
+}
+`
+
+func UpdateRunHistoryWTeamID(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	runHistoryID []*string,
+	teamID string,
+) (data_ *UpdateRunHistoryWTeamIDResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "UpdateRunHistoryWTeamID",
+		Query:  UpdateRunHistoryWTeamID_Operation,
+		Variables: &__UpdateRunHistoryWTeamIDInput{
+			RunHistoryID: runHistoryID,
 			TeamID:       teamID,
 		},
 	}
 
-	data_ = &UpdateRunHistoryDeploymentFieldsResponse{}
+	data_ = &UpdateRunHistoryWTeamIDResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(

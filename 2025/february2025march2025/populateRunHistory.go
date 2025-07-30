@@ -8,17 +8,6 @@ import (
 	"github.com/Khan/genqlient/graphql"
 )
 
-type deploymentParamsToAdd struct {
-	runHistoryID string
-	deploymentID string
-	sbomTool     string
-	namespace    string
-	account      string
-	cluster      string
-	application  string
-	teamID       string
-}
-
 func AddDeploymentDetailsToRunHistory(gqlClient graphql.Client) error {
 
 	logger.Sl.Debugf("-----updating new deployment fields in run history--------")
@@ -37,32 +26,143 @@ func AddDeploymentDetailsToRunHistory(gqlClient graphql.Client) error {
 		return nil
 	}
 
-	var dataToUpdate []deploymentParamsToAdd
+	deploymentIDUpdate := make(map[string][]*string)
+	sbomUpdate := make(map[string][]*string)
+	nsUpdate := make(map[string][]*string)
+	accountUpdate := make(map[string][]*string)
+	clusterUpdate := make(map[string][]*string)
+	appUpdate := make(map[string][]*string)
+	teamIDUpdate := make(map[string][]*string)
+
 	for _, val := range res.QueryRunHistory {
 
 		if val.Id == nil {
 			continue
 		}
-		dataToUpdate = append(dataToUpdate, deploymentParamsToAdd{
-			runHistoryID: *val.Id,
-			deploymentID: val.ApplicationDeployment.Id,
-			sbomTool:     val.ApplicationDeployment.ToolsUsed.Sbom,
-			namespace:    val.ApplicationDeployment.ApplicationEnvironment.Namespace,
-			account:      val.ApplicationDeployment.ApplicationEnvironment.Environment.Purpose,
-			cluster:      val.ApplicationDeployment.ApplicationEnvironment.DeploymentTarget.Name,
-			application:  val.ApplicationDeployment.ApplicationEnvironment.Application.Name,
-			teamID:       val.ApplicationDeployment.ApplicationEnvironment.Application.Team.Id,
-		})
+
+		deploymentIDUpdate[val.ApplicationDeployment.Id] = append(deploymentIDUpdate[val.ApplicationDeployment.Id], val.Id)
+		sbomUpdate[val.ApplicationDeployment.ToolsUsed.Sbom] = append(sbomUpdate[val.ApplicationDeployment.ToolsUsed.Sbom], val.Id)
+		nsUpdate[val.ApplicationDeployment.ApplicationEnvironment.Namespace] = append(nsUpdate[val.ApplicationDeployment.ApplicationEnvironment.Namespace], val.Id)
+		accountUpdate[val.ApplicationDeployment.ApplicationEnvironment.Environment.Purpose] = append(accountUpdate[val.ApplicationDeployment.ApplicationEnvironment.Environment.Purpose], val.Id)
+		clusterUpdate[val.ApplicationDeployment.ApplicationEnvironment.DeploymentTarget.Name] = append(clusterUpdate[val.ApplicationDeployment.ApplicationEnvironment.DeploymentTarget.Name], val.Id)
+		appUpdate[val.ApplicationDeployment.ApplicationEnvironment.Application.Name] = append(appUpdate[val.ApplicationDeployment.ApplicationEnvironment.Application.Name], val.Id)
+		teamIDUpdate[val.ApplicationDeployment.ApplicationEnvironment.Application.Team.Id] = append(teamIDUpdate[val.ApplicationDeployment.ApplicationEnvironment.Application.Team.Id], val.Id)
+
 	}
 
-	for _, val := range dataToUpdate {
-		_, err := UpdateRunHistoryDeploymentFields(ctx, gqlClient, &val.runHistoryID, val.deploymentID,
-			val.sbomTool, val.namespace, val.account, val.cluster, val.application, val.teamID)
-		if err != nil {
-			return fmt.Errorf("error in UpdateRunHistoryDeploymentFields for run history id: %s, %s", val.runHistoryID, err.Error())
+	const batchSize = 10000
+
+	logger.Sl.Debug("-----updating records of run history with application deployment ID--------")
+	for key, val := range deploymentIDUpdate {
+		for i := 0; i < len(val); i += batchSize {
+			end := i + batchSize
+			if end > len(val) {
+				end = len(val)
+			}
+			batch := val[i:end]
+
+			if _, err := UpdateRunHistoryWAppDeploymentID(ctx, gqlClient, batch, key); err != nil {
+				return fmt.Errorf("error in UpdateRunHistoryWAppDeploymentID for key %s: %w", key, err)
+			}
 		}
 	}
+	logger.Sl.Debug("-----updated records of run history with application deployment ID--------")
 
+	logger.Sl.Debug("-----updating records of run history with sbomTool--------")
+	for key, val := range sbomUpdate {
+		for i := 0; i < len(val); i += batchSize {
+			end := i + batchSize
+			if end > len(val) {
+				end = len(val)
+			}
+			batch := val[i:end]
+
+			if _, err := UpdateRunHistoryWSbomTool(ctx, gqlClient, batch, key); err != nil {
+				return fmt.Errorf("error in UpdateRunHistoryWSbomTool for key %s: %w", key, err)
+			}
+		}
+	}
+	logger.Sl.Debug("-----updated records of run history with sbomTool--------")
+
+	logger.Sl.Debug("-----updating records of run history with NS--------")
+	for key, val := range nsUpdate {
+		for i := 0; i < len(val); i += batchSize {
+			end := i + batchSize
+			if end > len(val) {
+				end = len(val)
+			}
+			batch := val[i:end]
+
+			if _, err := UpdateRunHistoryWNamespace(ctx, gqlClient, batch, key); err != nil {
+				return fmt.Errorf("error in UpdateRunHistoryWNamespace for key %s: %w", key, err)
+			}
+		}
+	}
+	logger.Sl.Debug("-----updated records of run history with NS--------")
+
+	logger.Sl.Debug("-----updating records of run history with Account--------")
+	for key, val := range accountUpdate {
+		for i := 0; i < len(val); i += batchSize {
+			end := i + batchSize
+			if end > len(val) {
+				end = len(val)
+			}
+			batch := val[i:end]
+
+			if _, err := UpdateRunHistoryWAccount(ctx, gqlClient, batch, key); err != nil {
+				return fmt.Errorf("error in UpdateRunHistoryWAccount for key %s: %w", key, err)
+			}
+		}
+	}
+	logger.Sl.Debug("-----updated records of run history with Account--------")
+
+	logger.Sl.Debug("-----updating records of run history with Cluster--------")
+	for key, val := range clusterUpdate {
+		for i := 0; i < len(val); i += batchSize {
+			end := i + batchSize
+			if end > len(val) {
+				end = len(val)
+			}
+			batch := val[i:end]
+
+			if _, err := UpdateRunHistoryWCluster(ctx, gqlClient, batch, key); err != nil {
+				return fmt.Errorf("error in UpdateRunHistoryWCluster for key %s: %w", key, err)
+			}
+		}
+	}
+	logger.Sl.Debug("-----updated records of run history with Cluster--------")
+
+	logger.Sl.Debug("-----updating records of run history with Applicaion Name--------")
+	for key, val := range appUpdate {
+		for i := 0; i < len(val); i += batchSize {
+			end := i + batchSize
+			if end > len(val) {
+				end = len(val)
+			}
+			batch := val[i:end]
+
+			if _, err := UpdateRunHistoryWApplication(ctx, gqlClient, batch, key); err != nil {
+				return fmt.Errorf("error in UpdateRunHistoryWApplication for key %s: %w", key, err)
+			}
+		}
+	}
+	logger.Sl.Debug("-----updated records of run history with Applicaion Name--------")
+
+	logger.Sl.Debug("-----updating records of run history with TeamID--------")
+	for key, val := range teamIDUpdate {
+		for i := 0; i < len(val); i += batchSize {
+			end := i + batchSize
+			if end > len(val) {
+				end = len(val)
+			}
+			batch := val[i:end]
+
+			if _, err := UpdateRunHistoryWTeamID(ctx, gqlClient, batch, key); err != nil {
+				return fmt.Errorf("error in UpdateRunHistoryWTeamID for key %s: %w", key, err)
+			}
+		}
+	}
+	logger.Sl.Debug("-----updated records of run history with TeamID--------")
 	logger.Sl.Debugf("-----updated new deployment fields in run history--------")
 
 	return nil
@@ -86,26 +186,32 @@ func AddSbomToolToArtifactRunHistory(gqlClient graphql.Client) error {
 		return nil
 	}
 
-	var dataToUpdate []deploymentParamsToAdd
+	sbomUpdate := make(map[string][]*string)
 	for _, val := range res.QueryRunHistory {
 
 		if val.Id == nil {
 			continue
 		}
-		dataToUpdate = append(dataToUpdate, deploymentParamsToAdd{
-			runHistoryID: *val.Id,
-			sbomTool:     val.ArtifactScan.Tool,
-		})
+		sbomUpdate[val.ArtifactScan.Tool] = append(sbomUpdate[val.ArtifactScan.Tool], val.Id)
 	}
 
-	for _, val := range dataToUpdate {
-		_, err := UpdateArtifactRunHistory(ctx, gqlClient, &val.runHistoryID, val.sbomTool)
-		if err != nil {
-			return fmt.Errorf("error in UpdateArtifactRunHistory for run history id: %s, %s", val.runHistoryID, err.Error())
+	const batchSize = 10000
+
+	logger.Sl.Debugf("-----updating sbom field in artifact run histories--------")
+	for key, val := range sbomUpdate {
+		for i := 0; i < len(val); i += batchSize {
+			end := i + batchSize
+			if end > len(val) {
+				end = len(val)
+			}
+			batch := val[i:end]
+
+			if _, err := UpdateRunHistoryWSbomTool(ctx, gqlClient, batch, key); err != nil {
+				return fmt.Errorf("error in UpdateRunHistoryWSbomTool for key %s: %w", key, err)
+			}
 		}
 	}
-
-	logger.Sl.Debugf("-----updated sbom field in artifact run history--------")
+	logger.Sl.Debugf("-----updated sbom field in artifact run histories--------")
 
 	return nil
 }

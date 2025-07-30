@@ -26,17 +26,17 @@ func UpgradeToApril2025(prodGraphUrl, prodToken string, prodDgraphClient graphql
 	deleteScanIDs := []string{}
 	for _, eachartifact := range artifactsResp.Scanning {
 		for _, eachScan := range eachartifact.ScanData {
-			logger.Logger.Sugar().Infof("Delete ScanData for Artifact: ", eachScan.ArtifactNameTag)
+			logger.Logger.Sugar().Infof("Delete ScanData for Artifact: %s", eachScan.ArtifactNameTag)
 			deleteScanIDs = append(deleteScanIDs, eachScan.Id)
 		}
 	}
 
 	for _, eachartifact := range artifactsResp.Noartifact {
-		logger.Logger.Sugar().Infof("Delete ScanData for Artifact: ", eachartifact.ArtifactNameTag)
+		logger.Logger.Sugar().Infof("Delete ScanData for Artifact: %s", eachartifact.ArtifactNameTag)
 		deleteScanIDs = append(deleteScanIDs, eachartifact.Id)
 	}
 
-	logger.Logger.Sugar().Infof("Number of Partially Scanned Artifacts ", len(deleteScanIDs))
+	logger.Logger.Sugar().Infof("Number of Partially Scanned Artifacts %v", len(deleteScanIDs))
 
 	batchSize := 50
 	// Loop through deleteScanIDs in batches of 50
@@ -63,7 +63,7 @@ func UpgradeToApril2025(prodGraphUrl, prodToken string, prodDgraphClient graphql
 		return fmt.Errorf("couldnt retrieve runhistory ids error: %s", err.Error())
 	}
 
-	logger.Logger.Sugar().Infof("Number of deployments with corrupted data to be removed", len(runHistoryResp.QueryApplicationDeployment))
+	logger.Logger.Sugar().Infof("Number of deployments with corrupted data to be removed %v", len(runHistoryResp.QueryApplicationDeployment))
 
 	deleteID := []*string{}
 	for _, eachdeployment := range runHistoryResp.QueryApplicationDeployment {
@@ -86,6 +86,8 @@ func UpgradeToApril2025(prodGraphUrl, prodToken string, prodDgraphClient graphql
 
 	logger.Logger.Sugar().Infof("Removed all corrupted data")
 
+	logger.Logger.Sugar().Infof("set default values for new params of deployment & artifact table")
+
 	if _, err := SetDefaultAttemptForDeployment(context.Background(), prodDgraphClient); err != nil {
 		return fmt.Errorf("error: UpgradeToApril2025: SetDefaultAttemptForDeployment: %s", err.Error())
 	}
@@ -102,10 +104,14 @@ func UpgradeToApril2025(prodGraphUrl, prodToken string, prodDgraphClient graphql
 		return fmt.Errorf("error: UpgradeToApril2025: SetDefaultScanStateForArtifact: %s", err.Error())
 	}
 
+	logger.Logger.Sugar().Infof("default values for new params of deployment & artifact table are added")
+
 	runhistoriesResp, err := GetRunHistories(context.Background(), prodDgraphClient)
 	if err != nil {
 		return fmt.Errorf("error: UpgradeToApril2025: GetRunHistories: %s", err.Error())
 	}
+
+	logger.Logger.Sugar().Infof("set default values for tools in runhistory")
 
 	runHistoryIDs := []*string{}
 	for _, runhistory := range runhistoriesResp.QueryRunHistory {
@@ -123,6 +129,8 @@ func UpgradeToApril2025(prodGraphUrl, prodToken string, prodDgraphClient graphql
 			return fmt.Errorf("error: UpgradeToApril2025: SetDefaultRunhistoryValues: %s", err.Error())
 		}
 	}
+
+	logger.Logger.Sugar().Infof("set default value for teamID in runhistory")
 
 	runHistories, err := QueryRunHistoryWTeamIDNull(context.Background(), prodDgraphClient)
 	if err != nil {
@@ -145,9 +153,13 @@ func UpgradeToApril2025(prodGraphUrl, prodToken string, prodDgraphClient graphql
 		}
 	}
 
+	logger.Logger.Sugar().Infof("remove addn policies to sync w repo")
+
 	if err := SyncPoliciesWRepo(prodDgraphClient); err != nil {
 		return fmt.Errorf("UpgradeToApril2025: SyncPoliciesWRepo: error: %s", err.Error())
 	}
+
+	logger.Logger.Sugar().Infof("delete alerts for deleted policies")
 
 	runHistoriesToDelete, err := QueryAlertsToDelete(context.Background(), prodDgraphClient)
 	if err != nil {
