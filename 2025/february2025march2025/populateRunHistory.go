@@ -3,20 +3,58 @@ package february2025march2025
 import (
 	"context"
 	"fmt"
+	"time"
+	graphqlfunc "upgradationScript/graphqlFunc"
 	"upgradationScript/logger"
 
 	"github.com/Khan/genqlient/graphql"
+	"github.com/cenkalti/backoff"
 )
 
-func AddDeploymentDetailsToRunHistory(gqlClient graphql.Client) error {
+// callWithRetry will try your GraphQL operation up to MaxElapsedTime,
+// backing off exponentially (with jitter) between attempts.
+func callWithRetry(
+	prodGraphUrl, prodToken string,
+	operation func(ctx context.Context, gqlClient graphql.Client) error,
+) error {
+	// Configure an exponential backoff:
+	exp := backoff.NewExponentialBackOff()
+	exp.InitialInterval = 1 * time.Second
+	exp.MaxInterval = 10 * time.Second
+	exp.MaxElapsedTime = 10 * time.Minute
+
+	attempt := 0
+	// Wrap the operation so that each attempt has its own shorter timeout:
+	retryOp := func() error {
+		attempt++
+		gqlient := graphqlfunc.NewClient(prodGraphUrl, prodToken)
+		// each try gets, say, a 30s timeout
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+		defer cancel()
+		err := operation(ctx, gqlient)
+		if err != nil {
+			logger.Sl.Warnf("Retry attempt %d failed: %v", attempt, err)
+		}
+		return err
+	}
+
+	return backoff.Retry(retryOp, exp)
+}
+
+func AddDeploymentDetailsToRunHistory(prodGraphUrl, prodToken string) error {
 
 	logger.Sl.Debugf("-----updating new deployment fields in run history--------")
 
-	ctx := context.Background()
-
-	res, err := QueryRunHistoryWithApplicationDeployment(ctx, gqlClient)
-	if err != nil {
-		return fmt.Errorf("error in QueryRunHistoryWithApplicationDeployment: %s", err.Error())
+	var res *QueryRunHistoryWithApplicationDeploymentResponse
+	if err := callWithRetry(prodGraphUrl, prodToken, func(ctx context.Context, gqlClient graphql.Client) error {
+		var err error
+		res, err = QueryRunHistoryWithApplicationDeployment(ctx, gqlClient)
+		if err != nil {
+			return fmt.Errorf("error in QueryRunHistoryWithApplicationDeployment: %s", err.Error())
+		}
+		return nil
+	}); err != nil {
+		return err
 	}
 
 	logger.Sl.Debugf("records found for existing run history with application deployment: %d", len(res.QueryRunHistory))
@@ -50,19 +88,22 @@ func AddDeploymentDetailsToRunHistory(gqlClient graphql.Client) error {
 
 	}
 
-	const batchSize = 10000
+	const batchSize = 2500
 
 	logger.Sl.Debug("-----updating records of run history with application deployment ID--------")
 	for key, val := range deploymentIDUpdate {
 		for i := 0; i < len(val); i += batchSize {
-			end := i + batchSize
-			if end > len(val) {
-				end = len(val)
-			}
+			end := min(i+batchSize, len(val))
 			batch := val[i:end]
-
-			if _, err := UpdateRunHistoryWAppDeploymentID(ctx, gqlClient, batch, key); err != nil {
-				return fmt.Errorf("error in UpdateRunHistoryWAppDeploymentID for key %s: %w", key, err)
+			logger.Sl.Debugf("-----updating application deployment ID %s to run history batch %v batchSize %v--------", key, i, len(batch))
+			if err := callWithRetry(prodGraphUrl, prodToken, func(ctx context.Context, gqlClient graphql.Client) error {
+				_, err := UpdateRunHistoryWAppDeploymentID(ctx, gqlClient, batch, key)
+				if err != nil {
+					return fmt.Errorf("error in UpdateRunHistoryWAppDeploymentID for key %s: %w", key, err)
+				}
+				return nil
+			}); err != nil {
+				return err
 			}
 		}
 	}
@@ -71,14 +112,16 @@ func AddDeploymentDetailsToRunHistory(gqlClient graphql.Client) error {
 	logger.Sl.Debug("-----updating records of run history with sbomTool--------")
 	for key, val := range sbomUpdate {
 		for i := 0; i < len(val); i += batchSize {
-			end := i + batchSize
-			if end > len(val) {
-				end = len(val)
-			}
+			end := min(i+batchSize, len(val))
 			batch := val[i:end]
-
-			if _, err := UpdateRunHistoryWSbomTool(ctx, gqlClient, batch, key); err != nil {
-				return fmt.Errorf("error in UpdateRunHistoryWSbomTool for key %s: %w", key, err)
+			logger.Sl.Debugf("-----updating sbom %s to run history batch %v batchSize %v--------", key, i, len(batch))
+			if err := callWithRetry(prodGraphUrl, prodToken, func(ctx context.Context, gqlClient graphql.Client) error {
+				if _, err := UpdateRunHistoryWSbomTool(ctx, gqlClient, batch, key); err != nil {
+					return fmt.Errorf("error in UpdateRunHistoryWSbomTool for key %s: %w", key, err)
+				}
+				return nil
+			}); err != nil {
+				return err
 			}
 		}
 	}
@@ -87,14 +130,16 @@ func AddDeploymentDetailsToRunHistory(gqlClient graphql.Client) error {
 	logger.Sl.Debug("-----updating records of run history with NS--------")
 	for key, val := range nsUpdate {
 		for i := 0; i < len(val); i += batchSize {
-			end := i + batchSize
-			if end > len(val) {
-				end = len(val)
-			}
+			end := min(i+batchSize, len(val))
 			batch := val[i:end]
-
-			if _, err := UpdateRunHistoryWNamespace(ctx, gqlClient, batch, key); err != nil {
-				return fmt.Errorf("error in UpdateRunHistoryWNamespace for key %s: %w", key, err)
+			logger.Sl.Debugf("-----updating ns %s to run history batch %v batchSize %v--------", key, i, len(batch))
+			if err := callWithRetry(prodGraphUrl, prodToken, func(ctx context.Context, gqlClient graphql.Client) error {
+				if _, err := UpdateRunHistoryWNamespace(ctx, gqlClient, batch, key); err != nil {
+					return fmt.Errorf("error in UpdateRunHistoryWNamespace for key %s: %w", key, err)
+				}
+				return nil
+			}); err != nil {
+				return err
 			}
 		}
 	}
@@ -103,14 +148,16 @@ func AddDeploymentDetailsToRunHistory(gqlClient graphql.Client) error {
 	logger.Sl.Debug("-----updating records of run history with Account--------")
 	for key, val := range accountUpdate {
 		for i := 0; i < len(val); i += batchSize {
-			end := i + batchSize
-			if end > len(val) {
-				end = len(val)
-			}
+			end := min(i+batchSize, len(val))
 			batch := val[i:end]
-
-			if _, err := UpdateRunHistoryWAccount(ctx, gqlClient, batch, key); err != nil {
-				return fmt.Errorf("error in UpdateRunHistoryWAccount for key %s: %w", key, err)
+			logger.Sl.Debugf("-----updating account %s to run history batch %v batchSize %v--------", key, i, len(batch))
+			if err := callWithRetry(prodGraphUrl, prodToken, func(ctx context.Context, gqlClient graphql.Client) error {
+				if _, err := UpdateRunHistoryWAccount(ctx, gqlClient, batch, key); err != nil {
+					return fmt.Errorf("error in UpdateRunHistoryWAccount for key %s: %w", key, err)
+				}
+				return nil
+			}); err != nil {
+				return err
 			}
 		}
 	}
@@ -119,14 +166,16 @@ func AddDeploymentDetailsToRunHistory(gqlClient graphql.Client) error {
 	logger.Sl.Debug("-----updating records of run history with Cluster--------")
 	for key, val := range clusterUpdate {
 		for i := 0; i < len(val); i += batchSize {
-			end := i + batchSize
-			if end > len(val) {
-				end = len(val)
-			}
+			end := min(i+batchSize, len(val))
 			batch := val[i:end]
-
-			if _, err := UpdateRunHistoryWCluster(ctx, gqlClient, batch, key); err != nil {
-				return fmt.Errorf("error in UpdateRunHistoryWCluster for key %s: %w", key, err)
+			logger.Sl.Debugf("-----updating cluster %s to run history batch %v batchSize %v--------", key, i, len(batch))
+			if err := callWithRetry(prodGraphUrl, prodToken, func(ctx context.Context, gqlClient graphql.Client) error {
+				if _, err := UpdateRunHistoryWCluster(ctx, gqlClient, batch, key); err != nil {
+					return fmt.Errorf("error in UpdateRunHistoryWCluster for key %s: %w", key, err)
+				}
+				return nil
+			}); err != nil {
+				return err
 			}
 		}
 	}
@@ -135,14 +184,16 @@ func AddDeploymentDetailsToRunHistory(gqlClient graphql.Client) error {
 	logger.Sl.Debug("-----updating records of run history with Applicaion Name--------")
 	for key, val := range appUpdate {
 		for i := 0; i < len(val); i += batchSize {
-			end := i + batchSize
-			if end > len(val) {
-				end = len(val)
-			}
+			end := min(i+batchSize, len(val))
 			batch := val[i:end]
-
-			if _, err := UpdateRunHistoryWApplication(ctx, gqlClient, batch, key); err != nil {
-				return fmt.Errorf("error in UpdateRunHistoryWApplication for key %s: %w", key, err)
+			logger.Sl.Debugf("-----updating app name %s to run history batch %v batchSize %v--------", key, i, len(batch))
+			if err := callWithRetry(prodGraphUrl, prodToken, func(ctx context.Context, gqlClient graphql.Client) error {
+				if _, err := UpdateRunHistoryWApplication(ctx, gqlClient, batch, key); err != nil {
+					return fmt.Errorf("error in UpdateRunHistoryWApplication for key %s: %w", key, err)
+				}
+				return nil
+			}); err != nil {
+				return err
 			}
 		}
 	}
@@ -151,14 +202,16 @@ func AddDeploymentDetailsToRunHistory(gqlClient graphql.Client) error {
 	logger.Sl.Debug("-----updating records of run history with TeamID--------")
 	for key, val := range teamIDUpdate {
 		for i := 0; i < len(val); i += batchSize {
-			end := i + batchSize
-			if end > len(val) {
-				end = len(val)
-			}
+			end := min(i+batchSize, len(val))
 			batch := val[i:end]
-
-			if _, err := UpdateRunHistoryWTeamID(ctx, gqlClient, batch, key); err != nil {
-				return fmt.Errorf("error in UpdateRunHistoryWTeamID for key %s: %w", key, err)
+			logger.Sl.Debugf("-----updating teamID %s to run history batch %v batchSize %v--------", key, i, len(batch))
+			if err := callWithRetry(prodGraphUrl, prodToken, func(ctx context.Context, gqlClient graphql.Client) error {
+				if _, err := UpdateRunHistoryWTeamID(ctx, gqlClient, batch, key); err != nil {
+					return fmt.Errorf("error in UpdateRunHistoryWTeamID for key %s: %w", key, err)
+				}
+				return nil
+			}); err != nil {
+				return err
 			}
 		}
 	}
@@ -168,15 +221,20 @@ func AddDeploymentDetailsToRunHistory(gqlClient graphql.Client) error {
 	return nil
 }
 
-func AddSbomToolToArtifactRunHistory(gqlClient graphql.Client) error {
+func AddSbomToolToArtifactRunHistory(prodGraphUrl, prodToken string) error {
 
 	logger.Sl.Debugf("-----updating sbom field in artifact run history--------")
 
-	ctx := context.Background()
-
-	res, err := QueryRunHistoryWithArtifactScanData(ctx, gqlClient)
-	if err != nil {
-		return fmt.Errorf("error in QueryRunHistoryWithArtifactScanData: %s", err.Error())
+	var res *QueryRunHistoryWithArtifactScanDataResponse
+	if err := callWithRetry(prodGraphUrl, prodToken, func(ctx context.Context, gqlClient graphql.Client) error {
+		var err error
+		res, err = QueryRunHistoryWithArtifactScanData(ctx, gqlClient)
+		if err != nil {
+			return fmt.Errorf("error in QueryRunHistoryWithArtifactScanData: %s", err.Error())
+		}
+		return nil
+	}); err != nil {
+		return err
 	}
 
 	logger.Sl.Debugf("records found for existing run history with artifactscan data: %d", len(res.QueryRunHistory))
@@ -195,19 +253,21 @@ func AddSbomToolToArtifactRunHistory(gqlClient graphql.Client) error {
 		sbomUpdate[val.ArtifactScan.Tool] = append(sbomUpdate[val.ArtifactScan.Tool], val.Id)
 	}
 
-	const batchSize = 10000
+	const batchSize = 2500
 
 	logger.Sl.Debugf("-----updating sbom field in artifact run histories--------")
 	for key, val := range sbomUpdate {
 		for i := 0; i < len(val); i += batchSize {
-			end := i + batchSize
-			if end > len(val) {
-				end = len(val)
-			}
+			end := min(i+batchSize, len(val))
 			batch := val[i:end]
-
-			if _, err := UpdateRunHistoryWSbomTool(ctx, gqlClient, batch, key); err != nil {
-				return fmt.Errorf("error in UpdateRunHistoryWSbomTool for key %s: %w", key, err)
+			logger.Sl.Debugf("-----updating sbom %s to run history batch %v batchSize %v--------", key, i, len(batch))
+			if err := callWithRetry(prodGraphUrl, prodToken, func(ctx context.Context, gqlClient graphql.Client) error {
+				if _, err := UpdateRunHistoryWSbomTool(ctx, gqlClient, batch, key); err != nil {
+					return fmt.Errorf("error in UpdateRunHistoryWSbomTool for key %s: %w", key, err)
+				}
+				return nil
+			}); err != nil {
+				return err
 			}
 		}
 	}

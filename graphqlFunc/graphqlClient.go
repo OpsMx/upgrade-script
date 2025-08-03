@@ -25,7 +25,7 @@ func NewClient(graphqlUrl, graphqlToken string) graphql.Client {
 	graphqlUrl = fmt.Sprintf("%s/graphql", graphqlUrl)
 
 	httpClient := http.Client{
-		Timeout: 30 * time.Second,
+		Timeout: 5 * time.Minute,
 		Transport: &authedTransport{
 			token:   graphqlToken,
 			wrapped: http.DefaultTransport,

@@ -13,6 +13,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.17.75
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.79.3
 	github.com/aws/smithy-go v1.22.3
+	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/google/uuid v1.6.0
 	github.com/vektah/gqlparser v1.3.1
 	go.uber.org/zap v1.27.0

@@ -18,15 +18,15 @@ func UpgradeToMarch2025(prodGraphUrl, prodToken string, prodDgraphClient graphql
 		return fmt.Errorf("error: UpgradeToMarch2025: UpdateSchema: %s", err.Error())
 	}
 
-	if err := AddDeploymentDetailsToRunHistory(prodDgraphClient); err != nil {
+	if err := AddDeploymentDetailsToRunHistory(prodGraphUrl, prodToken); err != nil {
 		return fmt.Errorf("error: UpgradeToMarch2025: AddDeploymentDetailsToRunHistory: %s", err.Error())
 	}
 
-	if err := AddSbomToolToArtifactRunHistory(prodDgraphClient); err != nil {
+	if err := AddSbomToolToArtifactRunHistory(prodGraphUrl, prodToken); err != nil {
 		return fmt.Errorf("error: UpgradeToMarch2025: AddSbomToolToArtifactRunHistory: %s", err.Error())
 	}
 
-	if err := DeletePolicies(prodDgraphClient); err != nil {
+	if err := DeletePolicies(prodGraphUrl, prodToken); err != nil {
 		return fmt.Errorf("error: UpgradeToMarch2025: DeletePolicies: %s", err.Error())
 	}
 
@@ -34,10 +34,12 @@ func UpgradeToMarch2025(prodGraphUrl, prodToken string, prodDgraphClient graphql
 		return fmt.Errorf("error: UpgradeToMarch2025: UpdateBlockedApplicationDeploymentResponse: %s", err.Error())
 	}
 
+	prodDgraphClient = graphqlfunc.NewClient(prodGraphUrl, prodToken)
 	if _, err := UpdateNonBlockedApplicationDeployment(context.Background(), prodDgraphClient); err != nil {
 		return fmt.Errorf("error: UpgradeToMarch2025: UpdateNonBlockedApplicationDeployment: %s", err.Error())
 	}
 
+	prodDgraphClient = graphqlfunc.NewClient(prodGraphUrl, prodToken)
 	if _, err := SetKubescapeLatestFileTSNodeToDefault(context.Background(), prodDgraphClient); err != nil {
 		return fmt.Errorf("error: UpgradeToMarch2025: SetKubescapeLatestFileTSNodeToDefault: %s", err.Error())
 	}
