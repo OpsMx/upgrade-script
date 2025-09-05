@@ -1,0 +1,5 @@
+mutation SetProjectLevelToRepositery {
+    updateProject(input: { set: { level: "repository" }, filter: { has: name } }) {
+        numUids
+    }
+}

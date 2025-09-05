@@ -205,7 +205,7 @@ func beginProcessOfUpgrade(upgradeTo SchemaOrder, isSecondDgraphRequired, isLast
 		return june2025july2025.UpgradeToJuly2025(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, prodGraphqlClient)
 
 	case August2025Version:
-		return july2025august2025.UpgradeToAugust2025(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken, prodGraphqlClient)
+		return july2025august2025.UpgradeToAugust2025(Conf.ProdGraphQLAddr, Conf.ProdDgraphToken)
 	}
 
 	logger.Sl.Debugf("no upgrade steps for %s", upgradeTo.NameOfSchema())
